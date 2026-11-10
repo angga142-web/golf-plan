@@ -1,3 +1,4 @@
+<!doctype html>
 <title>Imperial Karawaci Yardage</title>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
@@ -5,6 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap">
 <style>
+[hidden]{display:none!important}
 /* Layout: one hole card per swipe, hole strip on top, score dock fixed at the bottom. Single light theme on purpose: read in direct sun. */
 :root{
   --paper:#ffffff; --mist:#eef1f5; --ink:#0c162d; --ink2:#46506a; --line:#d3d9e2;
@@ -89,6 +91,18 @@ tr.go{cursor:pointer}
 .confirm p{margin:0;flex:1 1 200px;font-weight:600}
 .confirm .yes{background:var(--red);color:#fff;border:0;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer}
 .confirm .no{background:#fff;border:2px solid var(--ink);border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer}
+/* GPS distance panel, sits on top of the score dock */
+.toprow .btns{display:flex;gap:8px}
+.gpsbtn{background:var(--ink);color:#fff;border:0;border-radius:8px;padding:6px 12px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
+.gps{max-width:560px;margin:0 auto 10px;border:2px solid var(--ink);border-radius:12px;padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.gpsrow{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}
+.gpsrow small{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}
+.gpsrow b{font-family:var(--f-num);font-size:30px;line-height:1;font-variant-numeric:tabular-nums}
+.gpsrow .mid b{font-size:38px}
+.gpsclub{font-family:var(--f-num);font-weight:800;font-size:22px;text-transform:uppercase;letter-spacing:.03em}
+.gpsnote{font-size:12px;font-weight:600;color:var(--ink2)}
+.gpsact{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.gpsact button{border:2px solid var(--ink);background:#fff;border-radius:8px;padding:5px 12px;font-weight:700;cursor:pointer}
 /* one-screen summary for a phone screenshot */
 .shot{position:fixed;inset:0;z-index:30;background:var(--paper);display:flex;flex-direction:column;gap:10px;
   padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px));
@@ -110,7 +124,7 @@ tr.go{cursor:pointer}
 <header class="top">
   <div class="toprow">
     <div class="brand">Imperial Karawaci · Tee Putih</div>
-    <button class="cardbtn" id="openCard" type="button">Kartu skor</button>
+    <div class="btns"><button class="gpsbtn" id="gpsBtn" type="button">GPS</button><button class="cardbtn" id="openCard" type="button">Kartu skor</button></div>
   </div>
   <nav class="chips" id="chips" aria-label="Pilih hole"></nav>
 </header>
@@ -119,6 +133,15 @@ tr.go{cursor:pointer}
 <div class="spacer"></div>
 
 <section class="dock" aria-label="Input skor">
+  <div class="gps" id="gps" hidden aria-live="polite">
+    <div class="gpsrow" id="gpsRow">
+      <div><small>Depan</small><b id="gF">–</b></div>
+      <div class="mid"><small>Tengah</small><b id="gC">–</b></div>
+      <div><small>Belakang</small><b id="gB">–</b></div>
+    </div>
+    <div class="gpsclub" id="gClub">Mencari posisi…</div>
+    <div class="gpsact"><span class="gpsnote" id="gNote"></span><span><button type="button" id="gAgain">Ukur lagi</button> <button type="button" id="gClose">Tutup</button></span></div>
+  </div>
   <div class="dockin">
     <div class="meta">
       <div class="h" id="mHole">Hole 1</div>
@@ -242,6 +265,38 @@ function renderShot(){
 }
 $("shotBtn").addEventListener("click",()=>{renderShot();$("shot").hidden=false;});
 $("closeShot").addEventListener("click",()=>{$("shot").hidden=true;});
+/* GPS: metres from the phone to the OSM green of the hole on screen; read only on a tap, never stored or sent */
+const GPS={"1":{"tee":[-6.232566,106.606416],"green":[[-6.229986,106.606575],[-6.229995,106.606629],[-6.230022,106.606676],[-6.230066,106.606704],[-6.230106,106.606711],[-6.230128,106.6067],[-6.230134,106.606673],[-6.230108,106.606587],[-6.230106,106.606514],[-6.230125,106.60642],[-6.23012,106.606389],[-6.23009,106.60638],[-6.230059,106.606385],[-6.230012,106.606429],[-6.229985,106.606495],[-6.229986,106.606575]]},"2":{"tee":[-6.230459,106.6048],"green":[[-6.230086,106.601872],[-6.230138,106.601807],[-6.230214,106.601747],[-6.230253,106.601732],[-6.230296,106.601736],[-6.230336,106.601761],[-6.230352,106.601789],[-6.230347,106.601827],[-6.230316,106.601856],[-6.230241,106.601884],[-6.230192,106.601918],[-6.230162,106.601963],[-6.230115,106.601985],[-6.230084,106.60197],[-6.230064,106.601936],[-6.230067,106.601904],[-6.230086,106.601872]]},"3":{"tee":[-6.22993,106.601337],"green":[[-6.232493,106.6],[-6.232511,106.599941],[-6.232516,106.599878],[-6.232503,106.599847],[-6.232469,106.599822],[-6.232429,106.599816],[-6.232398,106.599829],[-6.23238,106.599852],[-6.232365,106.599928],[-6.232364,106.600022],[-6.23238,106.600059],[-6.2324,106.600072],[-6.23243,106.600071],[-6.232471,106.600038],[-6.232493,106.6]]},"4":{"tee":[-6.232342,106.599441],"green":[[-6.230081,106.599612],[-6.230116,106.599692],[-6.230164,106.599761],[-6.230196,106.599777],[-6.230226,106.599774],[-6.23025,106.599754],[-6.230252,106.599718],[-6.230213,106.599544],[-6.230182,106.599518],[-6.230152,106.599518],[-6.230108,106.599533],[-6.230084,106.599571],[-6.230081,106.599612]]},"5":{"tee":[-6.229532,106.599699],"green":[[-6.229536,106.600721],[-6.22956,106.600679],[-6.229591,106.600656],[-6.22963,106.600643],[-6.229672,106.600652],[-6.229712,106.600681],[-6.229727,106.600719],[-6.229712,106.600776],[-6.229672,106.600813],[-6.229636,106.600829],[-6.229586,106.600827],[-6.229548,106.600802],[-6.229534,106.600762],[-6.229536,106.600721]]},"6":{"tee":[-6.229554,106.602031],"green":[[-6.229956,106.605819],[-6.229963,106.605856],[-6.229988,106.605885],[-6.230043,106.605909],[-6.23011,106.605918],[-6.230165,106.605911],[-6.2302,106.605895],[-6.230214,106.605878],[-6.230212,106.605847],[-6.230166,106.605799],[-6.230084,106.605752],[-6.230047,106.605742],[-6.230003,106.605746],[-6.229972,106.605768],[-6.229956,106.605819]]},"7":{"tee":[-6.230785,106.605602],"green":[[-6.231479,106.605109],[-6.231435,106.604997],[-6.231394,106.604922],[-6.23136,106.604902],[-6.23132,106.604906],[-6.231294,106.604928],[-6.231286,106.604967],[-6.231308,106.605056],[-6.231346,106.605136],[-6.23141,106.605184],[-6.231445,106.605189],[-6.231471,106.605181],[-6.231485,106.605156],[-6.231479,106.605109]]},"8":{"tee":[-6.230899,106.604189],"green":[[-6.231279,106.601651],[-6.231209,106.601649],[-6.231165,106.601635],[-6.231116,106.601588],[-6.231104,106.601555],[-6.231117,106.601518],[-6.231163,106.601479],[-6.23123,106.601458],[-6.231293,106.601461],[-6.231343,106.601484],[-6.231379,106.601528],[-6.231387,106.601582],[-6.231361,106.601631],[-6.231326,106.60165],[-6.231279,106.601651]]},"9":{"tee":[-6.231776,106.601578],"green":[[-6.232235,106.605376],[-6.232209,106.605417],[-6.232212,106.605455],[-6.232227,106.605482],[-6.232266,106.605498],[-6.232349,106.605495],[-6.232419,106.605468],[-6.232469,106.605418],[-6.232485,106.605373],[-6.232476,106.605342],[-6.232447,106.605305],[-6.232407,106.605296],[-6.232364,106.6053],[-6.232275,106.605347],[-6.232235,106.605376]]},"10":{"tee":[-6.233859,106.606498],"green":[[-6.236542,106.606638],[-6.236546,106.606553],[-6.236536,106.606527],[-6.236513,106.606512],[-6.23648,106.606515],[-6.236447,106.606534],[-6.236422,106.606587],[-6.236388,106.606619],[-6.236343,106.606638],[-6.236325,106.606677],[-6.23633,106.606705],[-6.236392,106.606771],[-6.23643,106.60679],[-6.236542,106.606804],[-6.236574,106.606796],[-6.236588,106.606772],[-6.236588,106.606743],[-6.236547,106.606675],[-6.236542,106.606638]]},"11":{"tee":[-6.2372,106.606259],"green":[[-6.238213,106.602565],[-6.238162,106.602547],[-6.238109,106.602553],[-6.238076,106.602566],[-6.238047,106.602608],[-6.238043,106.602671],[-6.238054,106.602717],[-6.238085,106.602751],[-6.238155,106.602771],[-6.238195,106.602762],[-6.238259,106.602686],[-6.238267,106.602634],[-6.23825,106.602594],[-6.238213,106.602565]]},"12":{"tee":[-6.237851,106.601339],"green":[[-6.236158,106.598828],[-6.236181,106.598798],[-6.23622,106.598781],[-6.236254,106.598783],[-6.236286,106.598801],[-6.236323,106.598845],[-6.236348,106.598906],[-6.236356,106.598963],[-6.236342,106.598999],[-6.236313,106.599022],[-6.236272,106.599022],[-6.236238,106.599006],[-6.236171,106.598932],[-6.236156,106.598878],[-6.236158,106.598828]]},"13":{"tee":[-6.235843,106.598497],"green":[[-6.232998,106.599139],[-6.232991,106.598992],[-6.232972,106.598954],[-6.232942,106.598937],[-6.232903,106.598938],[-6.232871,106.598958],[-6.232866,106.598985],[-6.232873,106.599195],[-6.232899,106.599226],[-6.232935,106.599232],[-6.232966,106.599219],[-6.232989,106.599198],[-6.232998,106.599139]]},"14":{"tee":[-6.233322,106.599643],"green":[[-6.234394,106.599487],[-6.234408,106.599471],[-6.234435,106.599465],[-6.234475,106.599482],[-6.234629,106.59967],[-6.234627,106.599696],[-6.234604,106.599717],[-6.234565,106.599724],[-6.234489,106.599701],[-6.234434,106.599658],[-6.234393,106.599601],[-6.234384,106.599528],[-6.234394,106.599487]]},"15":{"tee":[-6.23544,106.599295],"green":[[-6.233347,106.601671],[-6.233376,106.601607],[-6.233419,106.601563],[-6.233453,106.601561],[-6.233479,106.601581],[-6.233499,106.601652],[-6.233493,106.601761],[-6.23347,106.601828],[-6.233437,106.601853],[-6.233395,106.601849],[-6.233355,106.60183],[-6.233331,106.601779],[-6.233329,106.601728],[-6.233347,106.601671]]},"16":{"tee":[-6.233807,106.602401],"green":[[-6.234297,106.603664],[-6.234241,106.603666],[-6.234199,106.603634],[-6.234166,106.603589],[-6.234159,106.603538],[-6.23418,106.603469],[-6.234216,106.603426],[-6.234267,106.603412],[-6.234315,106.603422],[-6.23435,106.603458],[-6.234375,106.603515],[-6.234372,106.603579],[-6.234352,106.603629],[-6.234297,106.603664]]},"17":{"tee":[-6.234663,106.603802],"green":[[-6.234713,106.60091],[-6.234635,106.600981],[-6.234601,106.601018],[-6.234587,106.601062],[-6.234591,106.601089],[-6.234609,106.601117],[-6.234628,106.601122],[-6.234744,106.601064],[-6.234805,106.601048],[-6.234827,106.60102],[-6.23483,106.600958],[-6.23481,106.60092],[-6.234773,106.600895],[-6.23474,106.600896],[-6.234713,106.60091]]},"18":{"tee":[-6.23517,106.601622],"green":[[-6.234147,106.605241],[-6.234034,106.605255],[-6.233978,106.605254],[-6.233894,106.605231],[-6.233767,106.605159],[-6.233741,106.605152],[-6.233713,106.605163],[-6.233707,106.605184],[-6.233724,106.605235],[-6.233761,106.605276],[-6.233817,106.605312],[-6.2339,106.605351],[-6.233999,106.605377],[-6.234084,106.605388],[-6.234175,106.60537],[-6.234221,106.605338],[-6.23424,106.605302],[-6.234236,106.605268],[-6.234207,106.605241],[-6.234147,106.605241]]}};
+const CLUBS=[["DRIVER",200],["WOOD",180],["4 IRON",170],["5 IRON",160],["6 IRON",150],["7 IRON",140],["8 IRON",130],["9 IRON",120],["PW",110]];
+const COURSE_ADJ=10; // Imperial plays one club longer (round of 9 Nov 2026)
+function xy(p,o){const k=111320;return[(p[1]-o[1])*k*Math.cos(o[0]*Math.PI/180),(p[0]-o[0])*k];}
+function greenDist(me,n){
+  const g=GPS[n].green.map(p=>xy(p,me)); let c=[0,0]; g.forEach(q=>{c[0]+=q[0]/g.length;c[1]+=q[1]/g.length;});
+  const D=Math.hypot(c[0],c[1]), u=[c[0]/D,c[1]/D], ts=[];
+  for(let i=0;i<g.length;i++){const a=g[i],b=g[(i+1)%g.length],e=[b[0]-a[0],b[1]-a[1]],den=u[0]*e[1]-u[1]*e[0];if(Math.abs(den)<1e-9)continue;
+    const t=(a[0]*e[1]-a[1]*e[0])/den, s=(a[0]*u[1]-a[1]*u[0])/den; if(s>=0&&s<=1&&t>=0)ts.push(t);}
+  return{c:D,f:ts.length?Math.min(...ts):D,b:ts.length?Math.max(...ts):D};
+}
+function clubFor(d){const need=d+COURSE_ADJ; if(need>CLUBS[0][1])return null; let pick=CLUBS[0][0];
+  for(const[n,c] of CLUBS) if(c>=need) pick=n; return need<=CLUBS[CLUBS.length-1][1]?"PW atau lebih pendek":pick;}
+let gpsBusy=false;
+function gpsShow(msg){$("gpsRow").hidden=true;$("gClub").textContent=msg;$("gNote").textContent="";}
+function measure(){
+  $("gps").hidden=false;
+  if(!("geolocation" in navigator)||!window.isSecureContext){gpsShow("GPS tidak tersedia di halaman ini. Buka versi website (https).");return;}
+  if(gpsBusy)return; gpsBusy=true; gpsShow("Mencari posisi…");
+  navigator.geolocation.getCurrentPosition(pos=>{gpsBusy=false;
+    const me=[pos.coords.latitude,pos.coords.longitude], n=cur+1, d=greenDist(me,n), acc=Math.round(pos.coords.accuracy);
+    if(d.c>700){gpsShow("Posisi kamu "+(d.c/1000).toFixed(1)+" km dari green hole "+n+". Ukur saat di lapangan.");return;}
+    $("gpsRow").hidden=false; $("gF").textContent=Math.round(d.f); $("gC").textContent=Math.round(d.c); $("gB").textContent=Math.round(d.b);
+    const cl=clubFor(Math.round(d.c));
+    $("gClub").textContent=d.c<=8?("Hole "+n+" · di green: putt"):cl?("Hole "+n+" · ke tengah: "+cl):("Hole "+n+" · masih jauh: ikuti titik di plan");
+    $("gNote").textContent="±"+acc+" m"+(acc>15?" (sinyal lemah)":"")+" · sudah +1 club Imperial";
+  },err=>{gpsBusy=false;gpsShow(err.code===1?"Izin lokasi ditolak. Aktifkan lokasi untuk situs ini di pengaturan browser.":"Posisi belum didapat. Coba lagi di tempat terbuka.");},
+  {enableHighAccuracy:true,timeout:15000,maximumAge:0});
+}
+$("gpsBtn").addEventListener("click",measure); $("gAgain").addEventListener("click",measure);
+$("gClose").addEventListener("click",()=>{$("gps").hidden=true;});
 function openCard(){renderCard();$("sheet").hidden=false;}
 function closeCard(){$("sheet").hidden=true;$("confirm").hidden=true;}
 $("openCard").addEventListener("click",openCard); $("closeCard").addEventListener("click",closeCard);
