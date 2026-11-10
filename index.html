@@ -90,6 +90,7 @@ body.t-ring .ov .gRing,body.t-haz .ov .gHaz{display:inline}
 .bcx{border:2px solid var(--ink);background:#fff;border-radius:8px;width:34px;height:30px;font-weight:800;font-size:15px;cursor:pointer;flex:none}
 .bcline{font-size:14px;font-weight:600;line-height:1.25}
 .bcline b{font-family:var(--f-num);font-size:17px;font-weight:800}
+.bcline small{font-size:12px;color:var(--ink2);font-weight:600}
 .bcline .sandc{color:#8a6100}.bcline .waterc{color:#0d58b8}
 .bcnudge{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:700;color:var(--ink2)}
 .bcnudge span{margin-right:auto}
@@ -286,12 +287,66 @@ function applyTools(){document.body.classList.toggle("t-ring",!!tools.ring);docu
   document.querySelectorAll(".tool").forEach(b=>{const on=!!tools[b.dataset.t];b.classList.toggle("on",on);b.setAttribute("aria-pressed",on);});}
 document.querySelectorAll(".tool").forEach(b=>b.addEventListener("click",()=>{tools[b.dataset.t]=tools[b.dataset.t]?0:1;try{localStorage.setItem(TKEY,JSON.stringify(tools));}catch(e){}applyTools();}));
 function saveBalls(){try{localStorage.setItem(BKEY,JSON.stringify(balls));}catch(e){}}
-function setBall(n,x,y){const g=GEO[n];if(y<g.top||y>g.bot)return;balls[n]=[Math.round(x),Math.round(y)];saveBalls();updateBall();}
+let gpsFix=null;
+function setBall(n,x,y){const g=GEO[n];if(y<g.top||y>g.bot)return;gpsFix=null;balls[n]=[Math.round(x),Math.round(y)];saveBalls();updateBall();}
 function ballInfo(n,b){
   const g=GEO[n],P=g.pin,dG=dm(g,b[0],b[1],P[0],P[1]),here=codeAt(g,b[0],b[1]);
-  const pts=g.land.map((p,k)=>({n:k+1,x:p[0],y:p[1],dg:dm(g,p[0],p[1],P[0],P[1])}));
-  const tgt=pts.filter(p=>p.dg<dG-12).sort((a,c)=>c.dg-a.dg)[0]||null;
-  return{dG,here,tgt,sand:nearest(g,b[0],b[1],1,60),water:nearest(g,b[0],b[1],2,60)};}
+  return{dG,here,rec:advise(n,b),sand:nearest(g,b[0],b[1],1,60),water:nearest(g,b[0],b[1],2,60)};}
+/* Next shot from wherever the ball is, with the plan rules: SI 1-15 safe, 16-18 may attack; at most 95% power;
+   Imperial plays one club longer (-10 m per club); water only carried if a 75% strike clears it +10 m;
+   layups land >=22 m from water and clear of sand, inside the hole's corridor; 7i-PW to the apron when nothing
+   guards the front; no layup under 50% power. Trees and OB are not in the map data: check them by eye. */
+const MAXP=.95, FAIRWAY_MAX=160;           // 5 iron is the longest club off the fairway (no hybrid)
+function clubPick(d,maxCarry){let best=null;for(const[nm,c] of CLUBS){if(c>maxCarry)continue;const e=c-COURSE_ADJ;if(e*MAXP>=d)best={club:nm,e,pw:Math.round(d/e*100)};}return best;}
+function shotClear(g,a,T,e){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
+  for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
+  return w===0||.75*e>=w+10;}
+function frontClear(g,a,P,D){for(let m=Math.max(0,D-50);m<=D-4;m+=3){const t=m/D,x=a[0]+(P[0]-a[0])*t,y=a[1]+(P[1]-a[1])*t;
+  if(codeAt(g,x,y)||nearest(g,x,y,1,6)||nearest(g,x,y,2,10))return false;}return true;}
+function landOK(g,T){return !codeAt(g,T[0],T[1])&&!nearest(g,T[0],T[1],2,22)&&!nearest(g,T[0],T[1],1,6);}
+function routeOff(g,T){const r=[g.tee,...g.land,g.pin];let best=1e9;
+  for(let i=0;i+1<r.length;i++){const a=r[i],b=r[i+1],vx=b[0]-a[0],vy=b[1]-a[1],L2=vx*vx+vy*vy||1;
+    const t=Math.max(0,Math.min(1,((T[0]-a[0])*vx+(T[1]-a[1])*vy)/L2));best=Math.min(best,Math.hypot(a[0]+vx*t-T[0],a[1]+vy*t-T[1]));}
+  return best/g.scale;}
+function advise(n,b){
+  const g=GEO[n],P=g.pin,si=HOLES[n-1][1],attack=si>=16,D=dm(g,b[0],b[1],P[0],P[1]);
+  const R=(kind,T,d,c,x)=>Object.assign({kind,T,d,c,si,attack},x||{});
+  if(D<=8)return R("putt",P,D,null);
+  if(dm(g,b[0],b[1],g.tee[0],g.tee[1])<15){       // on the tee: the plan already applies the rules (and the user's calls)
+    const T=g.land.length?g.land[0]:P,d=dm(g,b[0],b[1],T[0],T[1]);
+    return R("tee",T,d,clubPick(d,attack?180:160)||clubPick(d,200),{plan:g.land.length?1:0});}
+  if(D<=50)return R("green",P,D,{club:D<=30?"CHIP":"PITCH",pw:null});
+  const front=frontClear(g,b,P,D), cap=attack?FAIRWAY_MAX:(front?150:140);
+  {const c=clubPick(D,cap);if(c&&shotClear(g,b,P,c.e))return R("green",P,D,c);}
+  for(let left=15;left<=45;left+=5){const da=D-left,c=clubPick(da,cap),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];   // short of the green, then chip
+    if(c&&c.pw>=50&&shotClear(g,b,T,c.e)&&(left===15&&front||landOK(g,T)))return R("apron",T,da,c,{left});}
+  const vb=[b[0]-P[0],b[1]-P[1]],a0=Math.atan2(vb[1],vb[0]),cands=g.land.map((p,k)=>({x:p[0],y:p[1],plan:k+1}));
+  for(let r=50;r<=200;r+=5)for(let a=-40;a<=40;a+=5){const t=a0+a*Math.PI/180;cands.push({x:P[0]+Math.cos(t)*r*g.scale,y:P[1]+Math.sin(t)*r*g.scale});}
+  let best=null;
+  for(const q of cands){const T=[q.x,q.y];if(T[0]<0||T[0]>1080||T[1]<g.top||T[1]>g.bot)continue;
+    const r=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);if(r>D-20||dl<40)continue;
+    const c=clubPick(dl,FAIRWAY_MAX);if(!c||c.pw<50||!landOK(g,T)||!shotClear(g,b,T,c.e))continue;
+    const off=routeOff(g,T);if(off>25)continue;
+    const nx=clubPick(r,150),ang=Math.abs(Math.atan2(vb[0]*(T[1]-P[1])-vb[1]*(T[0]-P[0]),vb[0]*(T[0]-P[0])+vb[1]*(T[1]-P[1])))*180/Math.PI;
+    let sc=ang*.5+off*.8+(r<60?(60-r)*.6:r>110?(r-110)*.6:0)+(c.pw<70?(70-c.pw)*.5:0)+(nx?(nx.pw>=90?8:0):25);
+    const w=nearest(g,T[0],T[1],2,40);if(w)sc+=(40-w.d)*.5;const sb=nearest(g,T[0],T[1],1,15);if(sb)sc+=15-sb.d;if(q.plan)sc-=6;
+    if(!best||sc<best.sc)best={sc,T,dl,c,r,nx,plan:q.plan};}
+  if(best)return R("layup",best.T,best.dl,best.c,{left:best.r,next:best.nx,plan:best.plan});
+  const rt=[g.tee,...g.land,g.pin];let pb=null;
+  for(let t=0;t<=1;t+=.02){const k=Math.min(rt.length-2,Math.floor(t*(rt.length-1))),u=t*(rt.length-1)-k;
+    const T=[rt[k][0]+(rt[k+1][0]-rt[k][0])*u,rt[k][1]+(rt[k+1][1]-rt[k][1])*u],rr=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);
+    if(rr<D&&dl<=70&&landOK(g,T)&&(!pb||dl<pb.dl))pb={T,dl,r:rr};}
+  if(pb)return R("punch",pb.T,pb.dl,{club:"PUNCH",pw:null},{left:pb.r});
+  return R("none",P,D,null);}
+const clubTxt=c=>c?c.club+(c.pw?" "+c.pw+"%":""):"";
+function recText(I){const r=I.rec,why=r.attack?"SI "+r.si+" boleh serang":"SI "+r.si+" main aman";
+  if(r.kind==="putt")return"Di green: <b>putt</b>";
+  if(r.kind==="tee")return"Tee shot: <b>"+clubTxt(r.c)+"</b> "+(r.plan?"ke titik 1 plan":"ke tengah green")+" · "+Math.round(r.d)+" m <small>(ikuti plan, sudah +1 club)</small>";
+  if(r.kind==="green")return"Saran: <b>"+clubTxt(r.c)+"</b> ke tengah green · "+Math.round(r.d)+" m <small>("+why+")</small>";
+  if(r.kind==="apron")return"Saran: <b>"+clubTxt(r.c)+"</b> ke depan green · "+Math.round(r.d)+" m, lalu chip ±"+r.left+" m <small>("+why+")</small>";
+  if(r.kind==="layup")return"Saran: <b>"+clubTxt(r.c)+"</b> layup "+Math.round(r.d)+" m"+(r.plan?" ke titik "+r.plan:"")+", sisa "+Math.round(r.left)+" m"+(r.next?" (<b>"+clubTxt(r.next)+"</b>)":"")+" <small>("+why+")</small>";
+  if(r.kind==="punch")return"Saran: <b>punch</b> keluar ke fairway · "+Math.round(r.d)+" m, sisa "+Math.round(r.left)+" m";
+  return"Tidak ada jalur aman di data peta: keluar ke fairway terdekat";}
 function updateBall(){
   const n=cur+1,g=GEO[n],b=balls[n],card=$("ballcard");
   document.querySelectorAll(".gBall").forEach(el=>el.textContent="");
@@ -299,14 +354,16 @@ function updateBall(){
   const I=ballInfo(n,b),P=g.pin;
   const lay=slider.children[cur].querySelector(".gBall");
   let h='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+P[0]+'" y2="'+P[1]+'" stroke="#fff" stroke-width="9" stroke-linecap="round"/><line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+P[0]+'" y2="'+P[1]+'" stroke="#d2142d" stroke-width="5" stroke-dasharray="16 12" stroke-linecap="round"/>';
-  if(I.tgt){h+='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+I.tgt.x+'" y2="'+I.tgt.y+'" stroke="#fff" stroke-width="10" stroke-linecap="round"/><line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+I.tgt.x+'" y2="'+I.tgt.y+'" stroke="#ffc400" stroke-width="6" stroke-linecap="round"/><circle cx="'+I.tgt.x+'" cy="'+I.tgt.y+'" r="26" fill="none" stroke="#ffc400" stroke-width="7"/>';
-    h+=pill((b[0]+I.tgt.x)/2+70,(b[1]+I.tgt.y)/2,Math.round(dm(g,b[0],b[1],I.tgt.x,I.tgt.y))+" m","#ffc400","#0c162d");}
+  const rc=I.rec;
+  if(rc.kind!=="putt"&&rc.kind!=="none"&&(rc.T[0]!==P[0]||rc.T[1]!==P[1])){const X=rc.T[0],Y=rc.T[1];
+    h+='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+X+'" y2="'+Y+'" stroke="#fff" stroke-width="10" stroke-linecap="round"/><line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+X+'" y2="'+Y+'" stroke="#ffc400" stroke-width="6" stroke-linecap="round"/><circle cx="'+X+'" cy="'+Y+'" r="26" fill="none" stroke="#ffc400" stroke-width="7"/>';
+    h+=pill((b[0]+X)/2+70,(b[1]+Y)/2,Math.round(rc.d)+" m","#ffc400","#0c162d");}
   h+=pill((b[0]+P[0])/2-70,(b[1]+P[1])/2,Math.round(I.dG)+" m","#d2142d","#fff");
   h+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="22" fill="#fff" stroke="#0c162d" stroke-width="6"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="9" fill="#d2142d"/>';
   lay.innerHTML=h;
   const where=I.here===1?'<span class="bad">Di bunker · </span>':I.here===2?'<span class="bad">Di air · </span>':"";
   $("bcMain").innerHTML=where+"Green "+Math.round(I.dG)+" m";
-  $("bcTgt").innerHTML=I.tgt?("Target: <b>Titik "+I.tgt.n+"</b> · "+Math.round(dm(g,b[0],b[1],I.tgt.x,I.tgt.y))+" m, lalu "+Math.round(I.tgt.dg)+" m ke green"):"Target: <b>langsung ke green</b>";
+  $("bcTgt").innerHTML=recText(I)+(gpsFix&&gpsFix.n===n?'<br><small>GPS ±'+gpsFix.acc+' m · depan '+gpsFix.f+' · belakang '+gpsFix.b+' m</small>':"");
   const hz=[];
   if(I.sand&&I.here!==1)hz.push('<span class="sandc"><b>Bunker</b> '+Math.round(I.sand.d)+' m '+dirWord(I.sand.dx,I.sand.dy)+'</span>');
   if(I.water&&I.here!==2)hz.push('<span class="waterc"><b>Air</b> '+Math.round(I.water.d)+' m '+dirWord(I.water.dx,I.water.dy)+'</span>');
@@ -314,7 +371,7 @@ function updateBall(){
   card.hidden=false;card.style.bottom=($("dock")?$("dock").offsetHeight+8:140)+"px";}
 document.querySelectorAll(".bcnudge button").forEach(bt=>bt.addEventListener("click",()=>{const n=cur+1,b=balls[n];if(!b)return;const g=GEO[n],d=5*g.scale,k=bt.dataset.d;
   if(k==="l")b[0]-=d;if(k==="r")b[0]+=d;if(k==="u")b[1]-=d;if(k==="d")b[1]+=d;
-  b[0]=Math.min(1070,Math.max(10,Math.round(b[0])));b[1]=Math.min(g.bot-2,Math.max(g.top+2,Math.round(b[1])));saveBalls();updateBall();}));
+  gpsFix=null;b[0]=Math.min(1070,Math.max(10,Math.round(b[0])));b[1]=Math.min(g.bot-2,Math.max(g.top+2,Math.round(b[1])));saveBalls();updateBall();}));
 $("bcX").addEventListener("click",()=>{delete balls[cur+1];saveBalls();updateBall();});
 
 HOLES.forEach((h,i)=>{
@@ -380,6 +437,8 @@ function renderShot(){
 $("shotBtn").addEventListener("click",()=>{renderShot();$("shot").hidden=false;});
 $("closeShot").addEventListener("click",()=>{$("shot").hidden=true;});
 /* GPS: metres from the phone to the OSM green of the hole on screen; read only on a tap, never stored or sent */
+const PXMAP={"1":{"ref":[-6.232566,106.606416],"o":[590.96,1041.44],"m":[[-0.1464,2.6879],[-2.7039,-0.1455]]},"2":{"ref":[-6.230459,106.6048],"o":[581.97,1046.42],"m":[[2.3398,0.309],[-0.3108,2.3259]]},"3":{"ref":[-6.22993,106.601337],"o":[567.01,1046.59],"m":[[1.1645,-2.1006],[2.1131,1.1577]]},"4":{"ref":[-6.232342,106.599441],"o":[436.61,1035.42],"m":[[-0.2812,3.0005],[-3.0183,-0.2796]]},"5":{"ref":[-6.229532,106.599699],"o":[539.8,992.92],"m":[[-5.3787,-0.445],[0.4476,-5.3469]]},"6":{"ref":[-6.229554,106.602031],"o":[531.59,1056.38],"m":[[-1.8575,-0.2529],[0.2544,-1.8465]]},"7":{"ref":[-6.230785,106.605602],"o":[539.82,976.58],"m":[[4.2148,-4.6761],[4.7039,4.1899]]},"8":{"ref":[-6.230899,106.604189],"o":[517.75,1043.39],"m":[[2.5759,-0.3452],[0.3472,2.5607]]},"9":{"ref":[-6.231776,106.601578],"o":[574.57,950.08],"m":[[-1.59,-0.234],[0.2353,-1.5806]]},"10":{"ref":[-6.233859,106.606498],"o":[557.48,1043.28],"m":[[-0.1578,-2.5838],[2.5992,-0.1568]]},"11":{"ref":[-6.2372,106.606259],"o":[559.87,1055.58],"m":[[1.8554,-0.4882],[0.4911,1.8444]]},"12":{"ref":[-6.237851,106.601339],"o":[559.36,1047.22],"m":[[1.9893,1.301],[-1.3088,1.9775]]},"13":{"ref":[-6.235843,106.598497],"o":[510.45,1047.91],"m":[[-0.4769,2.2809],[-2.2945,-0.4741]]},"14":{"ref":[-6.233322,106.599643],"o":[540.12,1000.43],"m":[[0.2223,-4.9408],[4.9702,0.221]]},"15":{"ref":[-6.23544,106.599295],"o":[532.03,1050.0],"m":[[-1.6997,1.4295],[-1.438,-1.6897]]},"16":{"ref":[-6.233807,106.602401],"o":[480.25,1004.31],"m":[[-4.411,-1.7846],[1.7952,-4.3849]]},"17":{"ref":[-6.234663,106.603802],"o":[539.88,1045.66],"m":[[2.4735,-0.0392],[0.0395,2.4588]]},"18":{"ref":[-6.23517,106.601622],"o":[463.03,949.91],"m":[[-1.5341,0.5033],[-0.5063,-1.525]]}};
+function ll2px(n,ll){const t=PXMAP[n],u=(ll[0]-t.ref[0])*1e5,v=(ll[1]-t.ref[1])*1e5;return[t.o[0]+t.m[0][0]*u+t.m[0][1]*v,t.o[1]+t.m[1][0]*u+t.m[1][1]*v];}
 const GPS={"1":{"tee":[-6.232566,106.606416],"green":[[-6.229986,106.606575],[-6.229995,106.606629],[-6.230022,106.606676],[-6.230066,106.606704],[-6.230106,106.606711],[-6.230128,106.6067],[-6.230134,106.606673],[-6.230108,106.606587],[-6.230106,106.606514],[-6.230125,106.60642],[-6.23012,106.606389],[-6.23009,106.60638],[-6.230059,106.606385],[-6.230012,106.606429],[-6.229985,106.606495],[-6.229986,106.606575]]},"2":{"tee":[-6.230459,106.6048],"green":[[-6.230086,106.601872],[-6.230138,106.601807],[-6.230214,106.601747],[-6.230253,106.601732],[-6.230296,106.601736],[-6.230336,106.601761],[-6.230352,106.601789],[-6.230347,106.601827],[-6.230316,106.601856],[-6.230241,106.601884],[-6.230192,106.601918],[-6.230162,106.601963],[-6.230115,106.601985],[-6.230084,106.60197],[-6.230064,106.601936],[-6.230067,106.601904],[-6.230086,106.601872]]},"3":{"tee":[-6.22993,106.601337],"green":[[-6.232493,106.6],[-6.232511,106.599941],[-6.232516,106.599878],[-6.232503,106.599847],[-6.232469,106.599822],[-6.232429,106.599816],[-6.232398,106.599829],[-6.23238,106.599852],[-6.232365,106.599928],[-6.232364,106.600022],[-6.23238,106.600059],[-6.2324,106.600072],[-6.23243,106.600071],[-6.232471,106.600038],[-6.232493,106.6]]},"4":{"tee":[-6.232342,106.599441],"green":[[-6.230081,106.599612],[-6.230116,106.599692],[-6.230164,106.599761],[-6.230196,106.599777],[-6.230226,106.599774],[-6.23025,106.599754],[-6.230252,106.599718],[-6.230213,106.599544],[-6.230182,106.599518],[-6.230152,106.599518],[-6.230108,106.599533],[-6.230084,106.599571],[-6.230081,106.599612]]},"5":{"tee":[-6.229532,106.599699],"green":[[-6.229536,106.600721],[-6.22956,106.600679],[-6.229591,106.600656],[-6.22963,106.600643],[-6.229672,106.600652],[-6.229712,106.600681],[-6.229727,106.600719],[-6.229712,106.600776],[-6.229672,106.600813],[-6.229636,106.600829],[-6.229586,106.600827],[-6.229548,106.600802],[-6.229534,106.600762],[-6.229536,106.600721]]},"6":{"tee":[-6.229554,106.602031],"green":[[-6.229956,106.605819],[-6.229963,106.605856],[-6.229988,106.605885],[-6.230043,106.605909],[-6.23011,106.605918],[-6.230165,106.605911],[-6.2302,106.605895],[-6.230214,106.605878],[-6.230212,106.605847],[-6.230166,106.605799],[-6.230084,106.605752],[-6.230047,106.605742],[-6.230003,106.605746],[-6.229972,106.605768],[-6.229956,106.605819]]},"7":{"tee":[-6.230785,106.605602],"green":[[-6.231479,106.605109],[-6.231435,106.604997],[-6.231394,106.604922],[-6.23136,106.604902],[-6.23132,106.604906],[-6.231294,106.604928],[-6.231286,106.604967],[-6.231308,106.605056],[-6.231346,106.605136],[-6.23141,106.605184],[-6.231445,106.605189],[-6.231471,106.605181],[-6.231485,106.605156],[-6.231479,106.605109]]},"8":{"tee":[-6.230899,106.604189],"green":[[-6.231279,106.601651],[-6.231209,106.601649],[-6.231165,106.601635],[-6.231116,106.601588],[-6.231104,106.601555],[-6.231117,106.601518],[-6.231163,106.601479],[-6.23123,106.601458],[-6.231293,106.601461],[-6.231343,106.601484],[-6.231379,106.601528],[-6.231387,106.601582],[-6.231361,106.601631],[-6.231326,106.60165],[-6.231279,106.601651]]},"9":{"tee":[-6.231776,106.601578],"green":[[-6.232235,106.605376],[-6.232209,106.605417],[-6.232212,106.605455],[-6.232227,106.605482],[-6.232266,106.605498],[-6.232349,106.605495],[-6.232419,106.605468],[-6.232469,106.605418],[-6.232485,106.605373],[-6.232476,106.605342],[-6.232447,106.605305],[-6.232407,106.605296],[-6.232364,106.6053],[-6.232275,106.605347],[-6.232235,106.605376]]},"10":{"tee":[-6.233859,106.606498],"green":[[-6.236542,106.606638],[-6.236546,106.606553],[-6.236536,106.606527],[-6.236513,106.606512],[-6.23648,106.606515],[-6.236447,106.606534],[-6.236422,106.606587],[-6.236388,106.606619],[-6.236343,106.606638],[-6.236325,106.606677],[-6.23633,106.606705],[-6.236392,106.606771],[-6.23643,106.60679],[-6.236542,106.606804],[-6.236574,106.606796],[-6.236588,106.606772],[-6.236588,106.606743],[-6.236547,106.606675],[-6.236542,106.606638]]},"11":{"tee":[-6.2372,106.606259],"green":[[-6.238213,106.602565],[-6.238162,106.602547],[-6.238109,106.602553],[-6.238076,106.602566],[-6.238047,106.602608],[-6.238043,106.602671],[-6.238054,106.602717],[-6.238085,106.602751],[-6.238155,106.602771],[-6.238195,106.602762],[-6.238259,106.602686],[-6.238267,106.602634],[-6.23825,106.602594],[-6.238213,106.602565]]},"12":{"tee":[-6.237851,106.601339],"green":[[-6.236158,106.598828],[-6.236181,106.598798],[-6.23622,106.598781],[-6.236254,106.598783],[-6.236286,106.598801],[-6.236323,106.598845],[-6.236348,106.598906],[-6.236356,106.598963],[-6.236342,106.598999],[-6.236313,106.599022],[-6.236272,106.599022],[-6.236238,106.599006],[-6.236171,106.598932],[-6.236156,106.598878],[-6.236158,106.598828]]},"13":{"tee":[-6.235843,106.598497],"green":[[-6.232998,106.599139],[-6.232991,106.598992],[-6.232972,106.598954],[-6.232942,106.598937],[-6.232903,106.598938],[-6.232871,106.598958],[-6.232866,106.598985],[-6.232873,106.599195],[-6.232899,106.599226],[-6.232935,106.599232],[-6.232966,106.599219],[-6.232989,106.599198],[-6.232998,106.599139]]},"14":{"tee":[-6.233322,106.599643],"green":[[-6.234394,106.599487],[-6.234408,106.599471],[-6.234435,106.599465],[-6.234475,106.599482],[-6.234629,106.59967],[-6.234627,106.599696],[-6.234604,106.599717],[-6.234565,106.599724],[-6.234489,106.599701],[-6.234434,106.599658],[-6.234393,106.599601],[-6.234384,106.599528],[-6.234394,106.599487]]},"15":{"tee":[-6.23544,106.599295],"green":[[-6.233347,106.601671],[-6.233376,106.601607],[-6.233419,106.601563],[-6.233453,106.601561],[-6.233479,106.601581],[-6.233499,106.601652],[-6.233493,106.601761],[-6.23347,106.601828],[-6.233437,106.601853],[-6.233395,106.601849],[-6.233355,106.60183],[-6.233331,106.601779],[-6.233329,106.601728],[-6.233347,106.601671]]},"16":{"tee":[-6.233807,106.602401],"green":[[-6.234297,106.603664],[-6.234241,106.603666],[-6.234199,106.603634],[-6.234166,106.603589],[-6.234159,106.603538],[-6.23418,106.603469],[-6.234216,106.603426],[-6.234267,106.603412],[-6.234315,106.603422],[-6.23435,106.603458],[-6.234375,106.603515],[-6.234372,106.603579],[-6.234352,106.603629],[-6.234297,106.603664]]},"17":{"tee":[-6.234663,106.603802],"green":[[-6.234713,106.60091],[-6.234635,106.600981],[-6.234601,106.601018],[-6.234587,106.601062],[-6.234591,106.601089],[-6.234609,106.601117],[-6.234628,106.601122],[-6.234744,106.601064],[-6.234805,106.601048],[-6.234827,106.60102],[-6.23483,106.600958],[-6.23481,106.60092],[-6.234773,106.600895],[-6.23474,106.600896],[-6.234713,106.60091]]},"18":{"tee":[-6.23517,106.601622],"green":[[-6.234147,106.605241],[-6.234034,106.605255],[-6.233978,106.605254],[-6.233894,106.605231],[-6.233767,106.605159],[-6.233741,106.605152],[-6.233713,106.605163],[-6.233707,106.605184],[-6.233724,106.605235],[-6.233761,106.605276],[-6.233817,106.605312],[-6.2339,106.605351],[-6.233999,106.605377],[-6.234084,106.605388],[-6.234175,106.60537],[-6.234221,106.605338],[-6.23424,106.605302],[-6.234236,106.605268],[-6.234207,106.605241],[-6.234147,106.605241]]}};
 const CLUBS=[["DRIVER",200],["WOOD",180],["4 IRON",170],["5 IRON",160],["6 IRON",150],["7 IRON",140],["8 IRON",130],["9 IRON",120],["PW",110]];
 const COURSE_ADJ=10; // Imperial plays one club longer (round of 9 Nov 2026)
@@ -402,6 +461,9 @@ function measure(){
   navigator.geolocation.getCurrentPosition(pos=>{gpsBusy=false;
     const me=[pos.coords.latitude,pos.coords.longitude], n=cur+1, d=greenDist(me,n), acc=Math.round(pos.coords.accuracy);
     if(d.c>700){gpsShow("Posisi kamu "+(d.c/1000).toFixed(1)+" km dari green hole "+n+". Ukur saat di lapangan.");return;}
+    const q=ll2px(n,me),gg=GEO[n];
+    if(q[0]>=0&&q[0]<=1080&&q[1]>=gg.top&&q[1]<=gg.bot){balls[n]=[Math.round(q[0]),Math.round(q[1])];saveBalls();
+      gpsFix={n,acc,f:Math.round(d.f),b:Math.round(d.b)};$("gps").hidden=true;updateBall();return;}
     $("gpsRow").hidden=false; $("gF").textContent=Math.round(d.f); $("gC").textContent=Math.round(d.c); $("gB").textContent=Math.round(d.b);
     const cl=clubFor(Math.round(d.c));
     $("gClub").textContent=d.c<=8?("Hole "+n+" · di green: putt"):cl?("Hole "+n+" · ke tengah: "+cl):("Hole "+n+" · masih jauh: ikuti titik di plan");
