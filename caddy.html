@@ -563,8 +563,15 @@ function advise(n,b,recover,skip,maxc){
       if(top){const e=top[1]-C.adj,t=e/d,T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
         if(e<d&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e,{club:top[0],e,pw:100},plan));}}
     skip=tsk;
+    /* par 4 (12 Nov 2026): when the plan spot leaves an approach longer than this break allows into the green,
+       go further off the tee: the longest allowed club, full swing along the hole's route, landing clear */
+    if(par===4&&!teeRuleOff&&dm(g,T[0],T[1],P[0],P[1])>capOf(ST.appClear)*MAXP){const rt=[b,...g.land.filter(q=>dm(g,b[0],b[1],q[0],q[1])>20),P];
+      for(const[nm,cr] of bag()){if(skip.has(nm)||cr-C.adj<=d)continue;const e=cr-C.adj,T2=along(rt,e*g.scale);if(!T2)continue;
+        if(dm(g,T2[0],T2[1],P[0],P[1])<30||!landOK(g,T2)||!shotClear(g,b,T2,e))continue;
+        return onSafeSide(n,b,R("tee",T2,e,{club:nm,e,pw:100},plan));}}
     const c0=pick(d,cap,skip)||pick(d,1e9,skip);
-    if(c0&&!teeRuleOff){const up=bag().filter(([nm,cr])=>cr>carryOf(c0.club)&&cr<=cap&&!(skip&&skip.has(nm))).pop();
+    const nxt=c0&&clubPick(dm(g,T[0],T[1],P[0],P[1]),1e9,new Set(["DRIVER"]));
+    if(c0&&!teeRuleOff&&nxt&&carryOf(nxt.club)>carryOf(c0.club)){const up=bag().filter(([nm,cr])=>cr>carryOf(c0.club)&&cr<=cap&&!(skip&&skip.has(nm))).pop();
       if(up){const e=up[1]-C.adj,dd=e*.9,T2=[b[0]+(T[0]-b[0])*dd/d,b[1]+(T[1]-b[1])*dd/d];
         if(dd-d<=10&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,dd,{club:up[0],e,pw:90},plan));}}
     return onSafeSide(n,b,R("tee",T,d,c0||clubPick(d,1e9,skip)||clubPick(d,1e9,new Set(["DRIVER"])),plan));}
@@ -608,15 +615,15 @@ function advise(n,b,recover,skip,maxc){
 
 /* Rule (11 Nov 2026): the next shot does not use a longer club than the shot before, unless that leaves only a punch-out */
 function adviseAfter(n,b,recover,skip,prev){const maxc=carryOf(prev||"");
-  const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return playsLike(n,b,r,skip);
+  const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return playsLike(n,b,r,skip,maxc);
   const r2=advise(n,b,recover,skip);return playsLike(n,b,r2.kind!=="punch"&&r2.kind!=="none"?r2:r,skip);}
 /* elevation (DEMNAS, 12 Nov 2026): a target higher than the ball plays about 1 m longer per metre of rise, lower plays shorter.
    The club is re-picked for that distance when the change is 2 m or more, at most one club longer or shorter. */
-function playsLike(n,b,r,skip){if(!terrain||!r||!r.c||!r.c.e||r.short||r.kind==="putt"||r.kind==="punch"||r.kind==="none")return r;
+function playsLike(n,b,r,skip,maxc){if(!terrain||!r||!r.c||!r.c.e||r.short||r.kind==="putt"||r.kind==="punch"||r.kind==="none")return r;
   const z0=elevationAt(n,b),z1=elevationAt(n,r.T);if(z0==null||z1==null)return r;const dz=Math.round(z1-z0);
   if(Math.abs(dz)<2)return Object.assign({},r,{dz});
   const pl=r.d+dz,TE=teeOf(n),atTee=dm(G[n],b[0],b[1],TE[0],TE[1])<15,sk=new Set([...(skip||[]),...(r.c.club==="DRIVER"?[]:["DRIVER"])]);
-  const c2=clubPick(pl,1e9,sk,atTee),step=Math.abs(carryOf(c2&&c2.club)-carryOf(r.c.club));
+  const c2=clubPick(pl,maxc||1e9,sk,atTee),step=Math.abs(carryOf(c2&&c2.club)-carryOf(r.c.club));
   return Object.assign({},r,{dz,plays:pl},c2&&step<=15?{c:c2}:{});}
 /* ---------- screen ---------- */
 const chipEls=[],map=$("map"),ov=$("ov");
@@ -697,7 +704,7 @@ function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl||sl.flat)ret
   const line='M'+h[0].toFixed(1)+' '+h[1].toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1);
   return'<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="'+line+head+'" stroke="#fff" stroke-width="'+zx(8)+'"/><path d="'+line+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(10)+' '+zx(7)+'"/><path d="'+head+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'"/></g>';}
 function slopeLegend(n){const sl=slopeOf(n);   // legend line for the info box under the map
-  if(sl&&sl.dem)return'<div class="tline slope">'+(sl.flat?'Slope green (DEMNAS): <b>hampir datar</b>. Baca green langsung.':'<i></i><b>Arah turun green (DEMNAS):</b> ikuti panah biru. Data elevasi kasar (±8 m per titik), cek di green.')+'</div>';
+  if(sl&&sl.dem)return"";
   return'<div class="tline slope">'+(sl?'<i></i><b>Estimasi arah air di green:</b> ke danau ±'+sl.m+' m dari green. Perkiraan, cek di green.':'Slope green: <b>tidak dapat diestimasi</b> dari peta (tidak ada air dekat green).')+'</div>';}
 let terrain=null, terrainOn=false, terrainLoading=false;
 function elevationAt(n,[x,y]){
