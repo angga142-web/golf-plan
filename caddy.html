@@ -172,9 +172,11 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 /* start menu */
 .sheet.start{background:var(--ink);color:#fff}
 .start .sheetin{gap:16px;max-width:460px}
-.sthero{padding-top:6px}
-.sthero small{font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
-.sthero h1{margin:0;font-family:var(--f-num);font-weight:800;font-size:52px;line-height:.95;letter-spacing:.02em;text-transform:uppercase}
+.hero{position:relative;margin:-14px -16px 0;height:210px;overflow:hidden;border-bottom:3px solid var(--gold)}
+.hero svg{display:block;width:100%;height:100%}
+.herotxt{position:absolute;left:16px;top:14px}
+.herotxt small{font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.herotxt h1{margin:0;font-family:var(--f-num);font-weight:800;font-size:52px;line-height:.95;letter-spacing:.02em;text-transform:uppercase;color:#fff;text-shadow:0 2px 0 rgba(12,22,45,.5)}
 .start section{display:flex;flex-direction:column;gap:7px}
 .start h3{color:#9aa6bf;font-size:15px}
 .start .help{color:#9aa6bf}
@@ -188,6 +190,21 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .stclubs b{display:block;font-family:var(--f-num);font-size:20px;letter-spacing:.03em;text-transform:uppercase}
 .stgo{margin-top:6px;height:60px;border:0;border-radius:14px;background:var(--gold);color:var(--ink);font-family:var(--f-num);font-weight:800;font-size:26px;letter-spacing:.05em;text-transform:uppercase}
 .brand{cursor:pointer}
+/* loading: ball rolls into the cup */
+.putt{position:fixed;inset:0;z-index:40;background:var(--ink);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px;color:#9aa6bf;font-family:var(--f-num);font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.putt[hidden]{display:none}
+.pgreen{position:relative;width:min(320px,82vw);height:110px;border-radius:50%;background:radial-gradient(ellipse at 50% 40%,#a8e870,#7fc456 70%,#5e9e3a)}
+.pcup{position:absolute;right:22%;top:48%;width:34px;height:15px;border-radius:50%;background:#0c162d;box-shadow:inset 0 3px 4px #000}
+.pflag{position:absolute;right:calc(22% + 16px);bottom:52%;width:2px;height:70px;background:#fff}
+.pflag::after{content:"";position:absolute;left:2px;top:0;border-left:22px solid #d2142d;border-top:8px solid transparent;border-bottom:8px solid transparent}
+.pball{position:absolute;left:8%;top:30%;width:24px;height:24px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 30%,#fff,#e6e9ef 70%,#c5ccd8);box-shadow:0 3px 3px rgba(0,0,0,.3)}
+.pball i{position:absolute;inset:-6px;background:radial-gradient(circle,rgba(12,22,45,.16) 0 1.2px,transparent 1.5px) 0 0/5px 5px}
+.putt.go .pball{animation:roll 1.25s cubic-bezier(.25,.6,.4,1) forwards,drop .28s 1.2s ease-in forwards}
+.putt.go .pball i{animation:spin 1.25s linear forwards}
+@keyframes roll{to{left:calc(78% - 12px + 5px)}}
+@keyframes spin{to{transform:translateX(30px)}}
+@keyframes drop{to{transform:translateY(9px) scale(.45);opacity:0}}
+@media (prefers-reduced-motion:reduce){.putt.go .pball,.putt.go .pball i{animation-duration:.01s;animation-delay:0s}}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:20;background:var(--paper);overflow-y:auto;padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px))}
 .sheetin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -294,13 +311,38 @@ tr.go{cursor:pointer}
 
 <div class="sheet gut start" id="startSheet">
   <div class="sheetin">
-    <div class="sthero"><small>Golf Plan</small><h1>Caddy</h1></div>
+    <div class="hero" aria-hidden="true"><svg viewBox="0 0 400 210" preserveAspectRatio="xMidYMid slice">
+  <defs><linearGradient id="hsky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0c162d"/><stop offset="1" stop-color="#25467a"/></linearGradient>
+    <radialGradient id="hsun" cx=".72" cy=".42" r=".5"><stop offset="0" stop-color="#ffc400" stop-opacity=".55"/><stop offset="1" stop-color="#ffc400" stop-opacity="0"/></radialGradient>
+    <radialGradient id="hball" cx=".38" cy=".32" r=".7"><stop offset="0" stop-color="#fff"/><stop offset=".7" stop-color="#e9ecf1"/><stop offset="1" stop-color="#c5ccd8"/></radialGradient>
+    <pattern id="hdimp" width="7" height="7" patternUnits="userSpaceOnUse"><circle cx="3.5" cy="3.5" r="1.5" fill="#0c162d" fill-opacity=".1"/></pattern>
+    <pattern id="hstripe" width="34" height="210" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)"><rect width="17" height="210" fill="#86c852"/><rect x="17" width="17" height="210" fill="#78ba48"/></pattern></defs>
+  <rect width="400" height="210" fill="url(#hsky)"/><rect width="400" height="210" fill="url(#hsun)"/>
+  <circle cx="300" cy="70" r="20" fill="#ffc400" opacity=".9"/>
+  <path d="M0 120 Q60 92 130 110 T260 100 T400 108 V210 H0Z" fill="#1c5a2c"/>
+  <path d="M0 132 Q90 112 180 128 T400 124 V210 H0Z" fill="#2f7d3a"/>
+  <path d="M150 130 Q200 118 260 128 Q245 146 190 146 Q150 144 150 130Z" fill="#1878e0"/>
+  <ellipse cx="95" cy="128" rx="34" ry="7" fill="#a8e870"/><line x1="98" y1="128" x2="98" y2="98" stroke="#fff" stroke-width="1.6"/><path d="M98 98 L114 103 L98 108Z" fill="#d2142d"/>
+  <ellipse cx="330" cy="122" rx="28" ry="6" fill="#a8e870"/><line x1="334" y1="122" x2="334" y2="96" stroke="#fff" stroke-width="1.6"/><path d="M334 96 L348 100 L334 104Z" fill="#d2142d"/>
+  <path d="M232 132 q6-14 12-2 q6-12 12 2z M40 116 q8-18 16-2 q8-14 16 2z" fill="#103d1c"/>
+  <path d="M0 210 V168 Q120 136 250 150 Q340 160 400 146 V210Z" fill="url(#hstripe)"/>
+  <path d="M0 210 V168 Q120 136 250 150 Q340 160 400 146" fill="none" stroke="#5e9e3a" stroke-width="2"/>
+  <ellipse cx="200" cy="199" rx="30" ry="6" fill="#000" opacity=".18"/>
+  <path d="M188 172 h24 l-6 8 v18 h-12 v-18z" fill="#ffc400" stroke="#0c162d" stroke-width="1.5"/>
+  <circle cx="200" cy="150" r="24" fill="url(#hball)" stroke="#b8c0cc"/><circle cx="200" cy="150" r="24" fill="url(#hdimp)"/>
+  <ellipse cx="192" cy="141" rx="8" ry="5" fill="#fff" opacity=".7"/></svg>
+  <div class="herotxt"><small>Golf Plan</small><h1>Caddy</h1></div></div>
     <section><h3>1 · Lapangan</h3><div class="opts" id="stCourse"><button type="button" aria-pressed="true" data-course="imperial-karawaci">Imperial Karawaci<small>18 hole · par 72</small></button></div><p class="help">Lapangan lain menyusul.</p></section>
     <section><h3>2 · Target main</h3><div class="opts three" id="stBreak"></div></section>
     <section><h3>3 · Tee off dari</h3><div class="opts three" id="stTee"></div></section>
     <section><h3>4 · Jarak pukulan</h3><button class="stclubs" id="stClubs" type="button"></button></section>
     <button class="stgo" id="stGo" type="button">Mulai tee off ▶</button>
   </div>
+</div>
+
+<div class="putt" id="puttIntro" hidden aria-hidden="true">
+  <div class="pgreen"><div class="pcup"></div><div class="pflag"></div><div class="pball"><i></i></div></div>
+  <p>Menyiapkan caddy…</p>
 </div>
 
 <div class="sheet gut" id="sheet" hidden>
@@ -1046,7 +1088,18 @@ function openStart(){renderStart();$("startSheet").hidden=false;}
 $("stBreak").addEventListener("click",ev=>{const b=ev.target.closest("[data-brk]");if(b){setBreak(+b.dataset.brk);renderStart();}});
 $("stTee").addEventListener("click",ev=>{const b=ev.target.closest("[data-tee]");if(b){setTee(+b.dataset.tee);renderStart();}});
 $("stClubs").addEventListener("click",openClubs);
-$("stGo").addEventListener("click",()=>{$("startSheet").hidden=true;VB=null;render();});
+/* "ball in the cup" sound, made with the Web Audio API (no file): a hollow plastic knock, a short rattle and a low thud */
+function cupSound(delay){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A();ac.resume&&ac.resume();const t=ac.currentTime+delay;   // made inside the tap so phones allow it
+  const knock=(at,f,v,d)=>{const o=ac.createOscillator(),g=ac.createGain();o.type="triangle";o.frequency.setValueAtTime(f,at);o.frequency.exponentialRampToValueAtTime(f*.6,at+d);
+    g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.001,at+d);o.connect(g).connect(ac.destination);o.start(at);o.stop(at+d+.02);};
+  const noise=(at,v,d)=>{const b=ac.createBuffer(1,ac.sampleRate*d,ac.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=(Math.random()*2-1)*(1-i/x.length);
+    const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();f.type="bandpass";f.frequency.value=1800;f.Q.value=3;g.gain.value=v;n.buffer=b;n.connect(f).connect(g).connect(ac.destination);n.start(at);};
+  knock(t,880,.5,.09);noise(t,.35,.05);knock(t+.07,620,.3,.07);knock(t+.12,700,.18,.05);knock(t+.09,150,.6,.18);
+  setTimeout(()=>ac.close(),(delay+.8)*1000);}catch(e){}}
+$("stGo").addEventListener("click",()=>{const pi=$("puttIntro");pi.hidden=false;pi.classList.remove("go");void pi.offsetWidth;pi.classList.add("go");
+  cupSound(1.25);
+  setTimeout(()=>{$("startSheet").hidden=true;VB=null;render();},1500);
+  setTimeout(()=>{pi.hidden=true;pi.classList.remove("go");},1900);});
 $("brand").addEventListener("click",openStart);
 $("brand").title="Menu awal";
 renderStart();
