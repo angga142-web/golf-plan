@@ -24,6 +24,7 @@
 }
 *{box-sizing:border-box}
 html,body{height:100%;background:var(--paper);color:var(--ink)}
+html{overflow:auto;overscroll-behavior-y:auto}
 body{display:flex;flex-direction:column;font-family:var(--f-body);font-size:16px;-webkit-tap-highlight-color:transparent;overflow:hidden}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
 button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
