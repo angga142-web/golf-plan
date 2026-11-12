@@ -206,9 +206,9 @@ tr.go{cursor:pointer}
 <header class="top gut">
   <div class="toprow">
     <div class="lead">
-    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Kartu skor</button></div>
+    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button></div>
     <div class="btns">
-      <button class="tbtn" id="clubBtn" type="button">Jarak club</button>
+      <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
     </div>
     </div>
@@ -285,7 +285,7 @@ tr.go{cursor:pointer}
 
 <div class="sheet gut" id="clubSheet" hidden>
   <div class="sheetin">
-    <div class="sheethead"><h2>Jarak club saya</h2><button class="close" id="closeClubs" type="button">Tutup</button></div>
+    <div class="sheethead"><h2>Jarak pukulan saya</h2><button class="close" id="closeClubs" type="button">Tutup</button></div>
     <p class="help">Isi jarak terbang rata-rata (carry) dalam <span id="unitWord">meter</span>. Isi 0 untuk club yang tidak dibawa. Tandai ★ maksimal 3 club favorit: caddy memilihnya duluan kalau jaraknya cocok. <span id="adjNote"></span></p>
     <div class="clubs" id="clubList"></div>
   </div>
@@ -446,6 +446,7 @@ function driveB80(n,b,skip,R){const g=G[n],P=g.pin,par=H18[n-1][0],rt=[b,...g.la
     if(par===4&&r>50&&!clubPick(r,1e9,skip))continue;
     return R("drive",T,L,{club:nm,e,pw:Math.round(L/e*100)},{left:r});}
   return null;}
+const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
 let teeRuleOff=false,wedgeRelax=false;   // wedgeRelax: no full wedge fits (gap between two wedges), allow a part swing rather than a punch
 /* Strategy per break (11 Nov 2026). Club limits are named clubs, so they follow each player's own distances.
    100: nothing longer than a 5 iron off the tee (no driver, woods or 4 iron), nothing longer than a 7 iron into a green, layups with a 5 iron at most, never attack.
@@ -662,7 +663,7 @@ function terrainArt(n,M){const key=n+"|"+teeI;if(ART[key])return ART[key];
         const q=toMap(pts[k][0],pts[k][1]),dd=Math.hypot(q[0]-route[0],q[1]-route[1]);if(!best||dd<best.d)best={d:dd,x:pts[k][0],y:pts[k][1]};}}
     if(!d)continue;const c=col((L-C0)/span),stroke="rgb("+Math.round(c[0]*.55)+","+Math.round(c[1]*.45)+","+Math.round(c[2]*.4)+")";
     svg+='<path d="'+d+'" fill="none" stroke="'+stroke+'" stroke-width="'+(thick?1.6:.8)+'" stroke-linecap="round" vector-effect="non-scaling-stroke"/>';
-    if(best){const q=toMap(best.x,best.y);labels.push({x:q[0],y:q[1],c:stroke,t:L>0?"+"+L:L<0?"−"+(-L):"±0"});}}
+    if(best){const q=toMap(best.x,best.y);labels.push({x:q[0],y:q[1],c:stroke,t:(L>0?"+"+L:L<0?"−"+(-L):"±0")+" m"});}}
   return ART[key]={img:cv.toDataURL(),svg,labels,lo,hi};}
 function terrainLabels(n){const a=terrainOn&&terrain&&ART[n+"|"+teeI];if(!a)return"";
   return a.labels.map(l=>'<text class="rgi"'+fs(30)+' x="'+l.x.toFixed(1)+'" y="'+l.y.toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="'+l.c+'" stroke="#fff" stroke-width="'+zx(6)+'" paint-order="stroke">'+l.t+'</text>').join("");}
@@ -741,7 +742,7 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   const hn=peek(n),onDone=hn.on&&hn.on<=strokes(hn)&&hn.putts==null;
   h+=slopeArrow(n)+terrainLabels(n);
   placeCat();
-  ov.innerHTML=h;placeGreen(n,sim?"":!!rec&&rec.kind!=="putt"?"ask":onDone?"done":"");}
+  ov.innerHTML=h;placeGreen(n,!SHOW_ON||sim?"":!!rec&&rec.kind!=="putt"?"ask":onDone?"done":"");}
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
   el.style.bottom=(document.querySelector(".tools").offsetHeight+16)+"px";}
 $("cat").addEventListener("click",()=>{catClosed=catTip;$("cat").hidden=true;});
