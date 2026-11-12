@@ -53,12 +53,11 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map{order:1;position:relative;flex:1 1 0;min-height:0;background:var(--mist);border-bottom:3px solid var(--ink)}
 .map svg{display:block;width:100%;height:100%;touch-action:none}
 .map.moving .gbtn{visibility:hidden}
-.terrain-status{box-sizing:border-box;align-self:flex-start;max-width:min(210px,60vw);padding:7px 10px;border:2px solid var(--ink);border-radius:9px;background:#fff;color:var(--ink);font-size:14px;font-weight:800;line-height:1.2}
-.terrain-key{align-self:flex-start;display:flex;align-items:center;gap:6px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
-.terrain-key i{width:40px;height:9px;border-radius:4px;background:linear-gradient(90deg,#1c629d,#feca5d)}
-.terrain-controls{display:flex;gap:6px}
-.terrain-btn{align-self:flex-start;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-weight:800}
-.terrain-btn[aria-pressed=true]{background:var(--ink);color:#fff}
+.tbtns{position:absolute;top:50px;left:8px;display:flex;flex-direction:column;gap:6px}
+.tbtns .zbtn{position:static;font-size:14px;padding:4px 9px}
+.tip .tkey i{display:inline-block;width:34px;height:8px;border-radius:4px;background:linear-gradient(90deg,#1c629d,#feca5d);vertical-align:middle;margin:0 4px}
+.tip .slope b{color:#1f6fe0}
+.tip .slope i{display:inline-block;width:18px;border-top:2.5px dashed #1f6fe0;vertical-align:middle;margin-right:4px}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
 .rgt{font:500 20px var(--f-body)}
 .ovc{font:800 26px var(--f-num);letter-spacing:.02em}
@@ -104,7 +103,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .cardin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:5px}
 .foot:has(.note:empty):not(:has(button)){display:none}
 .status{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 8px;font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.03em;text-transform:uppercase}
-.round-budget{margin:3px 0 0;color:var(--ink2);font-size:14px;font-weight:700;line-height:1.25}
+.round-budget{margin:0;color:var(--ink2);font-size:12px;font-weight:700;line-height:1.2}
 .status .sub{color:var(--ink2);font-weight:600}
 .proj{padding:2px 8px;border-radius:6px;color:#fff;background:var(--ink2);white-space:nowrap}
 .proj.ok{background:var(--good)}.proj.bad{background:var(--over)}
@@ -217,13 +216,14 @@ tr.go{cursor:pointer}
 <div class="map">
   <svg id="map" role="img" aria-label="Peta hole. Ketuk untuk menaruh bola.">
     <image id="mapImg" x="0" y="0" width="1080" height="2160"/>
-    <defs><clipPath id="terrainClip"><rect id="terrainBounds"/></clipPath></defs>
-    <g id="terrainLayer" clip-path="url(#terrainClip)" pointer-events="none" hidden>
-      <image id="terrainImage" opacity=".55" preserveAspectRatio="none"/>
+    <defs><clipPath id="terrainClip"><rect id="terrainBounds"/></clipPath><mask id="terrainMask" maskUnits="userSpaceOnUse"><image id="terrainMaskImg" preserveAspectRatio="none"/></mask></defs>
+    <g id="terrainLayer" clip-path="url(#terrainClip)" mask="url(#terrainMask)" pointer-events="none" hidden>
+      <image id="terrainImage" opacity=".45" preserveAspectRatio="none"/>
     </g>
     <g id="ov"></g>
   </svg>
   <button class="zbtn" id="zoomBtn" type="button" aria-pressed="false">Zoom</button>
+  <div class="tbtns"><button class="zbtn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button><button class="zbtn" id="contourBtn" type="button" aria-pressed="false" hidden>Kontur</button></div>
   <button class="zbtn simbtn" id="simBtn" type="button" aria-pressed="false">Simulasi</button>
   <button class="gbtn" id="greenBtn" type="button" data-act="on" hidden>ON!</button>
   <div class="puttpop" id="puttPop" hidden role="group" aria-label="Jumlah putt"><button data-act="putt" data-v="1" type="button">1</button><button data-act="putt" data-v="2" type="button">2</button><button data-act="putt" data-v="3" type="button">3</button><button data-act="putt" data-v="4" type="button">4</button><button data-act="putt" data-v="5" type="button">5+</button></div>
@@ -241,13 +241,6 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
-    <div class="terrain-key" id="contourKey" hidden>Kontur 1 m · Garis tebal 5 m</div>
-    <div class="terrain-key" id="terrainKey" hidden aria-label="Legenda elevasi"><span>Rendah</span><i></i><span>Tinggi</span></div>
-    <output class="terrain-status" id="terrainStatus" aria-live="polite" hidden></output>
-    <div class="terrain-controls">
-      <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
-      <button class="terrain-btn" id="contourBtn" type="button" aria-pressed="false" hidden>Kontur</button>
-    </div>
   <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
   </div>
 </div>
@@ -409,7 +402,11 @@ function routeOff(g,T){const r=[g.tee,...g.land,g.pin];let best=1e9;
 const FW={};
 function loadFW(i){const n=i+1;if(FW[n])return;FW[n]="loading";const im=new Image();
   im.onload=()=>{const c=document.createElement("canvas");c.width=im.naturalWidth;c.height=im.naturalHeight;const x=c.getContext("2d");x.drawImage(im,0,0);
-    try{FW[n]={d:x.getImageData(0,0,c.width,c.height).data,w:c.width,h:c.height};}catch(e){FW[n]="none";return;}if(cur+1===n)render();};
+    try{FW[n]={d:x.getImageData(0,0,c.width,c.height).data,w:c.width,h:c.height};}catch(e){FW[n]="none";return;}
+    try{const k=4,m=document.createElement("canvas");m.width=Math.ceil(c.width/k);m.height=Math.ceil(c.height/k);const mx=m.getContext("2d");mx.drawImage(im,0,0,m.width,m.height);
+      const md=mx.getImageData(0,0,m.width,m.height);for(let q=0;q<md.data.length;q+=4){const on=Math.abs(md.data[q]-236)+Math.abs(md.data[q+1]-240)+Math.abs(md.data[q+2]-244)>14?255:0;md.data[q]=md.data[q+1]=md.data[q+2]=on;md.data[q+3]=255;}
+      mx.putImageData(md,0,0);FW[n].mask=m.toDataURL();}catch(e){}   // white = hole drawn on the picture, black = empty background
+    if(cur+1===n)render();};
   im.src=C.maps[i].src;}
 function fwAt(n,x,y){const f=FW[n];if(!f||typeof f==="string")return null;const mp=C.maps[n-1],px=Math.round((x-mp.x)*2),py=Math.round((y-G[n].top)*2);
   if(px<0||py<0||px>=f.w||py>=f.h)return false;const k=(py*f.w+px)*4;return Math.abs(f.d[k]-127)<22&&Math.abs(f.d[k+1]-193)<22&&Math.abs(f.d[k+2]-77)<20;}
@@ -576,6 +573,19 @@ const clubTxt=c=>c&&c.club?clubName(c.club)+(c.pw&&c.pw<90?" · "+c.pw+"%":""):"
 function nextShots(n,T,prev){const out=[],bench=pattern().bench;let a=T;
   for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
   return out;}
+/* green slope estimate from the map: only water is used (greens are shaped to drain toward a nearby lake or pond).
+   Bunkers say nothing reliable about slope, so with no water near the green there is no estimate. */
+const SLOPE={};
+function slopeOf(n){if(n in SLOPE)return SLOPE[n];const g=G[n],c=GC[n]||g.pin,R=Math.ceil(120*g.scale/CELL),c0=Math.floor(c[0]/CELL),r0=Math.floor((c[1]-g.top)/CELL);let best=null;
+  for(let r=Math.max(0,r0-R);r<=Math.min(g.rows-1,r0+R);r++)for(let k=Math.max(0,c0-R);k<=Math.min(g.cols-1,c0+R);k++){
+    if(g.cells[r*g.cols+k]!==2)continue;const x=k*CELL+5,y=g.top+r*CELL+5,d=Math.hypot(x-c[0],y-c[1]);if(!best||d<best.d)best={d,x,y};}
+  return SLOPE[n]=best&&best.d/g.scale<=120?{u:[(best.x-c[0])/best.d,(best.y-c[1])/best.d],m:Math.round(best.d/g.scale)}:null;}
+function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
+  const head='M'+(t[0]-sl.u[0]*a+px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a+py*a*.7).toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1)+'L'+(t[0]-sl.u[0]*a-px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a-py*a*.7).toFixed(1);
+  const line='M'+h[0].toFixed(1)+' '+h[1].toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1);
+  return'<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="'+line+head+'" stroke="#fff" stroke-width="'+zx(8)+'"/><path d="'+line+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(10)+' '+zx(7)+'"/><path d="'+head+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'"/></g>';}
+function slopeLegend(n){const sl=slopeOf(n);   // legend line for the info box under the map
+  return'<div class="tline slope">'+(sl?'<i></i><b>Estimasi arah air di green:</b> ke danau ±'+sl.m+' m dari green. Perkiraan, cek di green.':'Slope green: <b>tidak dapat diestimasi</b> dari peta (tidak ada air dekat green).')+'</div>';}
 let terrain=null, terrainOn=false, terrainLoading=false, contourOn=false;
 function elevationAt(n,[x,y]){
   const {ref,o,m}=C.pxmap[n];
@@ -599,8 +609,6 @@ function drawTerrain(n,g){
   const layer=$("terrainLayer");
   const show=terrainOn&&!!terrain;
   layer.toggleAttribute("hidden",!show);
-  $("terrainKey").hidden=!show||contourOn;
-  $("contourKey").hidden=!show||!contourOn;
   $("contourBtn").hidden=!show;
   if(!show)return;
   const image=$("terrainImage"), bounds=$("terrainBounds"), base=C.maps[n-1];
@@ -614,17 +622,18 @@ function drawTerrain(n,g){
   const href=contourOn?"data/imperial-karawaci-contours.svg":"data/imperial-karawaci-relief.png";
   if(image.getAttribute("href")!==href){
     image.setAttribute("href",href);
-    image.setAttribute("opacity",contourOn?"1":".55");
+    image.setAttribute("opacity",contourOn?"1":".45");
   }
+  const mk=$("terrainMaskImg"),mu=FW[n]&&FW[n].mask;   // hole-only mask from the map picture
+  if(mu){mk.setAttribute("href",mu);mk.setAttribute("x",base.x);mk.setAttribute("y",g.top);mk.setAttribute("width",base.w);mk.setAttribute("height",g.bot-g.top);$("terrainLayer").setAttribute("mask","url(#terrainMask)");}
+  else $("terrainLayer").removeAttribute("mask");
   bounds.setAttribute("x",base.x);
   bounds.setAttribute("y",g.top);
   bounds.setAttribute("width",base.w);
   bounds.setAttribute("height",g.bot-g.top);
 }
-function renderTerrainStatus(n,b){
-  const status=$("terrainStatus");
-  status.hidden=!terrainOn;
-  if(!terrainOn){status.textContent="";return;}
+function terrainLine(n,b){
+  if(!terrainOn)return "";
   const d=elevationChange(n,b);
   let label;
   if(terrainLoading)label="Memuat elevasi…";
@@ -634,7 +643,7 @@ function renderTerrainStatus(n,b){
   else if(d==null)label="Elevasi target tidak tersedia.";
   else if(d===0)label="≈0 m · Target hampir datar";
   else label=(d>0?"↑ +":"↓ −")+Math.abs(d)+" m · "+(d>0?"Target menanjak":"Target menurun");
-  status.textContent=label;
+  return '<div class="tline tkey"><b>Elevasi:</b> '+label+(terrain&&!terrainLoading?(contourOn?' · kontur 1 m, garis tebal 5 m':' · rendah<i></i>tinggi'):'')+'</div>';
 }
 $("contourBtn").addEventListener("click",()=>{
   contourOn=!contourOn;
@@ -687,6 +696,7 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   h+='<g transform="translate('+P[0]+' '+P[1]+') scale('+Z.toFixed(3)+')"><ellipse rx="11" ry="5" fill="#000" fill-opacity=".45"/><line y2="-58" stroke="#0c162d" stroke-width="4"/><path d="M0-58L32-47L0-36Z" fill="#d2142d"/></g>';   // flag
   h+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(22)+'" fill="#fff" stroke="#0c162d" stroke-width="'+zx(6)+'"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(9)+'" fill="#d2142d"/>';
   const hn=peek(n),onDone=hn.on&&hn.on<=strokes(hn)&&hn.putts==null;
+  h+=slopeArrow(n);
   placeCat();
   ov.innerHTML=h;placeGreen(n,sim?"":!!rec&&rec.kind!=="putt"?"ask":onDone?"done":"");}
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
@@ -767,12 +777,11 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
-    html+='<div class="tip">'+bubbleHTML+'</div>';
+    html+='<div class="tip">'+bubbleHTML+terrainLine(n,b)+slopeLegend(n)+'</div>';
     html+='<div class="foot">'+(h.log.length?'<button class="fbtn" data-act="undo" type="button">↶ Urungkan</button>':"")+
       '<span class="note">'+(note||"")+'</span></div>';
   }
   $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
-  renderTerrainStatus(n,b);
   drawMap(n,b);}
 
 /* ---------- actions ---------- */
