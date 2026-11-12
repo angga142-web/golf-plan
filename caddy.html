@@ -89,6 +89,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map.moving .cat{visibility:hidden}
 .resbar{position:absolute;bottom:8px;right:max(8px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff}
 .resbar:empty{display:none}
+.resbar{max-height:calc(100% - 56px);overflow-y:auto}
+.map{container-type:size}
+@container (max-height:340px){.map .resbar button{padding:2px 8px;font-size:15px}.map .sthead{padding:2px 6px;font-size:10px}}
 .resbar button{border:0;border-top:1px solid var(--line);background:#fff;padding:5px 8px;font-family:var(--f-num);font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;text-align:left}
 .resbar button:first-child{border-top:0}
 .resbar button:active{background:var(--gold)}
