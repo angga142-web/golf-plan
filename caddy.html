@@ -61,7 +61,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .rgi{font:700 21px var(--f-num);letter-spacing:.03em}
 .zbtn.simbtn{left:auto;right:max(8px,env(safe-area-inset-right,0px))}
 .zbtn.simbtn[aria-pressed=true]{background:var(--gold);color:var(--ink);border-color:var(--ink)}
-.simnote{border:2px dashed var(--ink);border-radius:10px;padding:5px 9px;font-size:13px;font-weight:700;background:#fff8d6}
+.simnote{border:2px dashed var(--ink);border-radius:10px;padding:3px 8px;font-size:11.5px;font-weight:700;background:#fff8d6}
 .zbtn{position:absolute;top:8px;left:8px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-family:var(--f-num);font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
 .zbtn[aria-pressed=true]{background:var(--ink);color:#fff}
 .tools{position:absolute;bottom:8px;left:max(8px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:6px}
@@ -87,8 +87,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .puttpop button{width:32px;height:34px;border:2px solid var(--ink);border-radius:8px;background:var(--mist);font-family:var(--f-num);font-weight:800;font-size:18px}
 .puttpop button:active{background:var(--gold)}
 .map.moving .puttpop{visibility:hidden}
-.tip{border:2px solid var(--ink);border-radius:10px;padding:6px 9px;background:#fff}
-.tip .aim,.tip .tline{font-size:13px;line-height:1.3}
+.tip{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;background:#fff}
+.tip .aim,.tip .tline{font-size:12px;line-height:1.28}
 .tip .tline+.tline,.tip .aim+.tline{margin-top:3px}
 .shape{display:flex;flex-direction:column;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff}
 .sthead{background:var(--ink);color:#fff;font-family:var(--f-num);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-align:center;line-height:1.1;padding:3px 6px}
@@ -96,21 +96,22 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .shape button[aria-pressed=true]{background:var(--ink);color:#fff}
 
 /* caddy card */
-.card{order:2;flex:0 0 auto;max-height:45%;overflow-y:auto;padding-block:8px calc(10px + env(safe-area-inset-bottom,0px))}
-.cardin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:7px}
-.status{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 8px;font-family:var(--f-num);font-weight:700;font-size:18px;letter-spacing:.03em;text-transform:uppercase}
+.card{order:2;flex:0 0 auto;padding-block:6px calc(6px + env(safe-area-inset-bottom,0px))}
+.cardin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:5px}
+.foot:has(.note:empty):not(:has(button)){display:none}
+.status{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 8px;font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.03em;text-transform:uppercase}
 .status .sub{color:var(--ink2);font-weight:600}
 .proj{padding:2px 8px;border-radius:6px;color:#fff;background:var(--ink2);white-space:nowrap}
 .proj.ok{background:var(--good)}.proj.bad{background:var(--over)}
 button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;display:inline-flex;align-items:center;gap:6px}
 .proj .tgi{width:16px;height:16px;flex:none}
-.resetmsg{border:3px solid var(--red);background:var(--redbg);border-radius:12px;padding:8px 10px;font-weight:700;font-size:15px;line-height:1.3}
-.resetmsg b{display:block;font-family:var(--f-num);font-size:22px;letter-spacing:.05em;text-transform:uppercase;color:var(--red);line-height:1.1}
+.resetmsg{border:2px solid var(--red);background:var(--redbg);border-radius:10px;padding:4px 8px;font-weight:700;font-size:12px;line-height:1.25}
+.resetmsg b{display:inline;margin-right:6px;font-family:var(--f-num);font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--red);line-height:1.1}
 .call{display:grid;grid-template-columns:auto 1fr;gap:8px;align-items:stretch}
-.dist{border:3px solid var(--ink);border-radius:12px;padding:4px 10px;text-align:center;min-width:92px;display:flex;flex-direction:column;justify-content:center}
-.dist b{font-family:var(--f-num);font-weight:800;font-size:44px;line-height:.95;font-variant-numeric:tabular-nums}
-.dist small{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
-.dist .fb{font-family:var(--f-num);font-size:15px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
+.dist{border:3px solid var(--ink);border-radius:12px;padding:3px 8px;text-align:center;min-width:84px;display:flex;flex-direction:column;justify-content:center}
+.dist b{font-family:var(--f-num);font-weight:800;font-size:36px;line-height:.95;font-variant-numeric:tabular-nums}
+.dist small{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.dist .fb{font-family:var(--f-num);font-size:13px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
 .shot{background:var(--gold);border-radius:12px;padding:6px 12px;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .shot.rec{background:var(--ink);color:#fff}
 .shot{position:relative}
@@ -124,13 +125,12 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .recbtn:disabled{background:transparent;color:var(--ink);opacity:.5}
 .recbtn:disabled i{background:var(--ink2)}
 .resbar .sel{outline:3px solid var(--gold);outline-offset:-3px}
-.shot .tbadge{white-space:nowrap;background:var(--ink);color:#fff;border-radius:8px;padding:2px 6px;font-family:var(--f-num);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;text-align:center;line-height:1.1}
-.shot .tbadge b{font-size:18px;font-weight:800}
-.shot .tbadge.bad{background:var(--over)}
-.shot.rec .tbadge{background:var(--gold);color:var(--ink)}
-.shot .club.long{font-size:24px;line-height:1.05}
-.shot .club{font-family:var(--f-num);font-weight:800;font-size:34px;line-height:1;text-transform:uppercase}
-.shot .tgt{font-weight:700;font-size:14px;line-height:1.25;margin-top:2px}
+.tbadge{white-space:nowrap;background:var(--ink);color:#fff;border-radius:8px;padding:2px 6px;font-family:var(--f-num);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;text-align:center;line-height:1.1}
+.tbadge b{font-size:15px;font-weight:800}
+.tbadge.bad{background:var(--over)}
+.shot .club.long{font-size:20px;line-height:1.05}
+.shot .club{font-family:var(--f-num);font-weight:800;font-size:28px;line-height:1;text-transform:uppercase}
+.shot .tgt{font-weight:700;font-size:12.5px;line-height:1.25;margin-top:2px}
 .aim{font-size:14px;font-weight:600;line-height:1.3}
 .aim b{font-weight:700}
 .aim .warn,.tline .warn{color:var(--red)}
@@ -538,13 +538,12 @@ const SHAPES={straight:{s:1,k:0},hook:{s:1,k:.27,aim:"kanan",go:"kiri"},draw:{s:
 let shape="draw";try{const v=localStorage.getItem("caddy-shape-v1");if(SHAPES[v])shape=v;}catch(e){}
 /* Rule (12 Nov 2026): never aim at a bunker or water. If the shape's start line runs over or ends near sand or water, aim straight at the
    target instead and let the shape finish the ball to the other side: the goal is to be on (green or fairway), not close to the flag. */
-function aimFor(n,b,T){const c=bend(b,T),sh=SHAPES[shape];if(!sh.k)return{ok:true,c};const g=G[n],A=c.aim;let bad=false;
-  for(let i=3;i<=20&&!bad;i++){const t=i/20;if(codeAt(g,b[0]+(A[0]-b[0])*t,b[1]+(A[1]-b[1])*t))bad=true;}
-  if(!bad&&(nearest(g,A[0],A[1],1,5)||nearest(g,A[0],A[1],2,10)))bad=true;
-  if(!bad)return{ok:true,c};
-  const E=[2*T[0]-A[0],2*T[1]-A[1]],M=[(b[0]+T[0])/2,(b[1]+T[1])/2];   // start at the target, the curve carries the ball as far the other way
-  return{ok:false,c:{aim:T,d:'M'+b[0].toFixed(1)+' '+b[1].toFixed(1)+'Q'+M[0].toFixed(1)+' '+M[1].toFixed(1)+' '+E[0].toFixed(1)+' '+E[1].toFixed(1)}};}
-function bend(a,T){const L=Math.hypot(T[0]-a[0],T[1]-a[1])||1,sh=SHAPES[shape],k=sh.k*L*sh.s,rx=-(T[1]-a[1])/L,ry=(T[0]-a[0])/L;   // (rx,ry) = golfer's right
+function aimFor(n,b,T){const sh=SHAPES[shape];if(!sh.k)return{ok:true,c:bend(b,T)};const g=G[n];
+  const safe=A=>{for(let i=3;i<=20;i++){const t=i/20;if(codeAt(g,b[0]+(A[0]-b[0])*t,b[1]+(A[1]-b[1])*t))return false;}
+    return!(nearest(g,A[0],A[1],1,5)||nearest(g,A[0],A[1],2,10));};
+  for(let f=10;f>=1;f--){const c=bend(b,T,f/10);if(safe(c.aim))return{ok:f===10,c};}   // less curve = aim closer to the target
+  return{ok:false,c:bend(b,T,0)};}
+function bend(a,T,f){const L=Math.hypot(T[0]-a[0],T[1]-a[1])||1,sh=SHAPES[shape],k=sh.k*L*sh.s*(f==null?1:f),rx=-(T[1]-a[1])/L,ry=(T[0]-a[0])/L;   // (rx,ry) = golfer's right
   const cx=(a[0]+T[0])/2+rx*k,cy=(a[1]+T[1])/2+ry*k,cl=Math.hypot(cx-a[0],cy-a[1])||1;
   return{aim:[a[0]+(cx-a[0])/cl*L,a[1]+(cy-a[1])/cl*L],d:'M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+'Q'+cx.toFixed(1)+' '+cy.toFixed(1)+' '+T[0].toFixed(1)+' '+T[1].toFixed(1)};}
 function thinLabel(x,y,txt){const sd=x-(22+txt.length*11)*Z<VB[0]+6*Z?1:-1;
@@ -582,8 +581,8 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
     if(Math.hypot(P[0]-end[0],P[1]-end[1])/g.scale>=5){   // no plan reaches the hole: thin line with what is left
       h+='<line x1="'+end[0]+'" y1="'+end[1]+'" x2="'+P[0]+'" y2="'+P[1]+'" stroke="#fff" stroke-width="'+zx(3)+'" stroke-dasharray="'+zx(12)+' '+zx(9)+'"/>';
       h+=thinLabel((end[0]+P[0])/2,(end[1]+P[1])/2,m0(dm(g,end[0],end[1],P[0],P[1]))+" m");}
-    if(SHAPES[shape].k&&AF.ok)h+='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+c.aim[0].toFixed(1)+'" y2="'+c.aim[1].toFixed(1)+'" stroke="#fff" stroke-width="'+zx(3)+'" stroke-dasharray="'+zx(4)+' '+zx(8)+'" stroke-linecap="round"/><circle cx="'+c.aim[0].toFixed(1)+'" cy="'+c.aim[1].toFixed(1)+'" r="'+zx(11)+'" fill="none" stroke="#fff" stroke-width="'+zx(4)+'"/>';   // start line: aim here
-    if(SHAPES[shape].k)h+='<text class="rgi"'+fs(20)+' x="'+c.aim[0].toFixed(1)+'" y="'+(c.aim[1]-(AF.ok?24:40)*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(6)+'" paint-order="stroke">AIM</text>';
+    if(SHAPES[shape].k&&Math.hypot(c.aim[0]-X,c.aim[1]-Y)>3)h+='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+c.aim[0].toFixed(1)+'" y2="'+c.aim[1].toFixed(1)+'" stroke="#fff" stroke-width="'+zx(3)+'" stroke-dasharray="'+zx(4)+' '+zx(8)+'" stroke-linecap="round"/><circle cx="'+c.aim[0].toFixed(1)+'" cy="'+c.aim[1].toFixed(1)+'" r="'+zx(11)+'" fill="none" stroke="#fff" stroke-width="'+zx(4)+'"/>';   // start line: aim here
+    if(SHAPES[shape].k)h+='<text class="rgi"'+fs(20)+' x="'+c.aim[0].toFixed(1)+'" y="'+(c.aim[1]-(Math.hypot(c.aim[0]-X,c.aim[1]-Y)>3?24:40)*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(6)+'" paint-order="stroke">AIM</text>';
     h+='<path d="'+c.d+'" fill="none" stroke="#fff" stroke-width="'+zx(10)+'" stroke-linecap="round"/><path d="'+c.d+'" fill="none" stroke="#ffc400" stroke-width="'+zx(6)+'" stroke-linecap="round"/><circle cx="'+X+'" cy="'+Y+'" r="'+zx(26)+'" fill="none" stroke="#ffc400" stroke-width="'+zx(7)+'"/>';
     const txt=m0(rec.d)+" m",w=(26+txt.length*18)*Z,ct=clubTxt(rec.c);   // distance tag left of the landing spot, club and power under it
     let px=X-44*Z-w/2;if(px<VB[0]+w/2+6*Z)px=X+44*Z+w/2;
@@ -645,7 +644,7 @@ const pickName=()=>picked.v==="pen"?PENS.find(x=>x[0]===picked.p)[1]:STATUS.find
 function render(){bubbleHTML="";resHTML="";catTip="";
   const n=cur+1,h=peek(n),hd=H18[cur],g=G[n],b=ballOf(n),t=totals(),sc=holeScore(h),s=strokes(h);
   chipEls.forEach((c,i)=>{const v=holeScore(peek(i+1));c.className="chip"+(i===cur?" on":"")+(v!=null?(v<=holeTarget(i)?" ok":" bad"):"");c.querySelector("span").textContent=v??"";});
-  let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span></div><button class="proj '+(t.n?(t.proj<=GOAL?"ok":"bad"):"")+'" data-act="brk" type="button" aria-label="Ganti target break, proyeksi '+t.proj+'"><svg class="tgi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Break '+BRK+'</button></div>';
+  let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span><!--TG--></div><button class="proj '+(t.n?(t.proj<=GOAL?"ok":"bad"):"")+'" data-act="brk" type="button" aria-label="Ganti target break, proyeksi '+t.proj+'"><svg class="tgi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Break '+BRK+'</button></div>';
   if(sc!=null&&!sim){rec=null;
     html+='<div class="done"><small>Hole '+n+' selesai</small><div class="sc"><button class="step" data-act="minus" type="button" aria-label="Kurangi skor">−</button><b class="'+(sc<=holeTarget(cur)?"ok":"bad")+'">'+sc+'</b><button class="step" data-act="plus" type="button" aria-label="Tambah skor">+</button></div>'+
       '<p>'+scoreName(sc-hd[0])+' · '+h.putts+' putt · bank '+sgn(t.bank)+'</p>'+
@@ -659,12 +658,13 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     if(recover&&!putt)html+='<div class="resetmsg"><b>Reset · napas dulu</b>'+RESET[last.r]+'</div>';
     const fb=putt?null:frontBack(n,b);
-    html+='<div class="call"><div class="dist"><b>'+m0(rec.D)+'</b><small>m ke green</small>'+(fb&&rec.D<260?'<span class="fb">'+m0(fb.f)+' – '+m0(fb.b)+'</span>':"")+'</div>'+
+    html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
+    html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
       '<div class="shot'+(recover?" rec":"")+'"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
-      '<div class="sr"><span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>'+(putt||sim?"":'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><i></i>Record'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
+      '<div class="sr">'+(putt||sim?"":'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><i></i>Record'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
-      bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik langsung ke '+(rec.kind==="green"?"tengah green":"target")+', bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
+      bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
     if(over>0)bubbleHTML+='<div class="tline"><span class="bad">'+(over===1?"+1 dari target hole tidak apa-apa, jangan tambah lagi.":"Selamatkan sisanya, satu pukulan sekali.")+'</span></div>';
     if(sim)html+='<div class="simnote">Mode simulasi: ketuk peta di mana saja untuk lihat saran caddy. Tidak tercatat di skor.</div>';
     resHTML=sim?"":'<div class="sthead">Status<br>pukulan</div>'+(putt?[1,2,3,4,5].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===5?"+":"")+' putt</button>').join("")
@@ -674,7 +674,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     onLabel=(s+1)+" ON!";
     html+='<div class="tip">'+bubbleHTML+slopeLegend(n)+'</div>';
     html+='<div class="foot">'+(h.log.length?'<button class="fbtn" data-act="undo" type="button">↶ Urungkan</button>':"")+
-      '<span class="note">'+(note||(putt?"Ketuk peta untuk koreksi posisi bola.":"Bola masuk green? Tekan tombol ON! di samping bendera. Ketuk peta untuk koreksi posisi bola."))+'</span></div>';
+      '<span class="note">'+(note||"")+'</span></div>';
   }
   $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
   drawMap(n,b);}
