@@ -53,7 +53,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map{order:1;position:relative;flex:1 1 0;min-height:0;background:var(--mist);border-bottom:3px solid var(--ink)}
 .map svg{display:block;width:100%;height:100%;touch-action:none}
 .map.moving .gbtn{visibility:hidden}
-.tip .slope b{color:#1f6fe0}
+.terrain-status{box-sizing:border-box;align-self:flex-start;max-width:min(210px,60vw);padding:7px 10px;border:2px solid var(--ink);border-radius:9px;background:#fff;color:var(--ink);font-size:14px;font-weight:800;line-height:1.2}
 .terrain-btn{align-self:flex-start;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-weight:800}
 .terrain-btn[aria-pressed=true]{background:var(--ink);color:#fff}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
@@ -234,6 +234,7 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
+    <output class="terrain-status" id="terrainStatus" aria-live="polite" hidden></output>
     <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
   <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
   </div>
@@ -582,12 +583,20 @@ function elevationChange(n,b){
   const from=elevationAt(n,b), to=elevationAt(n,rec.T);
   return from==null||to==null?null:Math.round(to-from);
 }
-function terrainLegend(n,b){
-  if(!terrainOn)return "";
+function renderTerrainStatus(n,b){
+  const status=$("terrainStatus");
+  status.hidden=!terrainOn;
+  if(!terrainOn){status.textContent="";return;}
   const d=elevationChange(n,b);
-  const label=terrainLoading?"Memuat data…":!terrain?"Gagal dimuat. Ketuk Elevasi dua kali untuk mencoba lagi.":
-    d==null?"Data untuk target ini tidak tersedia.":d===0?"Hampir datar":Math.abs(d)+" m "+(d>0?"menanjak":"menurun")+" ke target";
-  return '<div class="tline slope"><b>Elevasi DEMNAS:</b> '+label+'</div>';
+  let label;
+  if(terrainLoading)label="Memuat elevasi…";
+  else if(!terrain)label=location.protocol==="file:"?"Buka Caddy di GitHub Pages untuk memuat DEMNAS.":"DEMNAS gagal dimuat. Matikan lalu nyalakan Elevasi.";
+  else if(!rec)label="Pilih hole atau coba Simulasi.";
+  else if(rec.kind==="putt")label="Elevasi tersedia untuk pukulan menuju green.";
+  else if(d==null)label="Elevasi target tidak tersedia.";
+  else if(d===0)label="≈0 m · Target hampir datar";
+  else label=(d>0?"↑ +":"↓ −")+Math.abs(d)+" m · "+(d>0?"Target menanjak":"Target menurun");
+  status.textContent=label;
 }
 $("terrainBtn").addEventListener("click",async()=>{
   terrainOn=!terrainOn;
@@ -714,11 +723,12 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
-    html+='<div class="tip">'+bubbleHTML+terrainLegend(n,b)+'</div>';
+    html+='<div class="tip">'+bubbleHTML+'</div>';
     html+='<div class="foot">'+(h.log.length?'<button class="fbtn" data-act="undo" type="button">↶ Urungkan</button>':"")+
       '<span class="note">'+(note||"")+'</span></div>';
   }
   $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
+  renderTerrainStatus(n,b);
   drawMap(n,b);}
 
 /* ---------- actions ---------- */
