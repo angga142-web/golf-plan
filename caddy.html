@@ -7,7 +7,7 @@
 <title>Golf Plan Caddy · Imperial Karawaci</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&family=Kaushan+Script&display=swap">
 <style>
 /* Layout: one screen, no page scroll. Hole strip on top, hole map in the middle, one caddy instruction with result buttons at the bottom.
    Single light theme on purpose: it is read in direct sun. */
@@ -127,16 +127,21 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .shot{display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:center}
 .shot .sl{min-width:0}
 .shot .sr{display:flex;flex-direction:column;align-items:stretch;gap:5px}
-.recbtn{border:2px solid var(--ink);background:var(--ink);color:#fff;border-radius:8px;padding:4px 8px;font-family:var(--f-num);font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;line-height:1.05;display:flex;flex-direction:column;align-items:center}
+/* Record button drawn as a golf ball: white dimpled ball, the shot name printed in script like a ball's logo, status as the ball number line */
+.recbtn{width:78px;height:78px;border-radius:50%;border:1.5px solid #c9ced8;padding:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;color:#111;
+  background:radial-gradient(circle at 32% 28%,#fff 0 18%,rgba(255,255,255,0) 45%),radial-gradient(circle,rgba(12,22,45,.13) 0 1.3px,transparent 1.6px) 0 0/6px 6px,radial-gradient(circle,rgba(12,22,45,.13) 0 1.3px,transparent 1.6px) 3px 3px/6px 6px,radial-gradient(circle at 40% 35%,#ffffff,#e6e9ef 70%,#cfd4dd);
+  box-shadow:0 3px 6px rgba(12,22,45,.35),inset -4px -6px 10px rgba(12,22,45,.12)}
+.recbtn i{display:none}
 .recbtn i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-bottom:2px}
 .puttc{display:flex;flex-direction:column;align-items:center;gap:3px}
 .puttc small{font-family:var(--f-num);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase}
 .puttc div{display:grid;grid-template-columns:repeat(2,1fr);gap:5px}
 .puttc button{width:36px;height:36px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-family:var(--f-num);font-weight:800;font-size:18px;line-height:1}
 .puttc button:active{background:var(--ink);color:#fff}
-.recbtn small{font-size:11px;font-weight:700;letter-spacing:.02em;opacity:.85}
-.recbtn:disabled{background:transparent;color:var(--ink);opacity:.5}
-.recbtn:disabled i{background:var(--ink2)}
+.recbtn .ballname{font-family:"Kaushan Script",cursive;font-size:16px;line-height:1;color:#111;transform:rotate(-6deg)}
+.recbtn small{font-family:var(--f-num);font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--red);line-height:1}
+.recbtn:disabled{opacity:.75}
+.recbtn:disabled small{color:#6b7385}
 .resbar .sel{outline:3px solid var(--gold);outline-offset:-3px}
 .tbadge{white-space:nowrap;background:var(--ink);color:#fff;border-radius:8px;padding:2px 6px;font-family:var(--f-num);font-weight:700;font-size:13px;letter-spacing:.02em;text-transform:uppercase;text-align:center;line-height:1.1}
 .tbadge b{font-size:15px;font-weight:800}
@@ -819,7 +824,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
       '<div class="shot'+(recover?" rec":"")+'"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
-        :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><i></i>'+shotName(s)+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
+        :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
       bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
