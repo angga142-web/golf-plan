@@ -54,6 +54,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map svg{display:block;width:100%;height:100%;touch-action:none}
 .map.moving .gbtn{visibility:hidden}
 .terrain-status{box-sizing:border-box;align-self:flex-start;max-width:min(210px,60vw);padding:7px 10px;border:2px solid var(--ink);border-radius:9px;background:#fff;color:var(--ink);font-size:14px;font-weight:800;line-height:1.2}
+.terrain-key{align-self:flex-start;display:flex;align-items:center;gap:6px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
+.terrain-key i{width:40px;height:9px;border-radius:4px;background:linear-gradient(90deg,#1c629d,#feca5d)}
 .terrain-btn{align-self:flex-start;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-weight:800}
 .terrain-btn[aria-pressed=true]{background:var(--ink);color:#fff}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
@@ -214,6 +216,10 @@ tr.go{cursor:pointer}
 <div class="map">
   <svg id="map" role="img" aria-label="Peta hole. Ketuk untuk menaruh bola.">
     <image id="mapImg" x="0" y="0" width="1080" height="2160"/>
+    <defs><clipPath id="terrainClip"><rect id="terrainBounds"/></clipPath></defs>
+    <g id="terrainLayer" clip-path="url(#terrainClip)" pointer-events="none" hidden>
+      <image id="terrainImage" opacity=".55" preserveAspectRatio="none"/>
+    </g>
     <g id="ov"></g>
   </svg>
   <button class="zbtn" id="zoomBtn" type="button" aria-pressed="false">Zoom</button>
@@ -234,6 +240,7 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
+    <div class="terrain-key" id="terrainKey" hidden aria-label="Legenda elevasi"><span>Rendah</span><i></i><span>Tinggi</span></div>
     <output class="terrain-status" id="terrainStatus" aria-live="polite" hidden></output>
     <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
   <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
@@ -583,6 +590,26 @@ function elevationChange(n,b){
   const from=elevationAt(n,b), to=elevationAt(n,rec.T);
   return from==null||to==null?null:Math.round(to-from);
 }
+function drawTerrain(n,g){
+  const layer=$("terrainLayer"), key=$("terrainKey");
+  const show=terrainOn&&!!terrain;
+  layer.toggleAttribute("hidden",!show);
+  key.hidden=!show;
+  if(!show)return;
+  const image=$("terrainImage"), bounds=$("terrainBounds"), base=C.maps[n-1];
+  const origin=ll2px(n,[terrain.north,terrain.west]);
+  const right=ll2px(n,[terrain.north,terrain.west+terrain.pixelWidth]);
+  const down=ll2px(n,[terrain.north-terrain.pixelHeight,terrain.west]);
+  const matrix=[right[0]-origin[0],right[1]-origin[1],down[0]-origin[0],down[1]-origin[1],...origin];
+  image.setAttribute("width",terrain.width);
+  image.setAttribute("height",terrain.height);
+  image.setAttribute("transform","matrix("+matrix.join(" ")+")");
+  if(!image.hasAttribute("href"))image.setAttribute("href","data/imperial-karawaci-relief.png");
+  bounds.setAttribute("x",base.x);
+  bounds.setAttribute("y",g.top);
+  bounds.setAttribute("width",base.w);
+  bounds.setAttribute("height",g.bot-g.top);
+}
 function renderTerrainStatus(n,b){
   const status=$("terrainStatus");
   status.hidden=!terrainOn;
@@ -620,6 +647,7 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   const zoomed=zoomOverride==null?D<=150:zoomOverride,land=rec&&rec.kind!=="putt"?[rec.T]:[];
   const FB=fullBox(n);if(manualVB)setView(manualVB,true);else setView(zoomed?viewFor(g,(D>150?[b]:[b,P]).concat(land),FB):FB);   // far away a manual zoom frames ball and landing
   $("zoomBtn").setAttribute("aria-pressed",zoomOverride!=null||!!manualVB);$("zoomBtn").textContent=zoomed||manualVB?"Zoom out":"Zoom";
+  drawTerrain(n,g);
   let h=rings(n,g,D);
   if(rec&&rec.kind!=="putt"){const X=rec.T[0],Y=rec.T[1],AF=aimFor(n,b,rec.T),c=AF.c;
     let end=rec.T;const used=[[X,Y-14*Z],[X,Y+34*Z]];   // label spots taken, so follow-up labels do not stack
