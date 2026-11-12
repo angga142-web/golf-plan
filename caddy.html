@@ -37,7 +37,11 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .lead{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 auto}
 .brandrow{display:flex;align-items:center;gap:10px;min-width:0}
 .brand{font-family:var(--f-brand);font-weight:700;font-size:18px;letter-spacing:.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.btns{display:flex;gap:6px;flex:none}
+.top{position:relative}
+.menupop{position:absolute;z-index:30;right:max(16px,env(safe-area-inset-right,0px));top:calc(100% - 4px);min-width:220px;display:flex;flex-direction:column;gap:6px;padding:8px;background:var(--ink);border:2px solid #56627f;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+.menupop[hidden]{display:none}
+.menupop .tbtn{text-align:left;padding:8px 12px;white-space:nowrap}
+.menupop .mlab{color:#9aa6bf;margin-right:8px}
 .tbtn{background:transparent;color:#fff;border:2px solid #56627f;border-radius:8px;padding:4px 10px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
 .tbtn i.tdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;margin-right:6px;vertical-align:-1px}
 .tbtn.homebtn{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}.homebtn svg{width:17px;height:17px}
@@ -101,6 +105,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map.moving .puttpop{visibility:hidden}
 .tip{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;background:#fff}
 .tip .aim,.tip .tline{font-size:12px;line-height:1.28}
+.tip .treset b{font-family:var(--f-num);font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--red)}
+.tip .tcat{display:flex;gap:6px;align-items:flex-start}.tip .tcat img{width:22px;height:22px;border-radius:50%;flex:none;background:#0047af}
+.tip .tcat b{font-family:var(--f-num);font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--good)}
 .tip .tline+.tline,.tip .aim+.tline{margin-top:3px}
 .shapemenu{position:relative}
 .shapemenu .shape{position:absolute;bottom:calc(100% + 6px);left:0;min-width:100%}
@@ -285,10 +292,11 @@ tr.go{cursor:pointer}
 <header class="top gut">
   <div class="toprow">
     <div class="lead">
-    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button><button class="tbtn homebtn" id="homeBtn" type="button" aria-label="Kembali ke menu awal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg><span>Menu</span></button></div>
-    <div class="btns">
+    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button><button class="tbtn homebtn" id="homeBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menuPop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Menu</span></button></div>
+    <div class="menupop" id="menuPop" hidden>
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
-      <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
+      <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><span class="mlab">Tee</span><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
+      <button class="tbtn" id="backStart" type="button">Kembali ke menu awal</button>
     </div>
     </div>
     <nav class="chips" aria-label="Pilih hole">
@@ -963,7 +971,6 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c);
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
-    if(recover&&!putt)html+='<div class="resetmsg"><b>Reset · napas dulu</b>'+RESET[last.r]+'</div>';
     const fb=putt?null:frontBack(n,b);
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
     html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
@@ -979,6 +986,9 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
+    if(recover&&!putt)bubbleHTML+='<div class="tline treset"><b>Reset · napas dulu</b> '+RESET[last.r]+'</div>';
+    if(catTip)bubbleHTML+='<div class="tline tcat"><img alt="" src="'+$("cat").querySelector("img").src+'"><span>'+catTip.replace("</b>","</b> ")+'</span></div>';
+    catTip="";   // shown in the box, not on the map
     html+='<div class="tip">'+bubbleHTML+terrainLine(n,b)+slopeLegend(n)+'</div>';
     html+='<div class="foot">'+
       '<span class="note">'+(note||"")+'</span></div>';
@@ -1175,7 +1185,11 @@ $("stGo").addEventListener("click",()=>{const pi=$("puttIntro");pi.hidden=false;
   setTimeout(()=>{$("startSheet").hidden=true;VB=null;render();},1500);
   setTimeout(()=>{pi.hidden=true;pi.classList.remove("go");},1900);});
 $("brand").addEventListener("click",openStart);
-$("homeBtn").addEventListener("click",openStart);
+const menuOpen=o=>{$("menuPop").hidden=!o;$("homeBtn").setAttribute("aria-expanded",o);};
+$("homeBtn").addEventListener("click",ev=>{ev.stopPropagation();menuOpen($("menuPop").hidden);});
+document.addEventListener("click",ev=>{if(!$("menuPop").hidden&&!ev.target.closest("#menuPop"))menuOpen(false);});
+$("clubBtn").addEventListener("click",()=>menuOpen(false));
+$("backStart").addEventListener("click",()=>{menuOpen(false);openStart();});
 $("brand").title="Menu awal";
 renderStart();
 </script>
