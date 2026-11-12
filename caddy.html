@@ -93,6 +93,10 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .tip{border:2px solid var(--ink);border-radius:10px;padding:4px 8px;background:#fff}
 .tip .aim,.tip .tline{font-size:12px;line-height:1.28}
 .tip .tline+.tline,.tip .aim+.tline{margin-top:3px}
+.shapemenu{position:relative}
+.shapemenu .shape{position:absolute;bottom:calc(100% + 6px);left:0;min-width:100%}
+.shapebtn{display:flex;flex-direction:column;align-items:flex-start;border:2px solid var(--ink);border-radius:8px;background:var(--ink);color:#fff;padding:3px 9px 4px;font-family:var(--f-num);font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase;line-height:1.05}
+.shapebtn small{font-size:10px;opacity:.8}
 .shape{display:flex;flex-direction:column;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff}
 .sthead{background:var(--ink);color:#fff;font-family:var(--f-num);font-weight:700;font-size:11px;letter-spacing:.06em;text-transform:uppercase;text-align:center;line-height:1.1;padding:3px 6px}
 .shape button{border:0;background:#fff;padding:5px 8px;font-family:var(--f-num);font-weight:800;font-size:16px;letter-spacing:.04em;text-transform:uppercase}
@@ -133,6 +137,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .tbadge b{font-size:15px;font-weight:800}
 .tbadge.bad{background:var(--over)}
 .shot .club.long{font-size:20px;line-height:1.05}
+.shot .club .star{color:#b07a00;font-size:.75em}
 .shot .club{font-family:var(--f-num);font-weight:800;font-size:28px;line-height:1;text-transform:uppercase}
 .shot .tgt{font-weight:700;font-size:12.5px;line-height:1.25;margin-top:2px}
 .aim{font-size:14px;font-weight:600;line-height:1.3}
@@ -188,6 +193,9 @@ tr.go{cursor:pointer}
 .clubs{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
 .clubs label{display:flex;justify-content:space-between;align-items:center;gap:6px;font-family:var(--f-num);font-weight:700;font-size:16px;line-height:1.05}
 .clubs input{flex:none}
+.clubs .fav{border:0;background:none;font-size:20px;line-height:1;padding:0 2px;color:var(--ink2);flex:none}
+.clubs .fav.on{color:#e0a400}
+.clubs label>span:first-of-type{flex:1;min-width:0}
 .clubs .inp{display:flex;align-items:center;gap:4px;flex:none}
 .clubs .u{font-size:15px;font-weight:700;color:var(--ink2);width:20px}
 .unitbtn{align-self:center;justify-self:end;border:2px solid var(--ink);background:var(--mist);border-radius:8px;padding:8px 12px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.03em;text-transform:uppercase}
@@ -218,12 +226,13 @@ tr.go{cursor:pointer}
     <image id="mapImg" x="0" y="0" width="1080" height="2160"/>
     <defs><clipPath id="terrainClip"><rect id="terrainBounds"/></clipPath><mask id="terrainMask" maskUnits="userSpaceOnUse"><image id="terrainMaskImg" preserveAspectRatio="none"/></mask></defs>
     <g id="terrainLayer" clip-path="url(#terrainClip)" mask="url(#terrainMask)" pointer-events="none" hidden>
-      <image id="terrainImage" opacity=".45" preserveAspectRatio="none"/>
+      <image id="terrainImage" opacity=".45" preserveAspectRatio="none" href="data/imperial-karawaci-relief.png"/>
+      <image id="terrainContour" preserveAspectRatio="none" href="data/imperial-karawaci-contours.svg"/>
     </g>
     <g id="ov"></g>
   </svg>
   <button class="zbtn" id="zoomBtn" type="button" aria-pressed="false">Zoom</button>
-  <div class="tbtns"><button class="zbtn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button><button class="zbtn" id="contourBtn" type="button" aria-pressed="false" hidden>Kontur</button></div>
+  <div class="tbtns"><button class="zbtn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button></div>
   <button class="zbtn simbtn" id="simBtn" type="button" aria-pressed="false">Simulasi</button>
   <button class="gbtn" id="greenBtn" type="button" data-act="on" hidden>ON!</button>
   <div class="puttpop" id="puttPop" hidden role="group" aria-label="Jumlah putt"><button data-act="putt" data-v="1" type="button">1</button><button data-act="putt" data-v="2" type="button">2</button><button data-act="putt" data-v="3" type="button">3</button><button data-act="putt" data-v="4" type="button">4</button><button data-act="putt" data-v="5" type="button">5+</button></div>
@@ -241,7 +250,8 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
-  <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
+  <div class="shapemenu"><div class="shape" id="shapeList" role="group" aria-label="Pattern pukulan" hidden><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
+  <button class="shapebtn" id="shapeBtn" type="button" aria-expanded="false" aria-controls="shapeList"><small>Pattern</small><span id="shapeName">Draw</span> ▴</button></div>
   </div>
 </div>
 </div>
@@ -276,7 +286,7 @@ tr.go{cursor:pointer}
 <div class="sheet gut" id="clubSheet" hidden>
   <div class="sheetin">
     <div class="sheethead"><h2>Jarak club saya</h2><button class="close" id="closeClubs" type="button">Tutup</button></div>
-    <p class="help">Isi jarak terbang rata-rata (carry) dalam <span id="unitWord">meter</span>. Isi 0 untuk club yang tidak dibawa. <span id="adjNote"></span></p>
+    <p class="help">Isi jarak terbang rata-rata (carry) dalam <span id="unitWord">meter</span>. Isi 0 untuk club yang tidak dibawa. Tandai ★ maksimal 3 club favorit: caddy memilihnya duluan kalau jaraknya cocok. <span id="adjNote"></span></p>
     <div class="clubs" id="clubList"></div>
   </div>
 </div>
@@ -385,9 +395,11 @@ const WEDGE=/^(PW|GW|SW|LW)$/,MINPW=.8;   // rule (11 Nov 2026): at least 80% sw
 /* tee (11 Nov 2026): a tee shot cannot be held back, it is always a 90-100% swing, wedges included */
 /* rule (12 Nov 2026): for break 90/100 a wedge into the green is a full swing (85-95%); the in-between short pitch is for break 80 only */
 const WFULL=.85,wedgeFull=()=>bag().filter(([nm])=>WEDGE.test(nm)).map(([nm,c])=>[(c-C.adj)*WFULL,(c-C.adj)*MAXP]);   // full-wedge distance windows
-function clubPick(d,maxCarry,skip,tee){const hi=tee?1:MAXP;let best=null;
+/* favourites (12 Nov 2026): up to three starred clubs; when one of them fits the shot it is chosen over the default pick */
+let FAV=[];try{const v=JSON.parse(localStorage.getItem("caddy-fav-v1")||"[]");if(Array.isArray(v))FAV=v.slice(0,3);}catch(e){}
+function clubPick(d,maxCarry,skip,tee){const hi=tee?1:MAXP;let best=null,fav=null;
   for(const[nm,c] of bag()){if(c>maxCarry||(skip&&skip.has(nm)))continue;const e=c-C.adj,w=WEDGE.test(nm),part=BRK===80||wedgeRelax,lo=tee?.9:w&&!part?WFULL:MINPW;
-    if(e*hi>=d&&(d>=e*lo||!tee&&w&&part))best={club:nm,e,pw:Math.round(d/e*100)};}return best;}
+    if(e*hi>=d&&(d>=e*lo||!tee&&w&&part)){best={club:nm,e,pw:Math.round(d/e*100)};if(FAV.includes(nm))fav=best;}}return fav||best;}
 function shotClear(g,a,T,e){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
   return w===0||.75*e>=w+10;}
@@ -508,8 +520,16 @@ function advise(n,b,recover,skip,maxc){
 
 /* Rule (11 Nov 2026): the next shot does not use a longer club than the shot before, unless that leaves only a punch-out */
 function adviseAfter(n,b,recover,skip,prev){const maxc=carryOf(prev||"");
-  const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return r;
-  const r2=advise(n,b,recover,skip);return r2.kind!=="punch"&&r2.kind!=="none"?r2:r;}
+  const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return playsLike(n,b,r,skip);
+  const r2=advise(n,b,recover,skip);return playsLike(n,b,r2.kind!=="punch"&&r2.kind!=="none"?r2:r,skip);}
+/* elevation (DEMNAS, 12 Nov 2026): a target higher than the ball plays about 1 m longer per metre of rise, lower plays shorter.
+   The club is re-picked for that distance when the change is 2 m or more, at most one club longer or shorter. */
+function playsLike(n,b,r,skip){if(!terrain||!r||!r.c||!r.c.e||r.short||r.kind==="putt"||r.kind==="punch"||r.kind==="none")return r;
+  const z0=elevationAt(n,b),z1=elevationAt(n,r.T);if(z0==null||z1==null)return r;const dz=Math.round(z1-z0);
+  if(Math.abs(dz)<2)return Object.assign({},r,{dz});
+  const pl=r.d+dz,TE=teeOf(n),atTee=dm(G[n],b[0],b[1],TE[0],TE[1])<15,sk=new Set([...(skip||[]),...(r.c.club==="DRIVER"?[]:["DRIVER"])]);
+  const c2=clubPick(pl,1e9,sk,atTee),step=Math.abs(carryOf(c2&&c2.club)-carryOf(r.c.club));
+  return Object.assign({},r,{dz,plays:pl},c2&&step<=15?{c:c2}:{});}
 /* ---------- screen ---------- */
 const chipEls=[],map=$("map"),ov=$("ov");
 let rec=null;
@@ -575,18 +595,23 @@ function nextShots(n,T,prev){const out=[],bench=pattern().bench;let a=T;
   return out;}
 /* green slope estimate from the map: only water is used (greens are shaped to drain toward a nearby lake or pond).
    Bunkers say nothing reliable about slope, so with no water near the green there is no estimate. */
-const SLOPE={};
-function slopeOf(n){if(n in SLOPE)return SLOPE[n];const g=G[n],c=GC[n]||g.pin,R=Math.ceil(120*g.scale/CELL),c0=Math.floor(c[0]/CELL),r0=Math.floor((c[1]-g.top)/CELL);let best=null;
+let SLOPE={};const SLOPE_CACHE_RESET=()=>{SLOPE={};};
+function slopeDEM(n){const g=G[n],c=GC[n]||g.pin,h=10*g.scale,z=(dx,dy)=>elevationAt(n,[c[0]+dx,c[1]+dy]);
+  const zx1=z(h,0),zx0=z(-h,0),zy1=z(0,h),zy0=z(0,-h);if([zx1,zx0,zy1,zy0].some(v=>v==null))return null;
+  const gx=(zx1-zx0)/20,gy=(zy1-zy0)/20,gm=Math.hypot(gx,gy),drop=gm*25;   // metres per metre; drop over a 25 m green
+  return drop<.15?{flat:1,dem:1}:{u:[-gx/gm,-gy/gm],drop:Math.round(drop*10)/10,dem:1};}
+function slopeOf(n){if(n in SLOPE)return SLOPE[n];if(terrain){const sd=slopeDEM(n);if(sd)return SLOPE[n]=sd;}const g=G[n],c=GC[n]||g.pin,R=Math.ceil(120*g.scale/CELL),c0=Math.floor(c[0]/CELL),r0=Math.floor((c[1]-g.top)/CELL);let best=null;
   for(let r=Math.max(0,r0-R);r<=Math.min(g.rows-1,r0+R);r++)for(let k=Math.max(0,c0-R);k<=Math.min(g.cols-1,c0+R);k++){
     if(g.cells[r*g.cols+k]!==2)continue;const x=k*CELL+5,y=g.top+r*CELL+5,d=Math.hypot(x-c[0],y-c[1]);if(!best||d<best.d)best={d,x,y};}
   return SLOPE[n]=best&&best.d/g.scale<=120?{u:[(best.x-c[0])/best.d,(best.y-c[1])/best.d],m:Math.round(best.d/g.scale)}:null;}
-function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
+function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl||sl.flat)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
   const head='M'+(t[0]-sl.u[0]*a+px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a+py*a*.7).toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1)+'L'+(t[0]-sl.u[0]*a-px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a-py*a*.7).toFixed(1);
   const line='M'+h[0].toFixed(1)+' '+h[1].toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1);
   return'<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="'+line+head+'" stroke="#fff" stroke-width="'+zx(8)+'"/><path d="'+line+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(10)+' '+zx(7)+'"/><path d="'+head+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'"/></g>';}
 function slopeLegend(n){const sl=slopeOf(n);   // legend line for the info box under the map
+  if(sl&&sl.dem)return'<div class="tline slope">'+(sl.flat?'Slope green (DEMNAS): <b>hampir datar</b>. Baca green langsung.':'<i></i><b>Arah turun green (DEMNAS):</b> ikuti panah biru. Data elevasi kasar (±8 m per titik), cek di green.')+'</div>';
   return'<div class="tline slope">'+(sl?'<i></i><b>Estimasi arah air di green:</b> ke danau ±'+sl.m+' m dari green. Perkiraan, cek di green.':'Slope green: <b>tidak dapat diestimasi</b> dari peta (tidak ada air dekat green).')+'</div>';}
-let terrain=null, terrainOn=false, terrainLoading=false, contourOn=false;
+let terrain=null, terrainOn=false, terrainLoading=false;
 function elevationAt(n,[x,y]){
   const {ref,o,m}=C.pxmap[n];
   const dx=x-o[0], dy=y-o[1], det=m[0][0]*m[1][1]-m[0][1]*m[1][0];
@@ -601,7 +626,7 @@ function elevationAt(n,[x,y]){
   return (1-b)*((1-a)*z[i][j]+a*z[i][j+1])+b*((1-a)*z[i+1][j]+a*z[i+1][j+1]);
 }
 function elevationChange(n,b){
-  if(!terrainOn||!terrain||!rec||rec.kind==="putt"||rec.kind==="none")return null;
+  if(!terrain||!rec||rec.kind==="putt"||rec.kind==="none")return null;
   const from=elevationAt(n,b), to=elevationAt(n,rec.T);
   return from==null||to==null?null:Math.round(to-from);
 }
@@ -609,21 +634,13 @@ function drawTerrain(n,g){
   const layer=$("terrainLayer");
   const show=terrainOn&&!!terrain;
   layer.toggleAttribute("hidden",!show);
-  $("contourBtn").hidden=!show;
   if(!show)return;
   const image=$("terrainImage"), bounds=$("terrainBounds"), base=C.maps[n-1];
   const origin=ll2px(n,[terrain.north,terrain.west]);
   const right=ll2px(n,[terrain.north,terrain.west+terrain.pixelWidth]);
   const down=ll2px(n,[terrain.north-terrain.pixelHeight,terrain.west]);
   const matrix=[right[0]-origin[0],right[1]-origin[1],down[0]-origin[0],down[1]-origin[1],...origin];
-  image.setAttribute("width",terrain.width);
-  image.setAttribute("height",terrain.height);
-  image.setAttribute("transform","matrix("+matrix.join(" ")+")");
-  const href=contourOn?"data/imperial-karawaci-contours.svg":"data/imperial-karawaci-relief.png";
-  if(image.getAttribute("href")!==href){
-    image.setAttribute("href",href);
-    image.setAttribute("opacity",contourOn?"1":".45");
-  }
+  for(const im of [image,$("terrainContour")]){im.setAttribute("width",terrain.width);im.setAttribute("height",terrain.height);im.setAttribute("transform","matrix("+matrix.join(" ")+")");}
   const mk=$("terrainMaskImg"),mu=FW[n]&&FW[n].mask;   // hole-only mask from the map picture
   if(mu){mk.setAttribute("href",mu);mk.setAttribute("x",base.x);mk.setAttribute("y",g.top);mk.setAttribute("width",base.w);mk.setAttribute("height",g.bot-g.top);$("terrainLayer").setAttribute("mask","url(#terrainMask)");}
   else $("terrainLayer").removeAttribute("mask");
@@ -633,30 +650,19 @@ function drawTerrain(n,g){
   bounds.setAttribute("height",g.bot-g.top);
 }
 function terrainLine(n,b){
-  if(!terrainOn)return "";
+  if(!terrainOn&&!terrain)return "";
   const d=elevationChange(n,b);
   let label;
   if(terrainLoading)label="Memuat elevasi…";
-  else if(!terrain)label=location.protocol==="file:"?"Buka Caddy di GitHub Pages untuk memuat DEMNAS.":"DEMNAS gagal dimuat. Matikan lalu nyalakan Elevasi.";
+  else if(!terrain)label=location.protocol==="file:"?"Buka Caddy di GitHub Pages untuk memuat DEMNAS.":"DEMNAS gagal dimuat.";
   else if(!rec)label="Pilih hole atau coba Simulasi.";
   else if(rec.kind==="putt")label="Elevasi tersedia untuk pukulan menuju green.";
   else if(d==null)label="Elevasi target tidak tersedia.";
   else if(d===0)label="≈0 m · Target hampir datar";
   else label=(d>0?"↑ +":"↓ −")+Math.abs(d)+" m · "+(d>0?"Target menanjak":"Target menurun");
-  return '<div class="tline tkey"><b>Elevasi:</b> '+label+(terrain&&!terrainLoading?(contourOn?' · kontur 1 m, garis tebal 5 m':' · rendah<i></i>tinggi'):'')+'</div>';
+  return '<div class="tline tkey"><b>Elevasi:</b> '+label+(terrainOn&&terrain&&!terrainLoading?' · rendah<i></i>tinggi · kontur 1 m (tebal 5 m)':'')+'</div>';
 }
-$("contourBtn").addEventListener("click",()=>{
-  contourOn=!contourOn;
-  $("contourBtn").setAttribute("aria-pressed",contourOn);
-  render();
-});
-$("terrainBtn").addEventListener("click",async()=>{
-  terrainOn=!terrainOn;
-  $("terrainBtn").setAttribute("aria-pressed",terrainOn);
-  const load=terrainOn&&!terrain&&!terrainLoading;
-  if(load)terrainLoading=true;
-  render();
-  if(!load)return;
+async function loadTerrain(){if(terrain||terrainLoading)return;terrainLoading=true;
   try{
     const response=await fetch("data/imperial-karawaci-elevation.json");
     if(!response.ok)throw new Error("DEMNAS download failed");
@@ -664,10 +670,12 @@ $("terrainBtn").addEventListener("click",async()=>{
   }catch(e){
     terrain=null;
   }finally{
-    terrainLoading=false;
+    terrainLoading=false;SLOPE_CACHE_RESET();
     render();
   }
-});
+}
+$("terrainBtn").addEventListener("click",()=>{terrainOn=!terrainOn;$("terrainBtn").setAttribute("aria-pressed",terrainOn);render();loadTerrain();});
+if(location.protocol!=="file:")loadTerrain();
 function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   const zoomed=zoomOverride==null?D<=150:zoomOverride,land=rec&&rec.kind!=="putt"?[rec.T]:[];
   const FB=fullBox(n);if(manualVB)setView(manualVB,true);else setView(zoomed?viewFor(g,(D>150?[b]:[b,P]).concat(land),FB):FB);   // far away a manual zoom frames ball and landing
@@ -711,7 +719,9 @@ function placeGreen(n,show){const el=$("greenBtn"),[x,y,W,H]=toScreen(G[n].pin);
   const pp=$("puttPop");pp.hidden=show!=="done";if(show==="done"){const pw=pp.offsetWidth,lo=document.querySelector(".tools").offsetWidth+14;pp.style.left=Math.min(W-pw-6,Math.max(pw+lo<W-6?lo:6,x-pw/2))+"px";pp.style.top=Math.min(H-pp.offsetHeight-6,top+hh+8)+"px";}}   // after ON: how many putts
 const SIDE={L:"kiri",R:"kanan"},OPP={L:"R",R:"L"};
 const RESET={duff:"Duff sudah lewat. Tempo pelan, selesaikan ayunan.",top:"Topping sudah lewat. Kepala tetap, lihat bola sampai kena.",L:"Miss kiri sudah lewat. Ambil jalur aman kembali ke permainan.",R:"Miss kanan sudah lewat. Ambil jalur aman kembali ke permainan.",pen:"Penalti sudah dibayar, jangan bayar dua kali. Main ke area terlebar."};
-function tgtText(r){
+const playsTxt=r=>r.plays?" · main seperti "+m0(r.plays)+" m ("+(r.dz>0?"↑":"↓")+Math.abs(r.dz)+" m)":"";
+function tgtText(r){return tgtText0(r)+playsTxt(r);}
+function tgtText0(r){
   if(r.kind==="drive")return"tee shot ke fairway · "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
   if(r.kind==="tee")return(r.plan?"ke landing area":"ke tengah green")+" · "+m0(r.d)+" m";
   if(r.kind==="green"&&r.chip==="run")return"chip & run · mendarat 1–2 m di green, sisanya menggelinding";
@@ -765,7 +775,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     const fb=putt?null:frontBack(n,b);
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
     html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
-      '<div class="shot'+(recover?" rec":"")+'"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
+      '<div class="shot'+(recover?" rec":"")+'"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
       '<div class="sr">'+(putt||sim?"":'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><i></i>Record'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
@@ -842,10 +852,12 @@ map.addEventListener("click",ev=>{if(dragged){dragged=false;return;}const n=cur+
 window.addEventListener("resize",()=>{VB=null;manualVB=null;drawMap(cur+1,ballOf(cur+1));});
 $("simBtn").addEventListener("click",()=>{sim=!sim;simBall={};picked=null;penOpen=false;$("simBtn").setAttribute("aria-pressed",sim);$("simBtn").textContent=sim?"Simulasi ON":"Simulasi";render();});
 $("zoomBtn").addEventListener("click",()=>{zoomOverride=$("zoomBtn").textContent==="Zoom";manualVB=null;drawMap(cur+1,ballOf(cur+1));});
-function setShape(v){shape=v;try{localStorage.setItem("caddy-shape-v1",v);}catch(e){}
-  document.querySelectorAll(".shape button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.shape===v));render();}
-document.querySelectorAll(".shape button").forEach(b=>b.addEventListener("click",()=>setShape(b.dataset.shape)));
-document.querySelectorAll(".shape button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.shape===shape));
+function showShape(){document.querySelectorAll("#shapeList button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.shape===shape));$("shapeName").textContent=shape;}
+function shapeMenu(open){$("shapeList").hidden=!open;$("shapeBtn").setAttribute("aria-expanded",String(open));}
+function setShape(v){shape=v;try{localStorage.setItem("caddy-shape-v1",v);}catch(e){}showShape();shapeMenu(false);render();}
+document.querySelectorAll("#shapeList button").forEach(b=>b.addEventListener("click",()=>setShape(b.dataset.shape)));
+$("shapeBtn").addEventListener("click",()=>shapeMenu($("shapeList").hidden));
+showShape();
 H18.forEach((h,i)=>{const c=document.createElement("button");c.type="button";c.className="chip";c.innerHTML="<b>"+(i+1)+"</b><span></span>";
   c.addEventListener("click",()=>go(i));$(i<9?"front":"back").appendChild(c);chipEls.push(c);});
 function go(i){loadFW(i);cur=i;note="";penOpen=false;picked=null;VB=null;zoomOverride=null;manualVB=null;const g=G[i+1];
@@ -888,12 +900,16 @@ $("yes").addEventListener("click",()=>{state={holes:{},updated:0};save();closeCa
 /* ---------- club distances ---------- */
 let clubUnit="m";try{if(localStorage.getItem("caddy-unit-v1")==="yd")clubUnit="yd";}catch(e){}
 const YD=.9144,showU=m=>clubUnit==="yd"?Math.round(m/YD):m,fromU=v=>clubUnit==="yd"?Math.round(v*YD):v;
+function saveFav(){try{localStorage.setItem("caddy-fav-v1",JSON.stringify(FAV));}catch(e){}}
 function renderClubs(){$("unitWord").textContent=clubUnit==="yd"?"yard":"meter";$("adjNote").textContent=C.adj?C.name+" main "+C.adj+" m lebih panjang, itu sudah dihitung otomatis.":"";
-  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><span>'+(CLUB_LABEL[c[0]]||c[0])+'</span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
+  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><button class="fav'+(FAV.includes(c[0])?" on":"")+'" type="button" data-fav="'+c[0]+'" aria-pressed="'+FAV.includes(c[0])+'" aria-label="Club favorit">'+(FAV.includes(c[0])?"★":"☆")+'</button><span>'+(CLUB_LABEL[c[0]]||c[0])+'</span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
     '<button class="unitbtn" id="unitBtn" type="button" aria-label="Ganti satuan meter atau yard">⇄ '+(clubUnit==="m"?"yard":"meter")+'</button>';}
 $("clubList").addEventListener("input",ev=>{const i=ev.target.dataset.i;if(i==null)return;const v=parseInt(ev.target.value,10);clubs[i][1]=isNaN(v)||v<0?0:Math.min(350,fromU(v));
   const o={};clubs.forEach(c=>o[c[0]]=c[1]);try{localStorage.setItem(CKEY,JSON.stringify(o));}catch(e){}});
-$("clubList").addEventListener("click",ev=>{if(!ev.target.closest("#unitBtn"))return;clubUnit=clubUnit==="m"?"yd":"m";try{localStorage.setItem("caddy-unit-v1",clubUnit);}catch(e){}renderClubs();});
+$("clubList").addEventListener("click",ev=>{const fb=ev.target.closest("[data-fav]");if(fb){ev.preventDefault();const nm=fb.dataset.fav;
+    if(FAV.includes(nm))FAV=FAV.filter(x=>x!==nm);else if(FAV.length<3)FAV.push(nm);else{$("adjNote").textContent="Maksimal 3 club favorit. Hapus satu bintang dulu.";return;}
+    saveFav();renderClubs();return;}
+  if(!ev.target.closest("#unitBtn"))return;clubUnit=clubUnit==="m"?"yd":"m";try{localStorage.setItem("caddy-unit-v1",clubUnit);}catch(e){}renderClubs();});
 function openClubs(){renderClubs();$("clubSheet").hidden=false;}
 $("openClubs").addEventListener("click",openClubs);$("clubBtn").addEventListener("click",openClubs);
 $("closeClubs").addEventListener("click",()=>{$("clubSheet").hidden=true;render();});
