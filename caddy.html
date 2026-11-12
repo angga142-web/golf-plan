@@ -55,7 +55,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map.moving .gbtn{visibility:hidden}
 .tbtns{position:absolute;top:50px;left:8px;display:flex;flex-direction:column;gap:6px}
 .tbtns .zbtn{position:static;font-size:14px;padding:4px 9px}
-.tip .tkey i{display:inline-block;width:34px;height:8px;border-radius:4px;background:linear-gradient(90deg,#1c629d,#feca5d);vertical-align:middle;margin:0 4px}
+.tip .tkey i{display:inline-block;width:34px;height:8px;border-radius:4px;background:linear-gradient(90deg,#fff6e1,#d6540a);vertical-align:middle;margin:0 4px}
 .tip .slope b{color:#1f6fe0}
 .tip .slope i{display:inline-block;width:18px;border-top:2.5px dashed #1f6fe0;vertical-align:middle;margin-right:4px}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
@@ -226,8 +226,8 @@ tr.go{cursor:pointer}
     <image id="mapImg" x="0" y="0" width="1080" height="2160"/>
     <defs><clipPath id="terrainClip"><rect id="terrainBounds"/></clipPath><mask id="terrainMask" maskUnits="userSpaceOnUse"><image id="terrainMaskImg" preserveAspectRatio="none"/></mask></defs>
     <g id="terrainLayer" clip-path="url(#terrainClip)" mask="url(#terrainMask)" pointer-events="none" hidden>
-      <image id="terrainImage" opacity=".45" preserveAspectRatio="none" href="data/imperial-karawaci-relief.png"/>
-      <image id="terrainContour" preserveAspectRatio="none" href="data/imperial-karawaci-contours.svg"/>
+      <image id="terrainImage" opacity=".55" preserveAspectRatio="none" style="image-rendering:auto"/>
+      <g id="terrainContour"></g>
     </g>
     <g id="ov"></g>
   </svg>
@@ -630,6 +630,34 @@ function elevationChange(n,b){
   const from=elevationAt(n,b), to=elevationAt(n,rec.T);
   return from==null||to==null?null:Math.round(to-from);
 }
+/* terrain picture relative to the tee box (12 Nov 2026): colour from pale (lower than the tee) to deep orange (higher),
+   contour every 1 m labelled +1 / -2 from the tee, thicker every 5 m. Drawn in the elevation grid's own pixel space. */
+const ART={};
+function teeZ(n){return elevationAt(n,teeOf(n));}
+function terrainArt(n,M){const key=n+"|"+teeI;if(ART[key])return ART[key];
+  const z=terrain.elevations,W=terrain.width,H=terrain.height,z0=teeZ(n)??0,g=G[n],mp=C.maps[n-1];
+  const toMap=(u,v)=>[M[0]*u+M[2]*v+M[4],M[1]*u+M[3]*v+M[5]];
+  const inHole=(i,j)=>{const q=toMap(j+.5,i+.5);return q[0]>=mp.x&&q[0]<=mp.x+mp.w&&q[1]>=g.top&&q[1]<=g.bot&&codeAt(g,q[0],q[1])!==2;};   // water is left out
+  const wet=(i,j)=>{const q=toMap(j+.5,i+.5);return codeAt(g,q[0],q[1])===2;};
+  let lo=1e9,hi=-1e9;for(let i=0;i<H;i++)for(let j=0;j<W;j++)if(inHole(i,j)){const r=z[i][j]-z0;lo=Math.min(lo,r);hi=Math.max(hi,r);}
+  if(lo>hi){lo=-1;hi=1;}const C0=-5,span=10;   // colour scale fixed at -5 .. +5 m from the tee
+  const col=t=>{t=Math.max(0,Math.min(1,t));return[Math.round(255-(255-214)*t),Math.round(246-(246-84)*t),Math.round(225-(225-10)*t)];};   // cream -> deep orange
+  const cv=document.createElement("canvas");cv.width=W;cv.height=H;const cx=cv.getContext("2d"),im=cx.createImageData(W,H);
+  for(let i=0;i<H;i++)for(let j=0;j<W;j++){const k=(i*W+j)*4,c=col((z[i][j]-z0-C0)/span);im.data[k]=c[0];im.data[k+1]=c[1];im.data[k+2]=c[2];im.data[k+3]=wet(i,j)?0:255;}
+  cx.putImageData(im,0,0);
+  // contours by marching squares on the sample centres, levels at whole metres from the tee
+  let svg="";const route=[(g.tee[0]+g.pin[0])/2,(g.tee[1]+g.pin[1])/2];
+  for(let L=Math.ceil(lo);L<=Math.floor(hi);L++){const lv=z0+L,thick=L%5===0;let d="",best=null;
+    for(let i=0;i+1<H;i++)for(let j=0;j+1<W;j++){if(!inHole(i,j))continue;
+      const a=z[i][j],b=z[i][j+1],c=z[i+1][j+1],e=z[i+1][j],pts=[];
+      const cut=(p,q,x0,y0,x1,y1)=>{if((p<lv)!==(q<lv)){const t=(lv-p)/(q-p);pts.push([x0+(x1-x0)*t+.5,y0+(y1-y0)*t+.5]);}};
+      cut(a,b,j,i,j+1,i);cut(b,c,j+1,i,j+1,i+1);cut(e,c,j,i+1,j+1,i+1);cut(a,e,j,i,j,i+1);
+      for(let k=0;k+1<pts.length;k+=2){d+="M"+pts[k][0].toFixed(2)+" "+pts[k][1].toFixed(2)+"L"+pts[k+1][0].toFixed(2)+" "+pts[k+1][1].toFixed(2);
+        const q=toMap(pts[k][0],pts[k][1]),dd=Math.hypot(q[0]-route[0],q[1]-route[1]);if(!best||dd<best.d)best={d:dd,x:pts[k][0],y:pts[k][1]};}}
+    if(!d)continue;const c=col((L-C0)/span),stroke="rgb("+Math.round(c[0]*.55)+","+Math.round(c[1]*.45)+","+Math.round(c[2]*.4)+")";
+    svg+='<path d="'+d+'" fill="none" stroke="'+stroke+'" stroke-width="'+(thick?.22:.1)+'" stroke-linecap="round"/>';
+    if(best)svg+='<text x="'+best.x.toFixed(2)+'" y="'+best.y.toFixed(2)+'" font-size="1.5" font-weight="800" font-family="Barlow Condensed,Arial,sans-serif" text-anchor="middle" dominant-baseline="central" fill="'+stroke+'" stroke="#fff" stroke-width=".35" paint-order="stroke">'+(L>0?"+"+L:L<0?"−"+(-L):"±0")+'</text>';}
+  return ART[key]={img:cv.toDataURL(),svg,lo,hi};}
 function drawTerrain(n,g){
   const layer=$("terrainLayer");
   const show=terrainOn&&!!terrain;
@@ -640,7 +668,9 @@ function drawTerrain(n,g){
   const right=ll2px(n,[terrain.north,terrain.west+terrain.pixelWidth]);
   const down=ll2px(n,[terrain.north-terrain.pixelHeight,terrain.west]);
   const matrix=[right[0]-origin[0],right[1]-origin[1],down[0]-origin[0],down[1]-origin[1],...origin];
-  for(const im of [image,$("terrainContour")]){im.setAttribute("width",terrain.width);im.setAttribute("height",terrain.height);im.setAttribute("transform","matrix("+matrix.join(" ")+")");}
+  const art=terrainArt(n,matrix);image.setAttribute("href",art.img);image.setAttribute("width",terrain.width);image.setAttribute("height",terrain.height);
+  for(const el of [image,$("terrainContour")])el.setAttribute("transform","matrix("+matrix.join(" ")+")");
+  $("terrainContour").innerHTML=art.svg;
   const mk=$("terrainMaskImg"),mu=FW[n]&&FW[n].mask;   // hole-only mask from the map picture
   if(mu){mk.setAttribute("href",mu);mk.setAttribute("x",base.x);mk.setAttribute("y",g.top);mk.setAttribute("width",base.w);mk.setAttribute("height",g.bot-g.top);$("terrainLayer").setAttribute("mask","url(#terrainMask)");}
   else $("terrainLayer").removeAttribute("mask");
@@ -660,7 +690,7 @@ function terrainLine(n,b){
   else if(d==null)label="Elevasi target tidak tersedia.";
   else if(d===0)label="≈0 m · Target hampir datar";
   else label=(d>0?"↑ +":"↓ −")+Math.abs(d)+" m · "+(d>0?"Target menanjak":"Target menurun");
-  return '<div class="tline tkey"><b>Elevasi:</b> '+label+(terrainOn&&terrain&&!terrainLoading?' · rendah<i></i>tinggi · kontur 1 m (tebal 5 m)':'')+'</div>';
+  return '<div class="tline tkey"><b>Elevasi:</b> '+label+(terrainOn&&terrain&&!terrainLoading?' · peta: angka = beda tinggi dari tee (garis tiap 1 m), lebih rendah<i></i>lebih tinggi':'')+'</div>';
 }
 async function loadTerrain(){if(terrain||terrainLoading)return;terrainLoading=true;
   try{
