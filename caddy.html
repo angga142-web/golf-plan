@@ -483,7 +483,7 @@ const MAXP=.95;
 const WEDGE=/^(PW|GW|SW|LW)$/,MINPW=.8;   // rule (11 Nov 2026): at least 80% swing, only wedges go lower
 /* tee (11 Nov 2026): a tee shot cannot be held back, it is always a 90-100% swing, wedges included */
 /* rule (12 Nov 2026): for break 90/100 a wedge into the green is a full swing (85-95%); the in-between short pitch is for break 80 only */
-const WFULL=.85,wedgeFull=()=>bag().filter(([nm])=>WEDGE.test(nm)).map(([nm,c])=>[(c-C.adj)*WFULL,(c-C.adj)*MAXP]);   // full-wedge distance windows
+const WFULL=.8,wedgeFull=()=>bag().filter(([nm])=>WEDGE.test(nm)).map(([nm,c])=>[(c-C.adj)*WFULL,(c-C.adj)*MAXP]);   // full-wedge distance windows
 /* favourites (12 Nov 2026): up to three starred clubs; when one of them fits the shot it is chosen over the default pick */
 let FAV=[];try{const v=JSON.parse(localStorage.getItem("caddy-fav-v1")||"[]");if(Array.isArray(v))FAV=v.slice(0,3);}catch(e){}
 function clubPick(d,maxCarry,skip,tee){const hi=tee?1:MAXP;let best=null,fav=null;
@@ -535,6 +535,46 @@ function driveB80(n,b,skip,R){const g=G[n],P=g.pin,par=H18[n-1][0],rt=[b,...g.la
     if(par===4&&r>50&&!clubPick(r,1e9,skip))continue;
     return R("drive",T,L,{club:nm,e,pw:Math.round(L/e*100)},{left:r});}
   return null;}
+/* BASE RULE (12 Nov 2026), break 90/100, par 4 and 5: plan from the green back to the tee.
+   The last shot into the green is a full swing (wedges 80-95%, never a half swing; other clubs 80-95%) with a club this break allows into the green.
+   Tee shot (90-100%) and, on a par 5 or a long par 4, one layup (80-95%) are placed so that this approach is left.
+   Every shot uses a club no longer than the shot before. Fewest shots to the green first, then the shortest club into the green. */
+function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
+  const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];
+  const fit=(r,maxC,capC,wedgeOnly)=>{let f=null;for(const[nm,cr] of bag()){if(nm==="DRIVER"||cr>maxC||cr>capC||(wedgeOnly&&!WEDGE.test(nm)))continue;
+      const e=cr-C.adj,lo=WEDGE.test(nm)?WFULL:MINPW;if(r>=e*lo&&r<=e*MAXP)f={club:nm,e,cr,pw:Math.round(r/e*100)};}return f;};   // bag runs long to short: the last fit is the shortest club
+  const layCap=capOf(ST.layMax),wMax=Math.round(Math.max(...wedgeFull().map(w=>w[1])));let best=null;
+  for(const[nm,cr] of bag()){if(skip&&skip.has(nm))continue;if(!tee&&(nm==="DRIVER"||cr>(maxc||1e9)||cr>layCap))continue;const e=cr-C.adj,lo=tee?.9:WEDGE.test(nm)?WFULL:MINPW,hi=tee?1:MAXP;
+    for(let L=Math.ceil(e*lo);L<=e*hi;L+=2){const T=along(rt,L*g.scale);if(!T)continue;const r=dm(g,T[0],T[1],P[0],P[1]);
+      if(r<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
+      const appCap=capOf(frontClear(g,T,P,r)?ST.appClear:ST.appGuard);let shots=0,app=null;
+      const a=fit(r,cr,appCap);if(a&&shotClear(g,T,P,a.e)&&(tee||frontClear(g,T,P,r))){shots=1;app=a;}
+      else if(tee)for(let left=wMax;left>=40&&!shots;left-=3){   // from the tee one layup may come between: it leaves a full wedge
+        const w=fit(left,cr,1e9,true);if(!w)continue;const lay=r-left;if(lay<40)continue;const c3=fit(lay,cr,layCap);if(!c3)continue;
+        const t=lay/r,U=[T[0]+(P[0]-T[0])*t,T[1]+(P[1]-T[1])*t];if(!landOK(g,U)||!shotClear(g,T,U,c3.e))continue;shots=2;app=w;}
+      if(!shots)continue;
+      // fewest shots first; going for the green: the shortest club in; laying up: the fullest wedge left and the longer first shot
+      let sc=shots*100+(shots===1&&!WEDGE.test(app.club)?app.cr/10:-app.cr/10-L/20);
+      const wn=nearest(g,T[0],T[1],2,40);if(wn)sc+=(40-wn.d)*.3;const sb=nearest(g,T[0],T[1],1,15);if(sb)sc+=(15-sb.d)*.5;
+      if(!best||sc<best.sc)best={sc,T,L,r,c:{club:nm,e,pw:Math.round(L/e*100)}};}}
+  return best?R(tee?"tee":"layup",best.T,best.L,best.c,Object.assign({left:best.r},plan||{})):null;}
+const TEEPLAN={};
+function planTeeSim(n,b,skip,ST,R,plan){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join()].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+  const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
+  for(const[nm,cr] of bag()){if(skip.has(nm))continue;const e=cr-C.adj;
+    for(const f of [.9,.95,1]){const L=e*f,T=along(rt,L*g.scale);if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);
+      if(r0<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
+      let pos=T,prev=nm,strokes=1,pen=0,inClub=null;
+      for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev);if(!r||r.kind==="putt")break;strokes++;
+        if(r.kind==="punch"||r.kind==="none"){pen+=3;break;}
+        if(!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
+        if(r.short){if(r.chip==="pitch")pen+=.7;break;}
+        if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
+        prev=r.c&&r.c.club||prev;pos=r.T;}
+      const sc=strokes+pen+(inClub?carryOf(inClub)/2000:.2)-L/100000;
+      if(!best||sc<best.sc)best={sc,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
+  return TEEPLAN[key]=best?R("tee",best.T,best.L,best.c,plan):null;}
 const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
 let teeRuleOff=false,wedgeRelax=false;   // wedgeRelax: no full wedge fits (gap between two wedges), allow a part swing rather than a punch
 /* Strategy per break (11 Nov 2026). Club limits are named clubs, so they follow each player's own distances.
@@ -559,16 +599,11 @@ function advise(n,b,recover,skip,maxc){
     if(B80){const dr=driveB80(n,b,skip,R);if(dr)return onSafeSide(n,b,dr);}
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
+    if(!B80&&par>3&&!teeRuleOff){const pt=planTeeSim(n,b,tsk,ST,R,plan);if(pt)return onSafeSide(n,b,pt);}
     if(!pick(d,cap,tsk)&&par>3){const top=bag().find(([nm])=>!tsk.has(nm));   // plan spot past the longest allowed club: land that club at a full swing short of it
       if(top){const e=top[1]-C.adj,t=e/d,T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
         if(e<d&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e,{club:top[0],e,pw:100},plan));}}
     skip=tsk;
-    /* par 4 (12 Nov 2026): when the plan spot leaves an approach longer than this break allows into the green,
-       go further off the tee: the longest allowed club, full swing along the hole's route, landing clear */
-    if(par===4&&!teeRuleOff&&dm(g,T[0],T[1],P[0],P[1])>capOf(ST.appClear)*MAXP){const rt=[b,...g.land.filter(q=>dm(g,b[0],b[1],q[0],q[1])>20),P];
-      for(const[nm,cr] of bag()){if(skip.has(nm)||cr-C.adj<=d)continue;const e=cr-C.adj,T2=along(rt,e*g.scale);if(!T2)continue;
-        if(dm(g,T2[0],T2[1],P[0],P[1])<30||!landOK(g,T2)||!shotClear(g,b,T2,e))continue;
-        return onSafeSide(n,b,R("tee",T2,e,{club:nm,e,pw:100},plan));}}
     const c0=pick(d,cap,skip)||pick(d,1e9,skip);
     const nxt=c0&&clubPick(dm(g,T[0],T[1],P[0],P[1]),1e9,new Set(["DRIVER"]));
     if(c0&&!teeRuleOff&&nxt&&carryOf(nxt.club)>carryOf(c0.club)){const up=bag().filter(([nm,cr])=>cr>carryOf(c0.club)&&cr<=cap&&!(skip&&skip.has(nm))).pop();
@@ -587,9 +622,11 @@ function advise(n,b,recover,skip,maxc){
   /* Rule (11 Nov 2026): bunker or water in front of the green -> lay up short of it and chip to the centre; fly it only on SI 16-18 or when no layup works */
   let direct=null;{const c=pick(DC,cap,skip);if(c&&shotClear(g,b,GT,c.e))direct=R("green",GT,DC,c);}
   if(direct&&(front||attack))return direct;
+  if(!B80&&front){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   for(let left=15;left<=(B80?(front?45:50):25);left+=5){const da=D-left,c=pick(da,cap,skip),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];
     if(c&&c.pw>=50&&da>=40&&shotClear(g,b,T,c.e)&&(left===15&&front||landOK(g,T,front?22:Math.max(10,da*.12))))return R("apron",T,da,c,{left});}   // no 30 m "layups" in front of the green
   if(direct)return direct;
+  if(!B80){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   const vb=[b[0]-P[0],b[1]-P[1]],a0=Math.atan2(vb[1],vb[0]),cands=g.land.map((p,k)=>({x:p[0],y:p[1],plan:k+1}));
   const upd=B80&&recover,lo=upd?20:60,hi=upd?70:110;   // Break 80 recovery: leave a short up-and-down for par
   for(let r=upd?20:50;r<=200;r+=5)for(let a=-40;a<=40;a+=5){const t=a0+a*Math.PI/180;cands.push({x:P[0]+Math.cos(t)*r*g.scale,y:P[1]+Math.sin(t)*r*g.scale});}
