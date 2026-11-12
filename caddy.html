@@ -62,6 +62,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .rgt{font:500 20px var(--f-body)}
 .ovc{font:800 26px var(--f-num);letter-spacing:.02em}
 .rgi{font:700 21px var(--f-num);letter-spacing:.03em}
+.zbtn.mulbtn{left:50%;transform:translateX(-50%);background:var(--gold);border-color:var(--ink)}
 .zbtn.simbtn{left:auto;right:max(8px,env(safe-area-inset-right,0px))}
 .zbtn.simbtn[aria-pressed=true]{background:var(--gold);color:var(--ink);border-color:var(--ink)}
 .simnote{border:2px dashed var(--ink);border-radius:10px;padding:3px 8px;font-size:11.5px;font-weight:700;background:#fff8d6}
@@ -168,6 +169,25 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .done p{margin:0;font-weight:600}
 .next{align-self:stretch;height:56px;border:0;border-radius:12px;background:var(--ink);color:#fff;font-family:var(--f-num);font-weight:800;font-size:24px;letter-spacing:.04em;text-transform:uppercase}
 
+/* start menu */
+.sheet.start{background:var(--ink);color:#fff}
+.start .sheetin{gap:16px;max-width:460px}
+.sthero{padding-top:6px}
+.sthero small{font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold)}
+.sthero h1{margin:0;font-family:var(--f-num);font-weight:800;font-size:52px;line-height:.95;letter-spacing:.02em;text-transform:uppercase}
+.start section{display:flex;flex-direction:column;gap:7px}
+.start h3{color:#9aa6bf;font-size:15px}
+.start .help{color:#9aa6bf}
+.opts{display:grid;gap:8px}.opts.three{grid-template-columns:repeat(3,1fr)}
+.opts button{border:2px solid #56627f;border-radius:12px;background:transparent;color:#fff;padding:10px 12px;font-family:var(--f-num);font-weight:800;font-size:20px;letter-spacing:.03em;text-transform:uppercase;display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.05}
+.opts button small{font-family:var(--f-body);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;color:#9aa6bf}
+.opts button[aria-pressed=true]{border-color:var(--gold);background:var(--gold);color:var(--ink)}
+.opts button[aria-pressed=true] small{color:var(--ink)}
+.opts .dot{width:16px;height:16px;border-radius:50%;border:2px solid #fff;display:inline-block;margin-bottom:2px}
+.stclubs{border:2px solid #56627f;border-radius:12px;background:transparent;color:#fff;padding:10px 12px;text-align:left;font-weight:600;font-size:14px;line-height:1.35}
+.stclubs b{display:block;font-family:var(--f-num);font-size:20px;letter-spacing:.03em;text-transform:uppercase}
+.stgo{margin-top:6px;height:60px;border:0;border-radius:14px;background:var(--gold);color:var(--ink);font-family:var(--f-num);font-weight:800;font-size:26px;letter-spacing:.05em;text-transform:uppercase}
+.brand{cursor:pointer}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:20;background:var(--paper);overflow-y:auto;padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px))}
 .sheetin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -249,6 +269,7 @@ tr.go{cursor:pointer}
   <button class="zbtn" id="zoomBtn" type="button" aria-pressed="false">Zoom</button>
   <div class="tbtns"><button class="zbtn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button></div>
   <button class="zbtn simbtn" id="simBtn" type="button" aria-pressed="false">Simulasi</button>
+  <button class="zbtn mulbtn" id="mulBtn" type="button" hidden>↶ Mulligan</button>
   <button class="gbtn" id="greenBtn" type="button" data-act="on" hidden>ON!</button>
   <div class="puttpop" id="puttPop" hidden role="group" aria-label="Jumlah putt"><button data-act="putt" data-v="1" type="button">1</button><button data-act="putt" data-v="2" type="button">2</button><button data-act="putt" data-v="3" type="button">3</button><button data-act="putt" data-v="4" type="button">4</button><button data-act="putt" data-v="5" type="button">5+</button></div>
   <div class="resbar" id="resbar" role="group" aria-label="Hasil pukulan"></div>
@@ -269,6 +290,17 @@ tr.go{cursor:pointer}
   <button class="shapebtn" id="shapeBtn" type="button" aria-expanded="false" aria-controls="shapeList"><small>Pattern</small><span id="shapeName">Draw</span> ▴</button></div>
   </div>
 </div>
+</div>
+
+<div class="sheet gut start" id="startSheet">
+  <div class="sheetin">
+    <div class="sthero"><small>Golf Plan</small><h1>Caddy</h1></div>
+    <section><h3>1 · Lapangan</h3><div class="opts" id="stCourse"><button type="button" aria-pressed="true" data-course="imperial-karawaci">Imperial Karawaci<small>18 hole · par 72</small></button></div><p class="help">Lapangan lain menyusul.</p></section>
+    <section><h3>2 · Target main</h3><div class="opts three" id="stBreak"></div></section>
+    <section><h3>3 · Tee off dari</h3><div class="opts three" id="stTee"></div></section>
+    <section><h3>4 · Jarak pukulan</h3><button class="stclubs" id="stClubs" type="button"></button></section>
+    <button class="stgo" id="stGo" type="button">Mulai tee off ▶</button>
+  </div>
 </div>
 
 <div class="sheet gut" id="sheet" hidden>
@@ -818,7 +850,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     html+='<div class="done"><small>Hole '+n+' selesai</small><div class="sc"><button class="step" data-act="minus" type="button" aria-label="Kurangi skor">−</button><b class="'+(sc<=holeTarget(cur)?"ok":"bad")+'">'+sc+'</b><button class="step" data-act="plus" type="button" aria-label="Tambah skor">+</button></div>'+
       '<p>'+scoreName(sc-hd[0])+' · '+h.putts+' putt · bank '+sgn(t.bank)+'</p>'+
       '<button class="next" data-act="next" type="button">'+(cur<17?"Hole "+(n+1)+" ▶":"Lihat kartu skor")+'</button></div>'+
-      '<div class="foot"><button class="fbtn" data-act="undo" type="button">↶ Urungkan</button><span class="note">'+(sc>holeTarget(cur)?"Hole ini sudah lewat. Hole berikut mulai dari nol.":"")+'</span></div>';
+      '<div class="foot"><span class="note">'+(sc>holeTarget(cur)?"Hole ini sudah lewat. Hole berikut mulai dari nol.":"")+'</span></div>';
   }else{
     const last=h.log[h.log.length-1],recover=!!last&&last.r!=="ok",pat=pattern();
     const prev=[...h.log].reverse().find(e=>carryOf(e.c)>0);
@@ -842,10 +874,11 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
     html+='<div class="tip">'+bubbleHTML+terrainLine(n,b)+slopeLegend(n)+'</div>';
-    html+='<div class="foot">'+(h.log.length?'<button class="fbtn" data-act="undo" type="button">↶ Urungkan</button>':"")+
+    html+='<div class="foot">'+
       '<span class="note">'+(note||"")+'</span></div>';
   }
   $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
+  $("mulBtn").hidden=sim||!(h.log.length||h.putts!=null);   // mulligan = take the last shot (or the putts) back
   drawMap(n,b);}
 
 /* ---------- actions ---------- */
@@ -872,7 +905,6 @@ function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const 
   else if(a==="penmenu"){penOpen=!penOpen;render();}
   else if(a==="putt"){h.putts=+bt.dataset.v;note="";save();render();}
   else if(a==="on"){const pk=picked;logShot(pk?pk.v:"ok",pk&&pk.p||undefined);h.ball=G[cur+1].pin.slice();h.on=strokes(h);note="";save();render();}
-  else if(a==="undo")undo();
   else if(a==="plus"){h.adj=(h.adj||0)+1;save();render();}
   else if(a==="minus"){if(holeScore(h)>1){h.adj=(h.adj||0)-1;save();render();}}
   else if(a==="next"){if(cur<17)go(cur+1);else openCard();}}
@@ -905,6 +937,7 @@ map.addEventListener("click",ev=>{if(dragged){dragged=false;return;}const n=cur+
 
 window.addEventListener("resize",()=>{VB=null;manualVB=null;drawMap(cur+1,ballOf(cur+1));});
 $("simBtn").addEventListener("click",()=>{sim=!sim;simBall={};picked=null;penOpen=false;$("simBtn").setAttribute("aria-pressed",sim);$("simBtn").textContent=sim?"Simulasi ON":"Simulasi";render();});
+$("mulBtn").addEventListener("click",()=>undo());
 $("zoomBtn").addEventListener("click",()=>{zoomOverride=$("zoomBtn").textContent==="Zoom";manualVB=null;drawMap(cur+1,ballOf(cur+1));});
 function showShape(){document.querySelectorAll("#shapeList button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.shape===shape));$("shapeName").textContent=shape;}
 function shapeMenu(open){$("shapeList").hidden=!open;$("shapeBtn").setAttribute("aria-expanded",String(open));}
@@ -974,7 +1007,7 @@ $("clubList").addEventListener("click",ev=>{const fb=ev.target.closest("[data-fa
   if(!ev.target.closest("#unitBtn"))return;clubUnit=clubUnit==="m"?"yd":"m";try{localStorage.setItem("caddy-unit-v1",clubUnit);}catch(e){}renderClubs();});
 function openClubs(){renderClubs();$("clubSheet").hidden=false;}
 $("openClubs").addEventListener("click",openClubs);$("clubBtn").addEventListener("click",openClubs);
-$("closeClubs").addEventListener("click",()=>{$("clubSheet").hidden=true;render();});
+$("closeClubs").addEventListener("click",()=>{$("clubSheet").hidden=true;render();if(!$("startSheet").hidden)renderStart();});
 
 
 /* ---------- cloud copy of the round (private to the signed-in viewer); the phone copy always works offline ---------- */
@@ -1001,6 +1034,22 @@ function showTee(){const t=TEES[teeI];$("teeDot").style.background=t.fill;$("tee
 $("teeBtn").addEventListener("click",()=>{teeI=(teeI+1)%TEES.length;try{localStorage.setItem("caddy-tee-v1",TEES[teeI].id);}catch(e){}showTee();render();});
 showTee();
 fromHash();
+/* ---------- start menu: course, break target, tee colour, club distances, then tee off ---------- */
+function setBreak(b){BRK=b;GOAL=b-1;try{localStorage.setItem("caddy-break-v1",BRK);}catch(e){}}
+function setTee(i){teeI=i;try{localStorage.setItem("caddy-tee-v1",TEES[i].id);}catch(e){}showTee();}
+function renderStart(){
+  $("stBreak").innerHTML=BREAKS.map(b=>'<button type="button" data-brk="'+b+'" aria-pressed="'+(b===BRK)+'">Break '+b+'<small>skor '+(b-1)+' atau kurang</small></button>').join("");
+  $("stTee").innerHTML=TEES.map((t,i)=>'<button type="button" data-tee="'+i+'" aria-pressed="'+(i===teeI)+'"><i class="dot" style="background:'+t.fill+'"></i>'+t.name+'<small>'+(t.m?t.m.reduce((a,x)=>a+x,0)+" m":"")+'</small></button>').join("");
+  let saved=false;try{saved=!!localStorage.getItem(CKEY);}catch(e){}
+  $("stClubs").innerHTML='<b>Isi jarak pukulan ▸</b>'+(saved?"Tersimpan · driver "+carryOf("DRIVER")+" m · 7 iron "+carryOf("7 IRON")+" m · PW "+carryOf("PW")+" m":"Belum diisi · sekarang memakai template (7 iron "+carryOf("7 IRON")+" m)");}
+function openStart(){renderStart();$("startSheet").hidden=false;}
+$("stBreak").addEventListener("click",ev=>{const b=ev.target.closest("[data-brk]");if(b){setBreak(+b.dataset.brk);renderStart();}});
+$("stTee").addEventListener("click",ev=>{const b=ev.target.closest("[data-tee]");if(b){setTee(+b.dataset.tee);renderStart();}});
+$("stClubs").addEventListener("click",openClubs);
+$("stGo").addEventListener("click",()=>{$("startSheet").hidden=true;VB=null;render();});
+$("brand").addEventListener("click",openStart);
+$("brand").title="Menu awal";
+renderStart();
 </script>
 
 </body>
