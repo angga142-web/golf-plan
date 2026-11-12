@@ -110,6 +110,9 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .tip .aim,.tip .tline{font-size:12px;line-height:1.28}
 .tip .treset b{font-family:var(--f-num);font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--red)}
 .tip .tcat{display:flex;gap:6px;align-items:flex-start}.tip .tcat img{width:22px;height:22px;border-radius:50%;flex:none;background:#0047af}
+.rotbox{display:grid}.rotm{grid-area:1/1;visibility:hidden}.rotm.on{visibility:visible}
+.shot .club:not(.long){white-space:nowrap}.shot .sno{white-space:normal}
+.tip .tcat .treset b{color:var(--red)}
 .tip .tcat b{font-family:var(--f-num);font-size:13px;letter-spacing:.05em;text-transform:uppercase;color:var(--good)}
 .tip .tline+.tline,.tip .aim+.tline{margin-top:3px}
 .shapemenu{position:relative}
@@ -138,6 +141,10 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .dist{border:3px solid var(--ink);border-radius:12px;padding:3px 8px;text-align:center;min-width:84px;display:flex;flex-direction:column;justify-content:center}
 .dist b{font-family:var(--f-num);font-weight:800;font-size:36px;line-height:.95;font-variant-numeric:tabular-nums}
 .dist small{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.rb{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.rb .round-budget{min-width:0}
+.gdist{flex:none;font-family:var(--f-num);font-weight:700;font-size:14px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.dist{max-width:150px}.dist .dtg{font-size:11.5px;font-weight:700;line-height:1.2;color:var(--ink);margin-top:3px;text-wrap:balance}
+.shot .tgt:empty{display:none}
 .dist .fb{font-family:var(--f-num);font-size:13px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
 .shot{background:var(--gold);border-radius:12px;padding:6px 12px;min-width:0;display:flex;flex-direction:column;justify-content:center}
 .shot{position:relative}
@@ -234,14 +241,16 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .pcup{position:absolute;right:22%;top:48%;width:34px;height:15px;border-radius:50%;background:#0c162d;box-shadow:inset 0 3px 4px #000}
 .pflag{position:absolute;right:calc(22% + 16px);bottom:52%;width:2px;height:70px;background:#fff}
 .pflag::after{content:"";position:absolute;left:2px;top:0;border-left:22px solid #d2142d;border-top:8px solid transparent;border-bottom:8px solid transparent}
-.pball{position:absolute;left:8%;top:30%;width:24px;height:24px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 30%,#fff,#e6e9ef 70%,#c5ccd8);box-shadow:0 3px 3px rgba(0,0,0,.3)}
-.pball i{position:absolute;inset:-6px;background:radial-gradient(circle,rgba(12,22,45,.16) 0 1.2px,transparent 1.5px) 0 0/5px 5px}
-.putt.go .pball{animation:roll 1.25s cubic-bezier(.25,.6,.4,1) forwards,drop .28s 1.2s ease-in forwards}
-.putt.go .pball i{animation:spin 1.25s linear forwards}
-@keyframes roll{to{left:calc(78% - 12px + 5px)}}
-@keyframes spin{to{transform:translateX(30px)}}
-@keyframes drop{to{transform:translateY(9px) scale(.45);opacity:0}}
-@media (prefers-reduced-motion:reduce){.putt.go .pball,.putt.go .pball i{animation-duration:.01s;animation-delay:0s}}
+.pball{position:absolute;left:6%;top:22%;width:40px;height:40px;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 35% 30%,#fff,#e6e9ef 70%,#c5ccd8);box-shadow:0 3px 3px rgba(0,0,0,.3)}
+.pball img{display:block;width:100%;height:100%;border-radius:50%}
+.ptip{max-width:min(320px,86vw);text-align:center;font-family:var(--f-body);font-weight:600;font-size:15px;line-height:1.4;letter-spacing:0;text-transform:none;color:#fff}
+.ptip b{display:block;font-family:var(--f-brand);font-size:20px;color:var(--gold);margin-bottom:4px}
+.putt.go .pball{animation:roll 9s cubic-bezier(.35,.15,.6,1) forwards,drop .3s 9s ease-in forwards}
+.putt.go .pball img{animation:spin 9s cubic-bezier(.35,.15,.6,1) forwards}
+@keyframes roll{to{left:calc(78% - 20px + 3px)}}
+@keyframes spin{to{transform:rotate(600deg)}}
+@keyframes drop{to{transform:translateY(12px) scale(.35);opacity:0}}
+@media (prefers-reduced-motion:reduce){.putt.go .pball,.putt.go .pball img{animation-duration:.01s;animation-delay:0s}}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:20;background:var(--paper);overflow-y:auto;padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(24px + env(safe-area-inset-bottom,0px))}
 .sheetin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
@@ -372,7 +381,8 @@ tr.go{cursor:pointer}
 </div>
 
 <div class="putt" id="puttIntro" hidden aria-hidden="true">
-  <div class="pgreen"><div class="pcup"></div><div class="pflag"></div><div class="pball"><i></i></div></div>
+  <div class="pgreen"><div class="pcup"></div><div class="pflag"></div><div class="pball"><img id="pballImg" alt=""></div></div>
+  <div class="ptip" id="pTip"></div>
   <p>Menyiapkan caddy…</p>
 </div>
 
@@ -909,6 +919,9 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   h+=slopeArrow(n)+terrainLabels(n);
   placeCat();
   ov.innerHTML=h;placeGreen(n,!SHOW_ON||sim?"":!!rec&&rec.kind!=="putt"?"ask":onDone?"done":"");}
+/* reset and tips take turns in one line of the info box, 5 s each */
+let tipT=null;function tipRotate(list){clearInterval(tipT);if(list.length<2)return;let i=0;
+  tipT=setInterval(()=>{const ms=document.querySelectorAll("#tipRot .rotm");if(!ms.length){clearInterval(tipT);return;}i=(i+1)%ms.length;ms.forEach((m,k)=>m.classList.toggle("on",k===i));},5000);}
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
   el.style.bottom=(document.querySelector(".tools").offsetHeight+16)+"px";}
 $("cat").addEventListener("click",()=>{catClosed=catTip;$("cat").hidden=true;});
@@ -962,7 +975,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   const n=cur+1,h=peek(n),hd=H18[cur],g=G[n],b=ballOf(n),t=totals(),sc=holeScore(h),s=strokes(h);
   chipEls.forEach((c,i)=>{const v=holeScore(peek(i+1));c.className="chip"+(i===cur?" on":"")+(v!=null?(v<=holeTarget(i)?" ok":" bad"):"");c.querySelector("span").textContent=v??"";});
   let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span><!--TG--></div><button class="proj '+(t.n?(t.proj<=GOAL?"ok":"bad"):"")+'" data-act="brk" type="button" aria-label="Ganti target break, proyeksi '+t.proj+'"><svg class="tgi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Break '+BRK+'</button></div>';
-  html+='<p class="round-budget">'+budgetText(t)+'</p>';
+  html+='<div class="rb"><p class="round-budget">'+budgetText(t)+'</p><!--GD--></div>';
   if(sc!=null&&!sim){rec=null;
     html+='<div class="done"><small>Hole '+n+' selesai</small><div class="sc"><button class="step" data-act="minus" type="button" aria-label="Kurangi skor">−</button><b class="'+(sc<=holeTarget(cur)?"ok":"bad")+'">'+sc+'</b><button class="step" data-act="plus" type="button" aria-label="Tambah skor">+</button></div>'+
       '<p>'+scoreName(sc-hd[0])+' · '+h.putts+' putt · bank '+sgn(t.bank)+'</p>'+
@@ -975,9 +988,10 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     const fb=putt?null:frontBack(n,b);
+    html=html.replace("<!--GD-->",putt?"":'<span class="gdist">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+' m</span>');
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
-    html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
-      '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
+    html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="dtg">'+tgtText(rec)+'</span>')+'</div>'+
+      '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":"")+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
@@ -989,10 +1003,12 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
-    if(recover&&!putt)bubbleHTML+='<div class="tline treset"><b>Reset · napas dulu</b> '+RESET[last.r]+'</div>';
-    if(catTip)bubbleHTML+='<div class="tline tcat"><img alt="" src="'+$("cat").querySelector("img").src+'"><span>'+catTip.replace("</b>","</b> ")+'</span></div>';
+    const rot=[];if(recover&&!putt)rot.push('<span class="treset"><b>Reset · napas dulu</b> '+RESET[last.r]+'</span>');
+    if(catTip)rot.push('<span class="tcatx"><b>'+catTip.replace(/^<b>([^<]*)<\/b>/,"$1</b> ")+'</span>');
     catTip="";   // shown in the box, not on the map
-    html+='<div class="tip">'+bubbleHTML+terrainLine(n,b)+slopeLegend(n)+'</div>';
+    if(rot.length)bubbleHTML+='<div class="tline tcat" id="tipRot"><img alt="" src="'+$("cat").querySelector("img").src+'"><span class="rotbox">'+rot.map((m,i)=>'<span class="rotm'+(i?'':' on')+'">'+m+'</span>').join("")+'</span></div>';
+    html+='<div class="tip">'+bubbleHTML+slopeLegend(n)+'</div>';
+    tipRotate(rot);
     html+='<div class="foot">'+
       '<span class="note">'+(note||"")+'</span></div>';
   }
@@ -1184,9 +1200,15 @@ function perkututSound(){try{const A=window.AudioContext||window.webkitAudioCont
   coo(t0+.93,640,540,.24,.3);                                      // closing "kuu"
   setTimeout(()=>ac.close(),1600);}catch(e){}}
 $("stGo").addEventListener("click",()=>{const pi=$("puttIntro");pi.hidden=false;pi.classList.remove("go");void pi.offsetWidth;pi.classList.add("go");
-  perkututSound();cupSound(1.25);
-  setTimeout(()=>{$("startSheet").hidden=true;VB=null;render();},1500);
-  setTimeout(()=>{pi.hidden=true;pi.classList.remove("go");},1900);});
+  $("pballImg").src=document.querySelector(".herologo").src;$("pTip").innerHTML=breakTip(BRK);
+  perkututSound();setTimeout(perkututSound,4500);cupSound(9.05);
+  setTimeout(()=>{$("startSheet").hidden=true;VB=null;render();},9600);
+  setTimeout(()=>{pi.hidden=true;pi.classList.remove("go");},10000);});
+/* tip for the chosen break: how many strokes over par it allows, as bogeys / doubles */
+function breakTip(b){const par=H18.reduce((a,h)=>a+h[0],0),over=b-1-par;
+  if(over<=0)return"<b>Break "+b+"</b>Main par di semua hole.";
+  if(over<=18)return"<b>Break "+b+"</b>Kamu boleh "+over+" bogey"+(over<18?" dan minimal "+(18-over)+" par":"")+". Tidak ada double bogey.";
+  const d=Math.min(18,over-18);return"<b>Break "+b+"</b>Kamu boleh "+d+" double bogey dan "+(18-d)+" bogey. Tidak ada triple.";}
 $("brand").addEventListener("click",openStart);
 const menuOpen=o=>{$("menuPop").hidden=!o;$("homeBtn").setAttribute("aria-expanded",o);};
 $("homeBtn").addEventListener("click",ev=>{ev.stopPropagation();menuOpen($("menuPop").hidden);});
