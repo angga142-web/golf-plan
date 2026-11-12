@@ -56,6 +56,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .terrain-status{box-sizing:border-box;align-self:flex-start;max-width:min(210px,60vw);padding:7px 10px;border:2px solid var(--ink);border-radius:9px;background:#fff;color:var(--ink);font-size:14px;font-weight:800;line-height:1.2}
 .terrain-key{align-self:flex-start;display:flex;align-items:center;gap:6px;background:#fff;border:2px solid var(--ink);border-radius:8px;padding:5px 8px;font-size:12px;font-weight:800}
 .terrain-key i{width:40px;height:9px;border-radius:4px;background:linear-gradient(90deg,#1c629d,#feca5d)}
+.terrain-controls{display:flex;gap:6px}
 .terrain-btn{align-self:flex-start;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-weight:800}
 .terrain-btn[aria-pressed=true]{background:var(--ink);color:#fff}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
@@ -240,9 +241,13 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
+    <div class="terrain-key" id="contourKey" hidden>Kontur 1 m · Garis tebal 5 m</div>
     <div class="terrain-key" id="terrainKey" hidden aria-label="Legenda elevasi"><span>Rendah</span><i></i><span>Tinggi</span></div>
     <output class="terrain-status" id="terrainStatus" aria-live="polite" hidden></output>
-    <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
+    <div class="terrain-controls">
+      <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
+      <button class="terrain-btn" id="contourBtn" type="button" aria-pressed="false" hidden>Kontur</button>
+    </div>
   <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
   </div>
 </div>
@@ -571,7 +576,7 @@ const clubTxt=c=>c&&c.club?clubName(c.club)+(c.pw&&c.pw<90?" · "+c.pw+"%":""):"
 function nextShots(n,T,prev){const out=[],bench=pattern().bench;let a=T;
   for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
   return out;}
-let terrain=null, terrainOn=false, terrainLoading=false;
+let terrain=null, terrainOn=false, terrainLoading=false, contourOn=false;
 function elevationAt(n,[x,y]){
   const {ref,o,m}=C.pxmap[n];
   const dx=x-o[0], dy=y-o[1], det=m[0][0]*m[1][1]-m[0][1]*m[1][0];
@@ -591,10 +596,12 @@ function elevationChange(n,b){
   return from==null||to==null?null:Math.round(to-from);
 }
 function drawTerrain(n,g){
-  const layer=$("terrainLayer"), key=$("terrainKey");
+  const layer=$("terrainLayer");
   const show=terrainOn&&!!terrain;
   layer.toggleAttribute("hidden",!show);
-  key.hidden=!show;
+  $("terrainKey").hidden=!show||contourOn;
+  $("contourKey").hidden=!show||!contourOn;
+  $("contourBtn").hidden=!show;
   if(!show)return;
   const image=$("terrainImage"), bounds=$("terrainBounds"), base=C.maps[n-1];
   const origin=ll2px(n,[terrain.north,terrain.west]);
@@ -604,7 +611,11 @@ function drawTerrain(n,g){
   image.setAttribute("width",terrain.width);
   image.setAttribute("height",terrain.height);
   image.setAttribute("transform","matrix("+matrix.join(" ")+")");
-  if(!image.hasAttribute("href"))image.setAttribute("href","data/imperial-karawaci-relief.png");
+  const href=contourOn?"data/imperial-karawaci-contours.svg":"data/imperial-karawaci-relief.png";
+  if(image.getAttribute("href")!==href){
+    image.setAttribute("href",href);
+    image.setAttribute("opacity",contourOn?"1":".55");
+  }
   bounds.setAttribute("x",base.x);
   bounds.setAttribute("y",g.top);
   bounds.setAttribute("width",base.w);
@@ -625,6 +636,11 @@ function renderTerrainStatus(n,b){
   else label=(d>0?"↑ +":"↓ −")+Math.abs(d)+" m · "+(d>0?"Target menanjak":"Target menurun");
   status.textContent=label;
 }
+$("contourBtn").addEventListener("click",()=>{
+  contourOn=!contourOn;
+  $("contourBtn").setAttribute("aria-pressed",contourOn);
+  render();
+});
 $("terrainBtn").addEventListener("click",async()=>{
   terrainOn=!terrainOn;
   $("terrainBtn").setAttribute("aria-pressed",terrainOn);
