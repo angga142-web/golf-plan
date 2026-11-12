@@ -4,7 +4,7 @@
 <meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style>
 </head>
 <body>
-<title>Imperial Karawaci Caddy</title>
+<title>Golf Plan Caddy · Imperial Karawaci</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@500;600;700&display=swap">
@@ -54,7 +54,8 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .map svg{display:block;width:100%;height:100%;touch-action:none}
 .map.moving .gbtn{visibility:hidden}
 .tip .slope b{color:#1f6fe0}
-.tip .slope i{display:inline-block;width:18px;border-top:2.5px dashed #1f6fe0;vertical-align:middle;margin-right:4px}
+.terrain-btn{align-self:flex-start;min-height:40px;border:2px solid var(--ink);border-radius:8px;background:#fff;padding:5px 10px;font-weight:800}
+.terrain-btn[aria-pressed=true]{background:var(--ink);color:#fff}
 .ovt{font:800 34px var(--f-num);letter-spacing:.02em}
 .rgt{font:500 20px var(--f-body)}
 .ovc{font:800 26px var(--f-num);letter-spacing:.02em}
@@ -100,6 +101,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .cardin{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:5px}
 .foot:has(.note:empty):not(:has(button)){display:none}
 .status{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:4px 8px;font-family:var(--f-num);font-weight:700;font-size:16px;letter-spacing:.03em;text-transform:uppercase}
+.round-budget{margin:3px 0 0;color:var(--ink2);font-size:14px;font-weight:700;line-height:1.25}
 .status .sub{color:var(--ink2);font-weight:600}
 .proj{padding:2px 8px;border-radius:6px;color:#fff;background:var(--ink2);white-space:nowrap}
 .proj.ok{background:var(--good)}.proj.bad{background:var(--over)}
@@ -194,9 +196,9 @@ tr.go{cursor:pointer}
 <header class="top gut">
   <div class="toprow">
     <div class="lead">
-    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Score Card</button></div>
+    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Kartu skor</button></div>
     <div class="btns">
-      <button class="tbtn" id="clubBtn" type="button">Club Setting</button>
+      <button class="tbtn" id="clubBtn" type="button">Jarak club</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
     </div>
     </div>
@@ -232,6 +234,7 @@ tr.go{cursor:pointer}
     <span class="catb" id="catb"></span>
   </button>
   <div class="tools">
+    <button class="terrain-btn" id="terrainBtn" type="button" aria-pressed="false">Elevasi</button>
   <div class="shape" role="group" aria-label="Pattern pukulan"><div class="sthead">Pattern<br>pukulan</div><button type="button" data-shape="straight" aria-pressed="false">Straight</button><button type="button" data-shape="slice" aria-pressed="false">Slice</button><button type="button" data-shape="fade" aria-pressed="false">Fade</button><button type="button" data-shape="draw" aria-pressed="true">Draw</button><button type="button" data-shape="hook" aria-pressed="false">Hook</button></div>
   </div>
 </div>
@@ -242,9 +245,10 @@ tr.go{cursor:pointer}
     <div class="sheethead"><h2>Kartu skor</h2><button class="close" id="closeCard" type="button">Tutup</button></div>
     <div class="sum">
       <div><small>Skor</small><b id="sTot">–</b></div>
-      <div><small>Proyeksi</small><b id="sProj">–</b></div>
-      <div><small>Bank vs target</small><b id="sBank">–</b></div>
+      <div><small>Jika sisa sesuai target</small><b id="sProj">–</b></div>
+      <div><small>Selisih rencana</small><b id="sBank">–</b></div>
     </div>
+    <p class="help" id="strokeBudget"></p>
     <div class="why" id="why"></div>
     <div class="tblwrap"><table>
       <thead><tr><th>Hole</th><th>Par</th><th>Skor</th><th>Putt</th><th>Pen</th><th>Duff</th></tr></thead>
@@ -266,7 +270,7 @@ tr.go{cursor:pointer}
 <div class="sheet gut" id="clubSheet" hidden>
   <div class="sheetin">
     <div class="sheethead"><h2>Jarak club saya</h2><button class="close" id="closeClubs" type="button">Tutup</button></div>
-    <p class="help">Isi carry rata-rata dalam <span id="unitWord">meter</span>, bukan pukulan terbaik. Isi 0 untuk club yang tidak dibawa. <span id="adjNote"></span></p>
+    <p class="help">Isi jarak terbang rata-rata (carry) dalam <span id="unitWord">meter</span>. Isi 0 untuk club yang tidak dibawa. <span id="adjNote"></span></p>
     <div class="clubs" id="clubList"></div>
   </div>
 </div>
@@ -313,6 +317,12 @@ const strokes=h=>h.log.reduce((s,e)=>s+(e.r==="pen"?2:1),0);
 const holeScore=h=>h.putts!=null?strokes(h)+h.putts+(h.adj||0):null;
 function save(){state.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}queueSync();}
 function totals(){let tot=0,n=0,bank=0,proj=0;H18.forEach((h,i)=>{const s=holeScore(peek(i+1));if(s!=null){tot+=s;n++;bank+=holeTarget(i)-s;proj+=s;}else proj+=holeTarget(i);});return{tot,n,bank,proj};}
+function budgetText(t){
+  if(t.n===18)return "Skor akhir "+t.tot+" · "+(t.tot<=GOAL?"Break "+BRK+" tercapai":"Target "+GOAL+" terlewat "+(t.tot-GOAL)+" pukulan");
+  const remaining=18-t.n, left=GOAL-t.tot;
+  if(left<remaining)return "Target "+GOAL+" sudah di luar jangkauan · "+remaining+" hole tersisa";
+  return "Sisa jatah "+left+" pukulan untuk "+remaining+" hole";
+}
 const sgn=d=>d===0?"±0":(d>0?"+"+d:""+d);
 const scoreName=d=>d<=-1?"Birdie":d===0?"Par":d===1?"Bogey":d===2?"Double":"+"+d;
 
@@ -553,19 +563,50 @@ const clubTxt=c=>c&&c.club?clubName(c.club)+(c.pw&&c.pw<90?" · "+c.pw+"%":""):"
 function nextShots(n,T,prev){const out=[],bench=pattern().bench;let a=T;
   for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
   return out;}
-/* green slope estimate from the map: only water is used (greens are shaped to drain toward a nearby lake or pond).
-   Bunkers say nothing reliable about slope, so with no water near the green there is no estimate. */
-const SLOPE={};
-function slopeOf(n){if(n in SLOPE)return SLOPE[n];const g=G[n],c=GC[n]||g.pin,R=Math.ceil(120*g.scale/CELL),c0=Math.floor(c[0]/CELL),r0=Math.floor((c[1]-g.top)/CELL);let best=null;
-  for(let r=Math.max(0,r0-R);r<=Math.min(g.rows-1,r0+R);r++)for(let k=Math.max(0,c0-R);k<=Math.min(g.cols-1,c0+R);k++){
-    if(g.cells[r*g.cols+k]!==2)continue;const x=k*CELL+5,y=g.top+r*CELL+5,d=Math.hypot(x-c[0],y-c[1]);if(!best||d<best.d)best={d,x,y};}
-  return SLOPE[n]=best&&best.d/g.scale<=120?{u:[(best.x-c[0])/best.d,(best.y-c[1])/best.d],m:Math.round(best.d/g.scale)}:null;}
-function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
-  const head='M'+(t[0]-sl.u[0]*a+px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a+py*a*.7).toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1)+'L'+(t[0]-sl.u[0]*a-px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a-py*a*.7).toFixed(1);
-  const line='M'+h[0].toFixed(1)+' '+h[1].toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1);
-  return'<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="'+line+head+'" stroke="#fff" stroke-width="'+zx(8)+'"/><path d="'+line+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(10)+' '+zx(7)+'"/><path d="'+head+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'"/></g>';}
-function slopeLegend(n){const sl=slopeOf(n);   // legend line for the info box under the map
-  return'<div class="tline slope">'+(sl?'<i></i><b>Estimasi arah air di green:</b> ke danau ±'+sl.m+' m dari green. Perkiraan, cek di green.':'Slope green: <b>tidak dapat diestimasi</b> dari peta (tidak ada air dekat green).')+'</div>';}
+let terrain=null, terrainOn=false, terrainLoading=false;
+function elevationAt(n,[x,y]){
+  const {ref,o,m}=C.pxmap[n];
+  const dx=x-o[0], dy=y-o[1], det=m[0][0]*m[1][1]-m[0][1]*m[1][0];
+  const lat=ref[0]+(dx*m[1][1]-dy*m[0][1])/det/1e5;
+  const lon=ref[1]+(dy*m[0][0]-dx*m[1][0])/det/1e5;
+  // Grid origin is the outer corner. Sample values are at pixel centers.
+  const col=(lon-terrain.west)/terrain.pixelWidth-.5;
+  const row=(terrain.north-lat)/terrain.pixelHeight-.5;
+  const i=Math.floor(row), j=Math.floor(col);
+  if(i<0||j<0||i+1>=terrain.height||j+1>=terrain.width)return null;
+  const a=col-j,b=row-i,z=terrain.elevations;
+  return (1-b)*((1-a)*z[i][j]+a*z[i][j+1])+b*((1-a)*z[i+1][j]+a*z[i+1][j+1]);
+}
+function elevationChange(n,b){
+  if(!terrainOn||!terrain||!rec||rec.kind==="putt"||rec.kind==="none")return null;
+  const from=elevationAt(n,b), to=elevationAt(n,rec.T);
+  return from==null||to==null?null:Math.round(to-from);
+}
+function terrainLegend(n,b){
+  if(!terrainOn)return "";
+  const d=elevationChange(n,b);
+  const label=terrainLoading?"Memuat data…":!terrain?"Gagal dimuat. Ketuk Elevasi dua kali untuk mencoba lagi.":
+    d==null?"Data untuk target ini tidak tersedia.":d===0?"Hampir datar":Math.abs(d)+" m "+(d>0?"menanjak":"menurun")+" ke target";
+  return '<div class="tline slope"><b>Elevasi DEMNAS:</b> '+label+'</div>';
+}
+$("terrainBtn").addEventListener("click",async()=>{
+  terrainOn=!terrainOn;
+  $("terrainBtn").setAttribute("aria-pressed",terrainOn);
+  const load=terrainOn&&!terrain&&!terrainLoading;
+  if(load)terrainLoading=true;
+  render();
+  if(!load)return;
+  try{
+    const response=await fetch("data/imperial-karawaci-elevation.json");
+    if(!response.ok)throw new Error("DEMNAS download failed");
+    terrain=await response.json();
+  }catch(e){
+    terrain=null;
+  }finally{
+    terrainLoading=false;
+    render();
+  }
+});
 function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   const zoomed=zoomOverride==null?D<=150:zoomOverride,land=rec&&rec.kind!=="putt"?[rec.T]:[];
   const FB=fullBox(n);if(manualVB)setView(manualVB,true);else setView(zoomed?viewFor(g,(D>150?[b]:[b,P]).concat(land),FB):FB);   // far away a manual zoom frames ball and landing
@@ -584,7 +625,8 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
     if(SHAPES[shape].k&&Math.hypot(c.aim[0]-X,c.aim[1]-Y)>3)h+='<line x1="'+b[0]+'" y1="'+b[1]+'" x2="'+c.aim[0].toFixed(1)+'" y2="'+c.aim[1].toFixed(1)+'" stroke="#fff" stroke-width="'+zx(3)+'" stroke-dasharray="'+zx(4)+' '+zx(8)+'" stroke-linecap="round"/><circle cx="'+c.aim[0].toFixed(1)+'" cy="'+c.aim[1].toFixed(1)+'" r="'+zx(11)+'" fill="none" stroke="#fff" stroke-width="'+zx(4)+'"/>';   // start line: aim here
     if(SHAPES[shape].k)h+='<text class="rgi"'+fs(20)+' x="'+c.aim[0].toFixed(1)+'" y="'+(c.aim[1]-(Math.hypot(c.aim[0]-X,c.aim[1]-Y)>3?24:40)*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(6)+'" paint-order="stroke">AIM</text>';
     h+='<path d="'+c.d+'" fill="none" stroke="#fff" stroke-width="'+zx(10)+'" stroke-linecap="round"/><path d="'+c.d+'" fill="none" stroke="#ffc400" stroke-width="'+zx(6)+'" stroke-linecap="round"/><circle cx="'+X+'" cy="'+Y+'" r="'+zx(26)+'" fill="none" stroke="#ffc400" stroke-width="'+zx(7)+'"/>';
-    const txt=m0(rec.d)+" m",w=(26+txt.length*18)*Z,ct=clubTxt(rec.c);   // distance tag left of the landing spot, club and power under it
+    const dz=elevationChange(n,b);
+    const txt=m0(rec.d)+" m"+(dz?" · "+(dz>0?"↑":"↓")+Math.abs(dz)+" m":""),w=(26+txt.length*18)*Z,ct=clubTxt(rec.c);   // distance tag left of the landing spot, club and power under it
     let px=X-44*Z-w/2;if(px<VB[0]+w/2+6*Z)px=X+44*Z+w/2;
     h+=pill(px,Y-(ct?14*Z:0),txt,"#ffc400","#0c162d");
     if(ct)h+='<text class="ovc"'+fs(26)+' x="'+Math.min(VB[0]+VB[2]-(6+ct.length*7)*Z,Math.max(VB[0]+(6+ct.length*7)*Z,px)).toFixed(1)+'" y="'+(Y+34*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(7)+'" paint-order="stroke">'+ct+'</text>';}
@@ -592,7 +634,6 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   h+='<g transform="translate('+P[0]+' '+P[1]+') scale('+Z.toFixed(3)+')"><ellipse rx="11" ry="5" fill="#000" fill-opacity=".45"/><line y2="-58" stroke="#0c162d" stroke-width="4"/><path d="M0-58L32-47L0-36Z" fill="#d2142d"/></g>';   // flag
   h+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(22)+'" fill="#fff" stroke="#0c162d" stroke-width="'+zx(6)+'"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(9)+'" fill="#d2142d"/>';
   const hn=peek(n),onDone=hn.on&&hn.on<=strokes(hn)&&hn.putts==null;
-  h+=slopeArrow(n);
   placeCat();
   ov.innerHTML=h;placeGreen(n,sim?"":!!rec&&rec.kind!=="putt"?"ask":onDone?"done":"");}
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
@@ -645,6 +686,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   const n=cur+1,h=peek(n),hd=H18[cur],g=G[n],b=ballOf(n),t=totals(),sc=holeScore(h),s=strokes(h);
   chipEls.forEach((c,i)=>{const v=holeScore(peek(i+1));c.className="chip"+(i===cur?" on":"")+(v!=null?(v<=holeTarget(i)?" ok":" bad"):"");c.querySelector("span").textContent=v??"";});
   let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span><!--TG--></div><button class="proj '+(t.n?(t.proj<=GOAL?"ok":"bad"):"")+'" data-act="brk" type="button" aria-label="Ganti target break, proyeksi '+t.proj+'"><svg class="tgi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Break '+BRK+'</button></div>';
+  html+='<p class="round-budget">'+budgetText(t)+'</p>';
   if(sc!=null&&!sim){rec=null;
     html+='<div class="done"><small>Hole '+n+' selesai</small><div class="sc"><button class="step" data-act="minus" type="button" aria-label="Kurangi skor">−</button><b class="'+(sc<=holeTarget(cur)?"ok":"bad")+'">'+sc+'</b><button class="step" data-act="plus" type="button" aria-label="Tambah skor">+</button></div>'+
       '<p>'+scoreName(sc-hd[0])+' · '+h.putts+' putt · bank '+sgn(t.bank)+'</p>'+
@@ -666,13 +708,13 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
       bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
     if(over>0)bubbleHTML+='<div class="tline"><span class="bad">'+(over===1?"+1 dari target hole tidak apa-apa, jangan tambah lagi.":"Selamatkan sisanya, satu pukulan sekali.")+'</span></div>';
-    if(sim)html+='<div class="simnote">Mode simulasi: ketuk peta di mana saja untuk lihat saran caddy. Tidak tercatat di skor.</div>';
+    if(sim)html+='<div class="simnote">Ketuk peta untuk mencoba posisi bola. Skor ronde tetap sama.</div>';
     resHTML=sim?"":'<div class="sthead">Status<br>pukulan</div>'+(putt?[1,2,3,4,5].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===5?"+":"")+' putt</button>').join("")
       :STATUS.map(([v,t,cl])=>'<button class="'+cl+(isPicked(v,"")?" sel":"")+'" data-act="pick" data-v="'+v+'" type="button" aria-pressed="'+isPicked(v,"")+'">'+t+'</button>').join("")+
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
     onLabel=(s+1)+" ON!";
-    html+='<div class="tip">'+bubbleHTML+slopeLegend(n)+'</div>';
+    html+='<div class="tip">'+bubbleHTML+terrainLegend(n,b)+'</div>';
     html+='<div class="foot">'+(h.log.length?'<button class="fbtn" data-act="undo" type="button">↶ Urungkan</button>':"")+
       '<span class="note">'+(note||"")+'</span></div>';
   }
@@ -765,7 +807,8 @@ function renderCard(){
   part(0,9,"OUT");part(9,18,"IN");
   const t=totals();$("sTot").textContent=t.n?t.tot:"–";
   $("sProj").textContent=t.proj;$("sProj").className=t.n?(t.proj<=GOAL?"ok":"bad"):"";
-  $("sBank").textContent=t.n?sgn(t.bank):"–";$("sBank").className=t.n?(t.bank>=1?"ok":"bad"):"";
+  $("sBank").textContent=t.n?sgn(t.bank):"–";$("sBank").className=t.n?(t.bank>=0?"ok":"bad"):"";
+  $("strokeBudget").textContent=budgetText(t);
   const keys=Object.keys(why).sort((a,b)=>why[b]-why[a]);let w="<h3>Dari mana double datang</h3>";
   if(!t.n)w+="<p>Belum ada hole selesai. Break "+BRK+" = skor "+GOAL+" atau kurang. Target tiap hole ada di kotak kuning, hole tersulit (SI kecil) dapat jatah lebih.</p>";
   else if(!dbl)w+="<p>Belum ada double dari "+t.n+" hole. Itu cara tembus "+(GOAL+1)+".</p>";
