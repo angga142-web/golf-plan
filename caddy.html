@@ -934,7 +934,15 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
     let px=X-44*Z-w/2;if(px<VB[0]+w/2+6*Z)px=X+44*Z+w/2;
     h+=pill(px,Y-(ct?14*Z:0),txt,"#ffc400","#0c162d");
     if(ct)h+='<text class="ovc"'+fs(26)+' x="'+Math.min(VB[0]+VB[2]-(6+ct.length*7)*Z,Math.max(VB[0]+(6+ct.length*7)*Z,px)).toFixed(1)+'" y="'+(Y+34*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(7)+'" paint-order="stroke">'+ct+'</text>';}
-  const TE=teeOf(n);h+='<g transform="translate('+TE[0].toFixed(1)+' '+TE[1].toFixed(1)+') scale('+Z.toFixed(3)+')"><rect x="-104" y="-15" width="60" height="30" rx="6" fill="#fff" stroke="#0c162d" stroke-width="3"/><text x="-74" y="1" text-anchor="middle" dominant-baseline="central" class="rgi" style="font-size:22px" fill="#0c162d">TEE</text></g>';   // tee tag, left of the tee so the ball does not cover it
+  const TE=teeOf(n);
+  if(teeI>0){   // blue / red: placed from the scorecard, measured from the white tee along the line of play; the white tee stays marked as the reference
+    const W=G[n].tee,dd=TEES[teeI].m[n-1]-TEES[0].m[n-1],tc=TEES[teeI].fill;
+    let ref='<line x1="'+W[0].toFixed(1)+'" y1="'+W[1].toFixed(1)+'" x2="'+TE[0].toFixed(1)+'" y2="'+TE[1].toFixed(1)+'" stroke="'+tc+'" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(6)+' '+zx(5)+'"/>';
+    ref+='<ellipse cx="'+TE[0].toFixed(1)+'" cy="'+TE[1].toFixed(1)+'" rx="'+zx(34)+'" ry="'+zx(22)+'" fill="#86c852" stroke="#5e9e3a" stroke-width="'+zx(2)+'"/>';
+    ref+='<g transform="translate('+W[0].toFixed(1)+' '+W[1].toFixed(1)+') scale('+Z.toFixed(3)+')"><circle r="8" fill="#fff" stroke="#0c162d" stroke-width="3"/></g>';h=ref+h;   // white tee dot; the tag says how far from it
+    const lab=TEES[teeI].name.toUpperCase()+" "+(dd>=0?"+":"−")+Math.abs(dd)+" m",w=lab.length*11+18;
+    h+='<g transform="translate('+TE[0].toFixed(1)+' '+TE[1].toFixed(1)+') scale('+Z.toFixed(3)+')"><rect x="'+(-44-w)+'" y="-15" width="'+w+'" height="30" rx="6" fill="'+tc+'" stroke="#0c162d" stroke-width="3"/><text x="'+(-44-w/2)+'" y="1" text-anchor="middle" dominant-baseline="central" class="rgi" style="font-size:20px" fill="#fff">'+lab+'</text></g>';}
+  else h+='<g transform="translate('+TE[0].toFixed(1)+' '+TE[1].toFixed(1)+') scale('+Z.toFixed(3)+')"><rect x="-104" y="-15" width="60" height="30" rx="6" fill="#fff" stroke="#0c162d" stroke-width="3"/><text x="-74" y="1" text-anchor="middle" dominant-baseline="central" class="rgi" style="font-size:22px" fill="#0c162d">TEE</text></g>';   // tee tag, left of the tee so the ball does not cover it
   h+='<g transform="translate('+P[0]+' '+P[1]+') scale('+Z.toFixed(3)+')"><ellipse rx="11" ry="5" fill="#000" fill-opacity=".45"/><line y2="-58" stroke="#0c162d" stroke-width="4"/><path d="M0-58L32-47L0-36Z" fill="#d2142d"/></g>';   // flag
   h+='<circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(22)+'" fill="#fff" stroke="#0c162d" stroke-width="'+zx(6)+'"/><circle cx="'+b[0]+'" cy="'+b[1]+'" r="'+zx(9)+'" fill="#d2142d"/>';
   const hn=peek(n),onDone=hn.on&&hn.on<=strokes(hn)&&hn.putts==null;
