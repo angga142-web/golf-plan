@@ -33,12 +33,15 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 /* top strip */
 .top{flex:none;background:var(--ink);color:#fff;padding-block:8px 8px}
 .toprow{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px 14px}
-.lead{display:flex;flex-direction:column;gap:6px;min-width:0}
+.lead{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1 1 auto}
 .brandrow{display:flex;align-items:center;gap:10px;min-width:0}
 .brand{font-family:var(--f-brand);font-weight:700;font-size:18px;letter-spacing:.01em;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .btns{display:flex;gap:6px;flex:none}
 .tbtn{background:transparent;color:#fff;border:2px solid #56627f;border-radius:8px;padding:4px 10px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
 .tbtn i.tdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;margin-right:6px;vertical-align:-1px}
+.tbtn.homebtn{margin-left:auto;flex:none;display:inline-flex;align-items:center;gap:5px}.homebtn svg{width:17px;height:17px}
+.brandrow .tbtn{white-space:nowrap}
+@media (max-width:400px){.homebtn{padding:4px 7px}.homebtn span{display:none}}
 .tbtn.gold{background:var(--gold);border-color:var(--gold);color:var(--ink)}
 .chips{flex:1 1 300px;max-width:440px;margin-left:auto;display:flex;flex-direction:column;gap:4px}
 .crow{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:4px}
@@ -281,7 +284,7 @@ tr.go{cursor:pointer}
 <header class="top gut">
   <div class="toprow">
     <div class="lead">
-    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button></div>
+    <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button><button class="tbtn homebtn" id="homeBtn" type="button" aria-label="Kembali ke menu awal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11.5 12 4l9 7.5M5.5 9.5V20h5v-6h3v6h5V9.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg><span>Menu</span></button></div>
     <div class="btns">
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
@@ -1171,6 +1174,7 @@ $("stGo").addEventListener("click",()=>{const pi=$("puttIntro");pi.hidden=false;
   setTimeout(()=>{$("startSheet").hidden=true;VB=null;render();},1500);
   setTimeout(()=>{pi.hidden=true;pi.classList.remove("go");},1900);});
 $("brand").addEventListener("click",openStart);
+$("homeBtn").addEventListener("click",openStart);
 $("brand").title="Menu awal";
 renderStart();
 </script>
