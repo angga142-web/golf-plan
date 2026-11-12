@@ -202,6 +202,12 @@ tr.go{cursor:pointer}
 .clubs{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px}
 .clubs label{display:flex;justify-content:space-between;align-items:center;gap:6px;font-family:var(--f-num);font-weight:700;font-size:16px;line-height:1.05}
 .clubs input{flex:none}
+.refbar{display:flex;flex-direction:column;gap:5px;font-size:13px;font-weight:700;color:var(--ink2)}
+.refsel{display:flex;flex-wrap:wrap;gap:4px}
+.refsel button{border:2px solid var(--ink);border-radius:8px;background:#fff;padding:3px 8px;font-family:var(--f-num);font-weight:800;font-size:14px;letter-spacing:.03em;text-transform:uppercase}
+.refsel button[aria-pressed=true]{background:var(--ink);color:#fff}
+.clubs .ref{display:block;white-space:nowrap;font-family:var(--f-body);font-size:11px;font-weight:600;color:#7a8296;text-transform:none;letter-spacing:0;margin-top:1px}
+.reftxt{font-size:12px}
 .clubs .fav{border:0;background:none;font-size:20px;line-height:1;padding:0 2px;color:var(--ink2);flex:none}
 .clubs .fav.on{color:#e0a400}
 .clubs label>span:first-of-type{flex:1;min-width:0}
@@ -296,7 +302,9 @@ tr.go{cursor:pointer}
   <div class="sheetin">
     <div class="sheethead"><h2>Jarak pukulan saya</h2><button class="close" id="closeClubs" type="button">Tutup</button></div>
     <p class="help">Isi jarak terbang rata-rata (carry) dalam <span id="unitWord">meter</span>. Isi 0 untuk club yang tidak dibawa. Tandai ★ maksimal 3 club favorit: caddy memilihnya duluan kalau jaraknya cocok. <span id="adjNote"></span></p>
+    <div class="refbar"><span>Bandingkan dengan rata-rata:</span><div class="refsel" id="refSel" role="group" aria-label="Pembanding handicap"></div></div>
     <div class="clubs" id="clubList"></div>
+    <p class="help reftxt">Angka abu-abu = <b>jarak total</b> (carry + roll) rata-rata pegolf per handicap index. Sumber: Arccos 2025 Driving Distance Reports &amp; ShotLink/Trackman (pro). Isian kamu = <b>carry</b>, jadi wajar sedikit lebih pendek dari angka pembanding.</p>
   </div>
 </div>
 
@@ -947,11 +955,19 @@ $("yes").addEventListener("click",()=>{state={holes:{},updated:0};save();closeCa
 let clubUnit="m";try{if(localStorage.getItem("caddy-unit-v1")==="yd")clubUnit="yd";}catch(e){}
 const YD=.9144,showU=m=>clubUnit==="yd"?Math.round(m/YD):m,fromU=v=>clubUnit==="yd"?Math.round(v*YD):v;
 function saveFav(){try{localStorage.setItem("caddy-fav-v1",JSON.stringify(FAV));}catch(e){}}
-function renderClubs(){$("unitWord").textContent=clubUnit==="yd"?"yard":"meter";$("adjNote").textContent=C.adj?C.name+" main "+C.adj+" m lebih panjang, itu sudah dihitung otomatis.":"";
-  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><button class="fav'+(FAV.includes(c[0])?" on":"")+'" type="button" data-fav="'+c[0]+'" aria-pressed="'+FAV.includes(c[0])+'" aria-label="Club favorit">'+(FAV.includes(c[0])?"★":"☆")+'</button><span>'+(CLUB_LABEL[c[0]]||c[0])+'</span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
+/* comparison data (total distance in yards by handicap index): Arccos 2025 Driving Distance Reports, ShotLink / Trackman pro averages */
+const REFCOLS=["Pro","0–5","10","15","20","25"];
+const REFYD={"DRIVER":[301,250,227,215,209,195],"WOOD":[250,224,205,195,185,175],"WOOD 2":[235,215,190,180,170,160],"4 IRON":[209,203,176,170,155,150],
+  "5 IRON":[200,188,164,158,150,142],"6 IRON":[190,178,157,151,145,138],"7 IRON":[177,166,147,141,134,129],"8 IRON":[165,156,139,134,127,124],
+  "9 IRON":[153,144,128,124,118,113],"PW":[140,128,114,108,104,95],"SW":[115,105,92,85,80,70]};
+let refI=3;try{const t=localStorage.getItem("caddy-ref-v1"),v=+t;if(t!=null&&v>=0&&v<REFCOLS.length)refI=v;}catch(e){}   // default: HCP 15
+const refTxt=nm=>{const r=REFYD[nm];if(!r)return"–";const y=r[refI];return(clubUnit==="yd"?y:Math.round(y*YD))+" "+clubUnit;};
+function renderClubs(){$("refSel").innerHTML=REFCOLS.map((c,i)=>'<button type="button" data-ref="'+i+'" aria-pressed="'+(i===refI)+'">'+(i?"HCP "+c:c)+'</button>').join("");$("unitWord").textContent=clubUnit==="yd"?"yard":"meter";$("adjNote").textContent=C.adj?C.name+" main "+C.adj+" m lebih panjang, itu sudah dihitung otomatis.":"";
+  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><button class="fav'+(FAV.includes(c[0])?" on":"")+'" type="button" data-fav="'+c[0]+'" aria-pressed="'+FAV.includes(c[0])+'" aria-label="Club favorit">'+(FAV.includes(c[0])?"★":"☆")+'</button><span>'+(CLUB_LABEL[c[0]]||c[0])+'<small class="ref">'+(refI?"HCP "+REFCOLS[refI]:"Pro")+': '+refTxt(c[0])+'</small></span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
     '<button class="unitbtn" id="unitBtn" type="button" aria-label="Ganti satuan meter atau yard">⇄ '+(clubUnit==="m"?"yard":"meter")+'</button>';}
 $("clubList").addEventListener("input",ev=>{const i=ev.target.dataset.i;if(i==null)return;const v=parseInt(ev.target.value,10);clubs[i][1]=isNaN(v)||v<0?0:Math.min(350,fromU(v));
   const o={};clubs.forEach(c=>o[c[0]]=c[1]);try{localStorage.setItem(CKEY,JSON.stringify(o));}catch(e){}});
+$("refSel").addEventListener("click",ev=>{const b=ev.target.closest("[data-ref]");if(!b)return;refI=+b.dataset.ref;try{localStorage.setItem("caddy-ref-v1",refI);}catch(e){}renderClubs();});
 $("clubList").addEventListener("click",ev=>{const fb=ev.target.closest("[data-fav]");if(fb){ev.preventDefault();const nm=fb.dataset.fav;
     if(FAV.includes(nm))FAV=FAV.filter(x=>x!==nm);else if(FAV.length<3)FAV.push(nm);else{$("adjNote").textContent="Maksimal 3 club favorit. Hapus satu bintang dulu.";return;}
     saveFav();renderClubs();return;}
