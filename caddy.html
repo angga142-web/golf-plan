@@ -121,7 +121,6 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .dist small{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
 .dist .fb{font-family:var(--f-num);font-size:13px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
 .shot{background:var(--gold);border-radius:12px;padding:6px 12px;min-width:0;display:flex;flex-direction:column;justify-content:center}
-.shot.rec{background:var(--ink);color:#fff}
 .shot{position:relative}
 .shot .sno{font-size:11px;font-weight:700;letter-spacing:.02em;white-space:nowrap;text-transform:uppercase;opacity:.75}
 .shot{display:grid;grid-template-columns:1fr auto;column-gap:8px;align-items:center}
@@ -822,7 +821,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     const fb=putt?null:frontBack(n,b);
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
     html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="fb">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+'</span>')+'</div>'+
-      '<div class="shot'+(recover?" rec":"")+'"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
+      '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club)+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":tgtText(rec))+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
