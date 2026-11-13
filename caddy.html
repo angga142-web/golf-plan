@@ -141,8 +141,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .dist{border:3px solid var(--ink);border-radius:12px;padding:3px 8px;text-align:center;min-width:84px;display:flex;flex-direction:column;justify-content:center}
 .dist b{font-family:var(--f-num);font-weight:800;font-size:36px;line-height:.95;font-variant-numeric:tabular-nums}
 .dist small{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
-.rb{display:flex;justify-content:space-between;align-items:baseline;gap:8px}.rb .round-budget{min-width:0}
-.gdist{flex:none;font-family:var(--f-num);font-weight:700;font-size:14px;color:var(--ink2);font-variant-numeric:tabular-nums;white-space:nowrap}
+.gdist{flex:none;font-family:var(--f-num);font-weight:700;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap}
 .dist{max-width:150px}.dist .dtg{font-size:11.5px;font-weight:700;line-height:1.2;color:var(--ink);margin-top:3px;text-wrap:balance}
 .shot .tgt:empty{display:none}
 .dist .fb{font-family:var(--f-num);font-size:13px;font-weight:700;color:var(--ink2);font-variant-numeric:tabular-nums}
@@ -419,7 +418,7 @@ tr.go{cursor:pointer}
     <p class="help" id="strokeBudget"></p>
     <div class="why" id="why"></div>
     <div class="tblwrap"><table>
-      <thead><tr><th>Hole</th><th>Par</th><th>Skor</th><th>Putt</th><th>Pen</th><th>Duff</th></tr></thead>
+      <thead><tr><th>Hole</th><th>Par</th><th>Skor</th><th>Putt</th><th>Pen</th><th>Grounded</th></tr></thead>
       <tbody id="tbody"></tbody>
     </table></div>
     <div class="rowbtns">
@@ -818,13 +817,11 @@ function slopeOf(n){if(n in SLOPE)return SLOPE[n];if(terrain){const sd=slopeDEM(
   for(let r=Math.max(0,r0-R);r<=Math.min(g.rows-1,r0+R);r++)for(let k=Math.max(0,c0-R);k<=Math.min(g.cols-1,c0+R);k++){
     if(g.cells[r*g.cols+k]!==2)continue;const x=k*CELL+5,y=g.top+r*CELL+5,d=Math.hypot(x-c[0],y-c[1]);if(!best||d<best.d)best={d,x,y};}
   return SLOPE[n]=best&&best.d/g.scale<=120?{u:[(best.x-c[0])/best.d,(best.y-c[1])/best.d],m:Math.round(best.d/g.scale)}:null;}
-function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl||sl.flat)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
+function slopeArrow(n){const sl=slopeOf(n),c=GC[n]||G[n].pin;if(!sl||sl.flat||!sl.dem)return"";const L=150*Z,h=[c[0]-sl.u[0]*L/2,c[1]-sl.u[1]*L/2],t=[c[0]+sl.u[0]*L/2,c[1]+sl.u[1]*L/2],px=-sl.u[1],py=sl.u[0],a=16*Z;
   const head='M'+(t[0]-sl.u[0]*a+px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a+py*a*.7).toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1)+'L'+(t[0]-sl.u[0]*a-px*a*.7).toFixed(1)+' '+(t[1]-sl.u[1]*a-py*a*.7).toFixed(1);
   const line='M'+h[0].toFixed(1)+' '+h[1].toFixed(1)+'L'+t[0].toFixed(1)+' '+t[1].toFixed(1);
   return'<g fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="'+line+head+'" stroke="#fff" stroke-width="'+zx(8)+'"/><path d="'+line+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(10)+' '+zx(7)+'"/><path d="'+head+'" stroke="#1f6fe0" stroke-width="'+zx(4)+'"/></g>';}
-function slopeLegend(n){const sl=slopeOf(n);   // legend line for the info box under the map
-  if(sl&&sl.dem)return"";
-  return'<div class="tline slope">'+(sl?'<i></i><b>Estimasi arah air di green:</b> ke danau ±'+sl.m+' m dari green. Perkiraan, cek di green.':'Slope green: <b>tidak dapat diestimasi</b> dari peta (tidak ada air dekat green).')+'</div>';}
+function slopeLegend(n){return"";}   // no green slope line under the map (13 Nov 2026); the DEMNAS arrow on the map stays
 let terrain=null, terrainOn=false, terrainLoading=false;
 function elevationAt(n,[x,y]){
   const {ref,o,m}=C.pxmap[n];
@@ -981,7 +978,7 @@ function placeGreen(n,show){const el=$("greenBtn"),[x,y,W,H]=toScreen(G[n].pin);
   const top=Math.min(H-hh-6,Math.max(46,y-hh/2+14));el.style.left=Math.max(6,left)+"px";el.style.top=top+"px";
   const pp=$("puttPop");pp.hidden=show!=="done";if(show==="done"){const pw=pp.offsetWidth,lo=document.querySelector(".tools").offsetWidth+14;pp.style.left=Math.min(W-pw-6,Math.max(pw+lo<W-6?lo:6,x-pw/2))+"px";pp.style.top=Math.min(H-pp.offsetHeight-6,top+hh+8)+"px";}}   // after ON: how many putts
 const SIDE={L:"kiri",R:"kanan"},OPP={L:"R",R:"L"};
-const RESET={duff:"Duff sudah lewat. Tempo pelan, selesaikan ayunan.",top:"Topping sudah lewat. Kepala tetap, lihat bola sampai kena.",L:"Miss kiri sudah lewat. Ambil jalur aman kembali ke permainan.",R:"Miss kanan sudah lewat. Ambil jalur aman kembali ke permainan.",pen:"Penalti sudah dibayar, jangan bayar dua kali. Main ke area terlebar."};
+const RESET={duff:"Grounded sudah lewat. Tempo pelan, selesaikan ayunan.",top:"Topping sudah lewat. Kepala tetap, lihat bola sampai kena.",L:"Miss kiri sudah lewat. Ambil jalur aman kembali ke permainan.",R:"Miss kanan sudah lewat. Ambil jalur aman kembali ke permainan.",pen:"Penalti sudah dibayar, jangan bayar dua kali. Main ke area terlebar."};
 const playsTxt=r=>r.plays?" · main seperti "+m0(r.plays)+" m ("+(r.dz>0?"↑":"↓")+Math.abs(r.dz)+" m)":"";
 function tgtText(r){return tgtText0(r)+playsTxt(r);}
 function tgtText0(r){
@@ -1008,22 +1005,21 @@ function aimText(n,b,r,pat){
 let bubbleHTML="",resHTML="",onLabel="ON!",penOpen=false,picked=null,catTip="",catClosed="";
 const TIPS={L:"Bola miss kiri: ambil jalur keluar paling lebar ke fairway, bukan langsung ke green. Pilih loft yang cukup untuk lewat rintangan.",
   R:"Bola miss kanan: ambil jalur keluar paling lebar ke fairway, bukan langsung ke green. Pilih loft yang cukup untuk lewat rintangan.",
-  duff:"Setelah duff: bola sedikit ke belakang dari tengah stance, berat 60% di kaki depan, turunkan tangan duluan sebelum kepala stik.",
+  duff:"Setelah grounded: bola sedikit ke belakang dari tengah stance, berat 60% di kaki depan, turunkan tangan duluan sebelum kepala stik.",
   top:"Setelah topping: jaga tinggi badan selama ayunan, mata tetap di bola sampai kena, biarkan loft yang mengangkat bola.",
   pen:"Setelah penalti: drop di tempat rata, lalu pilih jarak pukulan yang paling kamu suka untuk pukulan berikutnya.",
   run:"Chip & run: stance sempit, bola di kaki belakang, gerakan seperti putt tanpa patah pergelangan. Mendarat 1–2 m di green, biarkan menggelinding.",
   lob:"Ada rintangan di depan: pakai SW, buka sedikit face, ayun pelan tapi selesai. Mendaratkan bola langsung di green.",
   pitch:"Pitch: berat di kaki depan, ayunan setengah dengan tempo sama, mendarat di sepertiga depan green.",
   sand:"Keluar bunker: buka face, kaki dibenamkan, pukul pasir 3 cm di belakang bola dan follow through penuh."};   // picked: the status chosen for this swing, logged by Record
-const STATUS=[["ok","Straight","good"],["L","◀ Kiri",""],["R","Kanan ▶",""],["duff","Duff",""],["top","Topping",""]],PENS=[["ob","OB"],["air","Air"],["pen","Penalti"]];
+const STATUS=[["ok","Straight","good"],["L","◀ Kiri",""],["R","Kanan ▶",""],["duff","Grounded",""],["top","Topping",""]],PENS=[["ob","OB"],["air","Air"],["pen","Penalti"]];
 const isPicked=(v,p)=>!!picked&&picked.v===v&&(picked.p||"")===p;
 const shotName=s=>s===0?"Tee off":(s+1)+(["th","st","nd","rd"][(s+1)%10>3||Math.floor((s+1)%100/10)===1?0:(s+1)%10])+" shot";   // Tee off, 2nd shot, 3rd shot, 4th shot ...
 const pickName=()=>picked.v==="pen"?PENS.find(x=>x[0]===picked.p)[1]:STATUS.find(x=>x[0]===picked.v)[1];
 function render(){bubbleHTML="";resHTML="";catTip="";
   const n=cur+1,h=peek(n),hd=H18[cur],g=G[n],b=ballOf(n),t=totals(),sc=holeScore(h),s=strokes(h);
   chipEls.forEach((c,i)=>{const v=holeScore(peek(i+1));c.className="chip"+(i===cur?" on":"")+(v!=null?(v<=holeTarget(i)?" ok":" bad"):"");c.querySelector("span").textContent=v??"";});
-  let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span><!--TG--></div><button class="proj '+(t.n?(t.proj<=GOAL?"ok":"bad"):"")+'" data-act="brk" type="button" aria-label="Ganti target break, proyeksi '+t.proj+'"><svg class="tgi" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="4.2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8" cy="8" r="1.6" fill="currentColor"/></svg>Break '+BRK+'</button></div>';
-  html+='<div class="rb"><p class="round-budget">'+budgetText(t)+'</p><!--GD--></div>';
+  let html='<div class="status"><div>Hole '+n+' <span class="sub">· Par '+hd[0]+' · SI '+hd[1]+'</span><!--TG--></div><!--GD--></div>';
   if(sc!=null&&!sim){rec=null;
     html+='<div class="done"><small>Hole '+n+' selesai</small><div class="sc"><button class="step" data-act="minus" type="button" aria-label="Kurangi skor">−</button><b class="'+(sc<=holeTarget(cur)?"ok":"bad")+'">'+sc+'</b><button class="step" data-act="plus" type="button" aria-label="Tambah skor">+</button></div>'+
       '<p>'+scoreName(sc-hd[0])+' · '+h.putts+' putt · bank '+sgn(t.bank)+'</p>'+
@@ -1045,7 +1041,6 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
       bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
-    if(over>0)bubbleHTML+='<div class="tline"><span class="bad">'+(over===1?"+1 dari target hole tidak apa-apa, jangan tambah lagi.":"Selamatkan sisanya, satu pukulan sekali.")+'</span></div>';
     if(sim)html+='<div class="simnote">Ketuk peta untuk mencoba posisi bola. Skor ronde tetap sama.</div>';
     resHTML=sim||putt?"":'<div class="sthead">Status<br>pukulan</div>'+(STATUS.map(([v,t,cl])=>'<button class="'+cl+(isPicked(v,"")?" sel":"")+'" data-act="pick" data-v="'+v+'" type="button" aria-pressed="'+isPicked(v,"")+'">'+t+'</button>').join("")+
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
@@ -1082,7 +1077,6 @@ function undo(){const h=hole(cur+1);note="";picked=null;
 $("greenBtn").addEventListener("click",ev=>onAct(ev));$("puttPop").addEventListener("click",ev=>onAct(ev));$("resbar").addEventListener("click",ev=>onAct(ev));
 $("card").addEventListener("click",ev=>onAct(ev));
 function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const a=bt.dataset.act,h=hole(cur+1);
-  if(a==="brk"){BRK=BREAKS[(BREAKS.indexOf(BRK)+1)%BREAKS.length];GOAL=BRK-1;try{localStorage.setItem("caddy-break-v1",BRK);}catch(e){}render();return;}
   if(a==="pick"){const v=bt.dataset.v,p=bt.dataset.p||"";picked=isPicked(v,p)?null:{v,p};render();}
   else if(a==="record"){if(picked)logShot(picked.v,picked.p||undefined);}
   else if(a==="penmenu"){penOpen=!penOpen;render();}
@@ -1146,7 +1140,7 @@ function renderCard(){
   const why={},put=k=>{why[k]=(why[k]||0)+1;};let dbl=0;
   const part=(a,b,label)=>{let p=0,s=0,n=0,pu=0,pe=0,du=0;for(let i=a;i<b;i++){const hd=H18[i],h=peek(i+1),v=holeScore(h),st=holeStats(h);p+=hd[0];
       if(v!=null){s+=v;n++;pu+=h.putts;pe+=st.pen;du+=st.duff;
-        if(v>=hd[0]+2){dbl++;let any=0;if(st.pen){put("Penalti");any=1;}if(h.putts>=3){put("3 putt");any=1;}if(st.duff){put("Duff / top");any=1;}if(st.chip>=2){put("Chip 2x");any=1;}if(st.lr>=2){put("Miss kiri/kanan");any=1;}if(!any)put("Lain-lain");}}
+        if(v>=hd[0]+2){dbl++;let any=0;if(st.pen){put("Penalti");any=1;}if(h.putts>=3){put("3 putt");any=1;}if(st.duff){put("Grounded / top");any=1;}if(st.chip>=2){put("Chip 2x");any=1;}if(st.lr>=2){put("Miss kiri/kanan");any=1;}if(!any)put("Lain-lain");}}
       row([[""+(i+1)],[""+hd[0]],[v??"–","s "+(v==null?"":v<=holeTarget(i)?"ok":"bad")],[v!=null?""+h.putts:"–"],[v!=null?""+st.pen:"–"],[v!=null?""+st.duff:"–"]],"go",()=>{closeCard();go(i);});}
     row([[label],[""+p],[n?""+s:"–"],[n?""+pu:"–"],[n?""+pe:"–"],[n?""+du:"–"]],"sub");};
   part(0,9,"OUT");part(9,18,"IN");
