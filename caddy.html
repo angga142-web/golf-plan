@@ -899,17 +899,25 @@ function advise(n,b,recover,skip,maxc){
   const fullGap=x=>Math.min(...bag().filter(([nm,c])=>nm!=="DRIVER"&&c<=cap&&!(skip&&skip.has(nm))).map(([nm,c])=>{const e=c-C.adj,lo=e*(WEDGE.test(nm)?WFULL:MINPW),hi=e*MAXP;return x<lo?lo-x:x>hi?x-hi:0;}).concat([999]));   // metres outside the nearest full-swing window
   /* approach club (13 Nov 2026): with sand or water short of the green on the line, take the shortest club whose mishit (85%) still carries it
      and whose good strike stays on the green; the club that only just reaches is shown as the minimum */
+  const frontHz=fb=>{let hz=0;if(fb)for(let m=8;m<fb.f;m+=2){const t=m/DC,x=b[0]+(GT[0]-b[0])*t,y=b[1]+(GT[1]-b[1])*t;if(codeAt(g,x,y)||nearest(g,x,y,1,3))hz=m;}return hz;};   // last sand/water short of the green on the line
   const upClub=cp=>{const c=pick(DC,cp,skip);if(!c||!shotClear(g,b,GT,c.e))return null;const fb=frontBack(n,b);if(!fb)return R("green",GT,DC,c);
-    let hz=0;for(let m=8;m<fb.f;m+=2){const t=m/DC,x=b[0]+(GT[0]-b[0])*t,y=b[1]+(GT[1]-b[1])*t;if(codeAt(g,x,y)||nearest(g,x,y,1,3))hz=m;}
-    if(!hz||.85*DC>=hz+3)return R("green",GT,DC,c);
+    const hz=frontHz(fb);if(!hz||.85*DC>=hz+3)return R("green",GT,DC,c);
     for(const[nm,cr] of bag().slice().reverse()){if(nm==="DRIVER"||cr>cp||skip&&skip.has(nm))continue;const e=cr-C.adj;if(e<=c.e)continue;
       const aim=Math.min(e*MAXP,fb.b-4);if(aim<DC||.85*aim<hz+3||aim/e<MINPW||!shotClear(g,b,GT,e))continue;   // aim deeper on the green so a mishit still carries the trouble
       const T=[b[0]+(GT[0]-b[0])*aim/DC,b[1]+(GT[1]-b[1])*aim/DC];return R("green",T,aim,{club:nm,e,pw:Math.round(aim/e*100)},{minClub:c.club});}
     return null;};   // no club does both: not straight at the green
-  let direct=upClub(cap);
-  if(!direct&&DC<=directRange())direct=upClub(capOf(BRK===100?"7 IRON":BRK===90?"6 IRON":"5 IRON"));   // within range a club or two more is fine to carry the trouble
-  if(direct&&DC<=directRange())return direct;   // rule (13 Nov 2026): within 9 iron (Break 100), 8 iron (90), 7 iron (80) play straight at the green
+  const inRange=DC<=directRange();
+  let direct=upClub(inRange?Math.min(cap,capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON")):cap);   // more club only within this break's rules
+  if(direct&&inRange)return direct;   // rule (13 Nov 2026): within 9 iron (Break 100), 8 iron (90), 7 iron (80) play straight at the green
   if(safe){const cs=chipSpot(cap,skip);if(cs)return cs;}
+  /* rule (13 Nov 2026): when carrying the bunker/water in front would need a club beyond the rules, lay up short of it,
+     30-50 m before the green, and pitch over it */
+  if(!direct&&!(B80&&atTee)){const fb=frontBack(n,b),hz=frontHz(fb);   // Break 80 par 3 tee shot keeps going for the green
+    if(hz&&fb&&DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP+20){const a0=Math.atan2(GT[1]-b[1],GT[0]-b[0]);let best=null;   // an approach (the green about in reach), not a long way out
+      for(let gap=30;gap<=50;gap+=4)for(const ang of [0,-5,5,-10,10,-15,15]){const dl=fb.f-gap;if(dl<40)continue;const t=a0+ang*Math.PI/180,T=[b[0]+Math.cos(t)*dl*g.scale,b[1]+Math.sin(t)*dl*g.scale];
+        if(!landOK(g,T)||!missOK(g,b,T))continue;const c=pick(dl,Math.min(cap,FM),skip);if(!c||!shotClear(g,b,T,c.e))continue;
+        const sc=Math.abs(gap-38)*.5+Math.abs(ang)*.6;if(!best||sc<best.sc)best={sc,T,dl,c};}
+      if(best)return R("layup",best.T,best.dl,best.c,{left:dm(g,best.T[0],best.T[1],P[0],P[1]),pre:1});}}
   if(direct&&!safe&&(front||attack))return direct;
   if(!B80&&!safe&&front){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   if(!safe)for(let left=15;left<=(B80?(front?45:50):25);left+=5){const da=D-left,c=pick(da,cap,skip),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];
@@ -1324,6 +1332,7 @@ function tgtText0(r){
   if(r.kind==="green"&&r.chip==="lob")return"angkat bola lewati rintangan · mendarat di green";
   if(r.kind==="green")return"ke tengah green · "+m0(r.d)+" m"+(r.minClub&&r.minClub!==r.c.club?" · minimal "+clubName(r.minClub)+", ambil "+clubName(r.c.club)+" biar aman lewat rintangan":"");
   if(r.kind==="apron")return(r.safe?"main aman · ":"")+"ke depan green · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
+  if(r.kind==="layup"&&r.pre)return"layup sebelum rintangan · "+m0(r.d)+" m, sisa "+m0(r.left)+" m lalu pitch ke green";
   if(r.kind==="layup")return"layup "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
   if(r.kind==="punch")return"keluar ke fairway · "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
   return"ke fairway terdekat, tidak ada jalur aman di peta";}
