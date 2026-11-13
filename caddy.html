@@ -697,6 +697,7 @@ function onSafeSide(n,b,res){if(!res||!res.T||fwAt(n,res.T[0],res.T[1])===null||
     const sc=miss?mMiss*wMiss+Math.min(mOther,10)*3:Math.min(mL/wL,mR/wR);
     if(!best||sc-Math.abs(off)*.05>best.sc)best={sc:sc-Math.abs(off)*.05,T:[x,y]};}
   if(!best)return res;const d=dm(g,b[0],b[1],best.T[0],best.T[1]);
+  if(res.c&&res.c.e&&res.c.club&&d/res.c.e<(WEDGE.test(res.c.club)?WFULL:MINPW))return res;   // the safer side would need less than an 80% swing: keep the spot
   return Object.assign({},res,{T:best.T,d,c:res.c&&res.c.e?Object.assign({},res.c,{pw:Math.round(d/res.c.e*100)}):res.c});}
 /* point at a given distance (px) along a polyline, or null if the line is shorter */
 function along(pts,dist){for(let i=0;i+1<pts.length;i++){const a=pts[i],c=pts[i+1],L=Math.hypot(c[0]-a[0],c[1]-a[1]);
@@ -737,9 +738,13 @@ function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b
   const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{})].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
   for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
-    for(const f of [.9,.95,1]){const L=e*f,T=along(rt,L*g.scale);if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);
-      if(r0<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
-      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=T,prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
+    for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
+      // the plan line can hug water (Imperial 4 and 13 run beside a lake): also try spots up to 32 m either side, on the hole's own fairway
+      const T1=along(rt,(L+2)*g.scale)||T0,dl=Math.hypot(T1[0]-T0[0],T1[1]-T0[1])||1,px=-(T1[1]-T0[1])/dl,py=(T1[0]-T0[0])/dl;let T=null,off=0;
+      for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];
+        if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0||!landOK(g,c)||!shotClear(g,b,c,e))continue;T=c;off=Math.abs(o);break;}
+      if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
+      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
       for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev,k===0);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
         if(!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
@@ -747,7 +752,7 @@ function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
         prev=r.c&&r.c.club||prev;pos=r.T;}
-      const sc=strokes+pen+(xp||0)+(inClub?carryOf(inClub)/2000:.2)-L/100000;
+      const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/100000;
       if(!best||sc<best.sc)best={sc,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?R("tee",best.T,best.L,best.c,plan):null;}
 const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
@@ -817,7 +822,9 @@ function advise(n,b,recover,skip,maxc){
   const vb=[b[0]-P[0],b[1]-P[1]],a0=Math.atan2(vb[1],vb[0]),cands=g.land.map((p,k)=>({x:p[0],y:p[1],plan:k+1}));
   const upd=B80&&recover,lo=upd?20:60,hi=upd?70:110;   // Break 80 recovery: leave a short up-and-down for par
   {const rt=[g.tee,...g.land,P];for(let i=0;i+1<rt.length;i++){const A=rt[i],B=rt[i+1],L=dm(g,A[0],A[1],B[0],B[1]);
-    for(let m=0;m<L;m+=5){const t=m/L;cands.push({x:A[0]+(B[0]-A[0])*t,y:A[1]+(B[1]-A[1])*t});}}}
+    const px=-(B[1]-A[1])/(Math.hypot(B[0]-A[0],B[1]-A[1])||1),py=(B[0]-A[0])/(Math.hypot(B[0]-A[0],B[1]-A[1])||1);
+    for(let m=0;m<L;m+=5){const t=m/L,x=A[0]+(B[0]-A[0])*t,y=A[1]+(B[1]-A[1])*t;cands.push({x,y});
+      if(m%10===0)for(const o of [-30,-15,15,30]){const c={x:x+px*o*g.scale,y:y+py*o*g.scale};if(fwAt(n,c.x,c.y)!==false)cands.push(c);}}}}   // beside the line too, on the hole's fairway
   for(let r=upd?20:50;r<=200;r+=5)for(let a=-40;a<=40;a+=5){const t=a0+a*Math.PI/180;cands.push({x:P[0]+Math.cos(t)*r*g.scale,y:P[1]+Math.sin(t)*r*g.scale});}
   let best=null;
   for(const q of cands){const T=[q.x,q.y];if(T[0]<0||T[0]>1080||T[1]<g.top||T[1]>g.bot)continue;
