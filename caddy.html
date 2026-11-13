@@ -469,8 +469,8 @@ const COURSE_PJ={id:"pangkalan-jati",name:"Pangkalan Jati",tee:"Tee Putih",adj:0
 /* chosen course (start menu); a different course reloads the page */
 let COURSE_ID="imperial-karawaci";try{COURSE_ID=localStorage.getItem("caddy-course-v1")||COURSE_ID;}catch(e){}
 const EXT=window.COURSE_EXT&&window.COURSE_EXT.id===COURSE_ID?window.COURSE_EXT:null;
-const C=COURSE_ID==="pangkalan-jati"?COURSE_PJ:EXT?{id:EXT.id,name:EXT.name,tee:"Tee Putih",adj:0,dem:!!EXT.dem,auto:true,maps:EXT.maps,holes:EXT.holes,geo:EXT.geo,greenpx:EXT.greenpx,pxmap:EXT.pxmap,
-  tees:[{id:"putih",name:"Putih",fill:"#ffffff",m:EXT.holes.map(h=>h[3])}]}:COURSE,TEES=C.tees;
+const C=COURSE_ID==="pangkalan-jati"?COURSE_PJ:EXT?{id:EXT.id,name:EXT.name,tee:"Tee Putih",adj:0,dem:!!EXT.dem,auto:true,maps:EXT.maps,holes:EXT.holes,geo:EXT.geo,greenpx:EXT.greenpx,pxmap:EXT.pxmap,base:EXT.base,
+  tees:EXT.tees||[{id:"putih",name:"Putih",fill:"#ffffff",m:EXT.holes.map(h=>h[3])}]}:COURSE,TEES=C.tees;
 let teeI=0;try{teeI=Math.max(0,TEES.findIndex(t=>t.id===localStorage.getItem("caddy-tee-v1")));}catch(e){}
 const H18=C.holes,G=C.geo,CELL=10;
 /* round goal: break 100, 90 or 80 (GOAL = highest score that still breaks it), chosen on the status row */
@@ -751,8 +751,8 @@ function playsLike(n,b,r,skip,maxc){if(!terrain||!r||!r.c||!r.c.e||r.short||r.ki
 /* ---------- screen ---------- */
 const chipEls=[],map=$("map"),ov=$("ov");
 let rec=null;
-function teeOf(n){const g=G[n],t=TEES[teeI];if(!t.m||teeI===0)return g.tee;   // blue/red: white tee moved along the first leg by the card difference (estimate)
-  const d=(TEES[0].m[n-1]-t.m[n-1])*g.scale,q=g.land[0]||g.pin,L=Math.hypot(q[0]-g.tee[0],q[1]-g.tee[1])||1;
+function teeOf(n,ti){const g=G[n],i=ti==null?teeI:ti,t=TEES[i],ref=C.base?C.base[n-1]:TEES[0].m[n-1];if(!t.m||(!C.base&&i===0))return g.tee;   // a tee colour = the reference tee moved along the first leg by the card difference (estimate)
+  const d=(ref-t.m[n-1])*g.scale,q=g.land[0]||g.pin,L=Math.hypot(q[0]-g.tee[0],q[1]-g.tee[1])||1;
   return[g.tee[0]+(q[0]-g.tee[0])/L*d,g.tee[1]+(q[1]-g.tee[1])/L*d];}
 let sim=false,simBall={};   // simulation mode: a separate ball per hole, never saved
 const ballOf=n=>{if(sim&&simBall[n])return simBall[n];const h=peek(n);return h.log.length&&h.ball||teeOf(n);};   // before the first recorded shot the ball is always on the tee box
@@ -956,7 +956,7 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
     if(ct)h+='<text class="ovc"'+fs(26)+' x="'+Math.min(VB[0]+VB[2]-(6+ct.length*7)*Z,Math.max(VB[0]+(6+ct.length*7)*Z,px)).toFixed(1)+'" y="'+(Y+34*Z).toFixed(1)+'" text-anchor="middle" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(7)+'" paint-order="stroke">'+ct+'</text>';}
   const TE=teeOf(n);
   if(teeI>0){   // blue / red: placed from the scorecard, measured from the white tee along the line of play; the white tee stays marked as the reference
-    const W=G[n].tee,dd=TEES[teeI].m[n-1]-TEES[0].m[n-1],tc=TEES[teeI].fill;
+    const W=teeOf(n,0),dd=TEES[teeI].m[n-1]-TEES[0].m[n-1],tc=TEES[teeI].fill;
     let ref='<line x1="'+W[0].toFixed(1)+'" y1="'+W[1].toFixed(1)+'" x2="'+TE[0].toFixed(1)+'" y2="'+TE[1].toFixed(1)+'" stroke="'+tc+'" stroke-width="'+zx(4)+'" stroke-dasharray="'+zx(6)+' '+zx(5)+'"/>';
     ref+='<ellipse cx="'+TE[0].toFixed(1)+'" cy="'+TE[1].toFixed(1)+'" rx="'+zx(34)+'" ry="'+zx(22)+'" fill="#86c852" stroke="#5e9e3a" stroke-width="'+zx(2)+'"/>';
     ref+='<g transform="translate('+W[0].toFixed(1)+' '+W[1].toFixed(1)+') scale('+Z.toFixed(3)+')"><circle r="8" fill="#fff" stroke="#0c162d" stroke-width="3"/></g>';h=ref+h;   // white tee dot; the tag says how far from it
