@@ -588,11 +588,13 @@ const $=id=>document.getElementById(id);
 
 /* ---------- clubs: typical carry in metres, editable ---------- */
 /* standard template, built from a 7 iron carry of 130 m: 10 m per iron, 10 m per wood above the 4 iron, 12-15 m between wedges; each player edits it in Club Setting */
-const DEF_CLUBS=[["DRIVER",200],["WOOD",180],["WOOD 2",170],["4 IRON",160],["5 IRON",150],["6 IRON",140],["7 IRON",130],["8 IRON",120],["9 IRON",110],["PW",100],["GW",88],["SW",75],["LW",60]];
+/* club gaps (13 Nov 2026): TrackMan LPGA Tour averages 2024, carry in yards (driver 94 mph, 218 yd). It is the closest speed profile
+   to a 170-200 m driver, so the whole bag scales from it. The 4 iron is not in the LPGA set: between the 5 wood and the 5 iron. */
+const DEF_CLUBS=[["DRIVER",218],["WOOD",195],["WOOD 2",180],["4 IRON",170],["5 IRON",160],["6 IRON",150],["7 IRON",139],["8 IRON",127],["9 IRON",114],["PW",101],["GW",87],["SW",72],["LW",57]];
 const CLUB_NAME={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3"},clubName=nm=>CLUB_NAME[nm]||nm;   // shown everywhere; the stored keys stay WOOD / WOOD 2
 const CLUB_LABEL={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3","4 IRON":"4 IRON / HYBRID","5 IRON":"5 IRON / HYBRID","6 IRON":"6 IRON / HYBRID","7 IRON":"7 IRON / HYBRID"};   // names stay the keys; labels only in Club Setting
 /* template (13 Nov 2026): built from the driver, written as "under 200 m"; a high handicapper starts at 170 m and every club scales with it */
-const DRV_DEF=170,scaleBag=dr=>DEF_CLUBS.map(([nm,c])=>[nm,Math.round(c*dr/200)]);
+const DRV_DEF=170,scaleBag=dr=>DEF_CLUBS.map(([nm,c])=>[nm,Math.round(c*dr/218)]);
 const templateDrv=()=>["hitam","emas"].includes(TEES[teeI]&&TEES[teeI].id)?200:DRV_DEF;   // back tees: a longer hitter's template
 let clubs=scaleBag(templateDrv());
 try{const s=JSON.parse(localStorage.getItem(CKEY)||"null");if(s)clubs.forEach(c=>{if(typeof s[c[0]]==="number")c[1]=s[c[0]];});}catch(e){}
@@ -918,7 +920,7 @@ function advise(n,b,recover,skip,maxc){
   if(!direct&&!(B80&&atTee)||b80long){const fb=frontBack(n,b),hz=frontHz(fb);
     if((hz||b80long)&&fb&&(b80long||DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP+20)){const a0=Math.atan2(GT[1]-b[1],GT[0]-b[0]);let best=null;   // an approach (the green about in reach), not a long way out
       for(let gap=30;gap<=50;gap+=4)for(const ang of [0,-5,5,-10,10,-15,15]){const dl=fb.f-gap;if(dl<40)continue;const t=a0+ang*Math.PI/180,T=[b[0]+Math.cos(t)*dl*g.scale,b[1]+Math.sin(t)*dl*g.scale];
-        if(!landOK(g,T)||!missOK(g,b,T))continue;const c=pick(dl,Math.min(cap,FM),skip);if(!c||!shotClear(g,b,T,c.e))continue;
+        if(!landOK(g,T)||!missOK(g,b,T))continue;{const dp=dm(g,T[0],T[1],GT[0],GT[1]),cp2=clubPick(dp,1e9,new Set(["DRIVER"]))||clubPick(dp,1e9,new Set(["DRIVER"]),2);if(!shotClear(g,T,GT,cp2?cp2.e:dp/.9))continue;}   /* the pitch over from there must be clear (water: 75% rule) */const c=pick(dl,Math.min(cap,FM),skip);if(!c||!shotClear(g,b,T,c.e))continue;
         const sc=Math.abs(gap-38)*.5+Math.abs(ang)*.6;if(!best||sc<best.sc)best={sc,T,dl,c};}
       if(best)return R("layup",best.T,best.dl,best.c,{left:dm(g,best.T[0],best.T[1],P[0],P[1]),pre:1});}}
   if(!direct&&B80&&!safe){const c=pick(DC,cap,skip)||bag().filter(([nm,cr])=>nm!=="DRIVER"&&!(skip&&skip.has(nm))&&cr-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();if(c&&shotClear(g,b,GT,c.e)&&missOK(g,b,GT))direct=R("green",GT,DC,c);}   // Break 80: no safe layup before the trouble either, so it still goes for the green
