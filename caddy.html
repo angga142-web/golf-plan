@@ -779,7 +779,7 @@ function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
         prev=r.c&&r.c.club||prev;pos=r.T;}
-      const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/100000;
+      const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/1000;
       if(!best||sc<best.sc)best={sc,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?R("tee",best.T,best.L,best.c,plan):null;}
 const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
@@ -1498,7 +1498,7 @@ function renderStart(){document.querySelectorAll("#stHoles [data-h]").forEach(x=
 let needT=null;function needLine(){const el=$("stNeed");el.textContent="";clearTimeout(needT);needT=setTimeout(()=>{let mx=0;
   const ds=[],[ha,hb]=span();   // longest tee shot the plan asks for, and on how many holes of this round
   for(let n=ha+1;n<=hb;n++){if(H18[n-1][0]<4)continue;const r=advise(n,teeOf(n),false,null,0);if(r&&r.c&&r.c.e&&(r.kind==="tee"||r.kind==="drive"))ds.push(Math.ceil(r.d/5)*5);}
-  if(!ds.length)return;const v=Math.max(...ds),cnt=ds.filter(x=>x===v).length;
+  if(!ds.length)return;const v=Math.max(...ds),cnt=ds.filter(x=>x>=v-10).length;   // holes that need about that much (within 10 m of the longest)
   el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*150))+"</b> <b>m</b> untuk Break "+BRK+(cnt<=6?", dan itu di <b>"+cnt+" hole</b> saja":", di <b>"+cnt+" hole</b>");
   const nb=$("needNum");clearInterval(needRoll);let k=0;needRoll=setInterval(()=>{k++;if(k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}
     nb.textContent=100+Math.floor(Math.random()*150);},45);},30);}
