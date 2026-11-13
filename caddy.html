@@ -220,7 +220,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .brand{cursor:pointer}
 .start{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px))}
 .start .sheetin{gap:clamp(8px,1.6vh,16px)}
-.start .hero{height:clamp(118px,25vh,210px)}
+.start .hero{height:clamp(112px,20vh,210px)}
 .start .herologo{width:clamp(56px,10vh,78px);height:clamp(56px,10vh,78px)}
 .start .herotxt h1{font-size:clamp(34px,6vh,44px)}
 .start .herotxt small{font-size:clamp(14px,2.4vh,17px)}
@@ -240,10 +240,11 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .stname::placeholder{color:#c9d2e6}
 .sheethead h2 small{display:block;font-size:15px;font-weight:600;color:var(--ink2)}
 .mapcredit{position:absolute;z-index:1;left:50%;bottom:2px;transform:translateX(-50%);font-size:9px;color:#7a8296;white-space:nowrap;pointer-events:none}
-.antri{position:absolute;z-index:2;left:8px;top:96px;display:flex;align-items:center;gap:6px;border:0;background:none;padding:0;cursor:pointer}
+.antri{position:absolute;z-index:2;right:max(8px,env(safe-area-inset-right,0px));top:52px;display:flex;align-items:center;gap:5px;border:2px solid var(--ink);border-radius:20px;background:#fff;padding:2px 9px 2px 2px;cursor:pointer;box-shadow:0 2px 6px rgba(12,22,45,.2)}
 .antri[hidden]{display:none}
-.antri img{width:44px;height:44px;border-radius:50%;border:2px solid #fff;background:#0047af;box-shadow:0 2px 4px rgba(12,22,45,.35)}
-.antri span{background:#fff;border:2px solid var(--ink);border-radius:12px;padding:4px 8px;font:700 12px var(--f-body);color:var(--ink);box-shadow:0 2px 6px rgba(12,22,45,.2)}
+.antri img{width:30px;height:30px;border-radius:50%;background:#0047af}
+.antri span{font:700 11px/1.1 var(--f-body);color:var(--ink);text-align:left;max-width:64px}
+.map.has-antri .resbar{max-height:calc(100% - 100px)}
 .trivia{display:flex;flex-direction:column;gap:10px}
 .trivia article{border:2px solid var(--ink);border-radius:12px;padding:10px 12px;background:#fff}
 .trivia .tag{display:inline-block;font:800 12px var(--f-num);letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:6px;color:#fff;background:var(--ink2);margin-bottom:6px}
@@ -257,6 +258,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 #needNum.set{animation:needpop .3s ease-out}@keyframes needpop{50%{transform:scale(1.25)}}
 .stcopy a{color:#c9d2e6}
 .start .stcopy{font-size:11px;white-space:nowrap}
+.stnote{margin:-6px 0 0;text-align:center;font-size:10.5px;line-height:1.3;color:#9aa6bf}
 .menupop a.tbtn{display:block;text-decoration:none}
 .share{background:#25d366;color:#fff;border-color:#25d366}
 .stcopy{margin:0;text-align:center;font-size:12px;color:#7f8aa6}.stcopy b{color:var(--gold);font-weight:700}
@@ -423,6 +425,7 @@ tr.go{cursor:pointer}
     <section><h3>4 · Jarak pukulan</h3><button class="stclubs" id="stClubs" type="button"></button></section>
     <button class="stgo" id="stGo" type="button">Mulai tee off <svg class="teeic" viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="8" r="7" fill="#fff" stroke="currentColor" stroke-width="2"/><circle cx="9.5" cy="6" r="1" fill="currentColor" opacity=".35"/><circle cx="13" cy="5" r="1" fill="currentColor" opacity=".35"/><circle cx="14.5" cy="9" r="1" fill="currentColor" opacity=".35"/><circle cx="10.5" cy="10" r="1" fill="currentColor" opacity=".35"/><path d="M5 15.5h14l-5 4.5v9.5l-2 2-2-2V20z" fill="currentColor"/></svg></button>
     <p class="stcopy">© 2026 Angga Prasetya · <b>Beta version</b> · <a id="feedback2" target="_blank" rel="noopener">Masukan</a> · <a href="#" id="creditsLink">Sumber data</a></p>
+    <p class="stnote">Jarak estimasi dari data satelit. Konfirmasi lagi dengan caddy kamu sesuai kondisi di lapangan.</p>
   </div>
 </div>
 
@@ -684,8 +687,8 @@ function planTeeSim(n,b,skip,ST,R,plan){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[
     for(const f of [.9,.95,1]){const L=e*f,T=along(rt,L*g.scale);if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);
       if(r0<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
       const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=T,prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
-      for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev);if(!r||r.kind==="putt")break;strokes++;
-        if(r.kind==="punch"||r.kind==="none"){pen+=3;break;}
+      for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev,k===0);if(!r||r.kind==="putt")break;strokes++;
+        if(r.kind==="punch"||r.kind==="none"){pen+=6;break;}   // a punch-out costs the punch and more shots after it
         if(!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
@@ -781,7 +784,7 @@ function advise(n,b,recover,skip,maxc){
   return R("none",P,D,{club:"KELUAR"},{short:1});}
 
 /* Rule (11 Nov 2026): the next shot does not use a longer club than the shot before, unless that leaves only a punch-out */
-function adviseAfter(n,b,recover,skip,prev){const maxc=carryOf(prev||"");
+function adviseAfter(n,b,recover,skip,prev,afterTee){const maxc=Math.max(0,carryOf(prev||"")-(afterTee?1:0));   // afterTee: strictly shorter than the tee club
   const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return playsLike(n,b,r,skip,maxc);
   const r2=advise(n,b,recover,skip);return playsLike(n,b,r2.kind!=="punch"&&r2.kind!=="none"?r2:r,skip);}
 /* elevation (DEMNAS, 12 Nov 2026): a target higher than the ball plays about 1 m longer per metre of rise, lower plays shorter.
@@ -851,9 +854,10 @@ function bend(a,T,f){const L=Math.hypot(T[0]-a[0],T[1]-a[1])||1,sh=SHAPES[shape]
 function thinLabel(x,y,txt){const sd=x-(22+txt.length*11)*Z<VB[0]+6*Z?1:-1;
   return'<text class="rgt"'+fs(20)+' x="'+(x+sd*22*Z).toFixed(1)+'" y="'+y.toFixed(1)+'" text-anchor="'+(sd>0?"start":"end")+'" dominant-baseline="central" fill="#0c162d" stroke="#fff" stroke-width="'+zx(6)+'" paint-order="stroke">'+txt+'</text>';}
 /* the shots after this one, as the caddy would call them if this one comes off */
+const ordShot=k=>k===1?"Tee":k===2?"2nd":k===3?"3rd":k+"th";
 const clubTxt=c=>c&&c.club?clubName(c.club)+(c.pw&&c.pw<90?" · "+c.pw+"%":""):"";
-function nextShots(n,T,prev){const out=[],bench=pattern().bench;let a=T;
-  for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
+function nextShots(n,T,prev,fromTee){const out=[],bench=pattern().bench;let a=T;
+  for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev,fromTee&&i===0);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
   return out;}
 /* green slope estimate from the map: only water is used (greens are shaped to drain toward a nearby lake or pond).
    Bunkers say nothing reliable about slope, so with no water near the green there is no estimate. */
@@ -984,11 +988,12 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   let h=rings(n,g,D);
   if(rec&&rec.kind!=="putt"){const X=rec.T[0],Y=rec.T[1],AF=aimFor(n,b,rec.T),c=AF.c;
     let end=rec.T;const used=[[X,Y-14*Z],[X,Y+34*Z]];   // label spots taken, so follow-up labels do not stack
-    nextShots(n,rec.T,rec.c&&rec.c.club).forEach(({a,r})=>{const q=bend(a,r.T);end=r.T;   // planned follow-up: thin dashed yellow
+    const done=strokes(peek(n));let k=done+1;
+    nextShots(n,rec.T,rec.c&&rec.c.club,done===0).forEach(({a,r})=>{const q=bend(a,r.T);end=r.T;k++;   // planned follow-up: thin dashed yellow
       h+='<path d="'+q.d+'" fill="none" stroke="#0c162d" stroke-opacity=".35" stroke-width="'+zx(6)+'" stroke-linecap="round"/><path d="'+q.d+'" fill="none" stroke="#ffc400" stroke-width="'+zx(3.5)+'" stroke-dasharray="'+zx(14)+' '+zx(10)+'" stroke-linecap="round"/>';
       if(Math.hypot(r.T[0]-P[0],r.T[1]-P[1])/g.scale>=5)h+='<circle cx="'+r.T[0]+'" cy="'+r.T[1]+'" r="'+zx(14)+'" fill="none" stroke="#ffc400" stroke-width="'+zx(3.5)+'" stroke-dasharray="'+zx(7)+' '+zx(5)+'"/>';
       let ly=r.T[1];while(used.some(u=>Math.abs(u[0]-r.T[0])<260*Z&&Math.abs(u[1]-ly)<30*Z))ly-=30*Z;used.push([r.T[0],ly]);
-      h+=thinLabel(r.T[0],ly,m0(r.d)+" m"+(clubTxt(r.c)?" · "+clubTxt(r.c):""));});
+      h+=thinLabel(r.T[0],ly,ordShot(k)+" · "+m0(r.d)+" m"+(clubTxt(r.c)?" · "+clubTxt(r.c):""));});
     if(Math.hypot(P[0]-end[0],P[1]-end[1])/g.scale>=5){   // no plan reaches the hole: thin line with what is left
       h+='<line x1="'+end[0]+'" y1="'+end[1]+'" x2="'+P[0]+'" y2="'+P[1]+'" stroke="#fff" stroke-width="'+zx(3)+'" stroke-dasharray="'+zx(12)+' '+zx(9)+'"/>';
       h+=thinLabel((end[0]+P[0])/2,(end[1]+P[1])/2,m0(dm(g,end[0],end[1],P[0],P[1]))+" m");}
@@ -1110,7 +1115,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   }else{
     const last=h.log[h.log.length-1],recover=!!last&&last.r!=="ok",pat=pattern();
     const prev=[...h.log].reverse().find(e=>carryOf(e.c)>0);
-    rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c);
+    rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0]);
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     const fb=putt?null:frontBack(n,b);
@@ -1139,7 +1144,8 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   }
   $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
   $("mulBtn").hidden=sim||!(h.log.length||h.putts!=null);
-  $("antriBtn").hidden=sim||h.log.length>0||h.putts!=null||sc!=null;   // mulligan = take the last shot (or the putts) back
+  $("antriBtn").hidden=sim||h.log.length>0||h.putts!=null||sc!=null;
+  document.querySelector(".map").classList.toggle("has-antri",!$("antriBtn").hidden);   // status panel stays below the cat   // mulligan = take the last shot (or the putts) back
   drawMap(n,b);}
 
 /* ---------- actions ---------- */
