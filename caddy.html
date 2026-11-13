@@ -688,8 +688,8 @@ const WFULL=.8,wedgeFull=()=>bag().filter(([nm])=>WEDGE.test(nm)).map(([nm,c])=>
 /* favourites (12 Nov 2026): up to three starred clubs; when one of them fits the shot it is chosen over the default pick */
 let FAV=[];try{const v=JSON.parse(localStorage.getItem("caddy-fav-v1")||"[]");if(Array.isArray(v))FAV=v.slice(0,3);}catch(e){}
 function clubPick(d,maxCarry,skip,tee){const hi=tee?1:MAXP;let best=null,fav=null;
-  for(const[nm,c] of bag()){if(c>maxCarry||(skip&&skip.has(nm)))continue;const e=c-C.adj,w=WEDGE.test(nm),part=BRK===80||wedgeRelax,lo=tee?.9:w&&!part?WFULL:MINPW;
-    if(e*hi>=d&&(d>=e*lo||!tee&&w&&part)){best={club:nm,e,pw:Math.round(d/e*100)};if(FAV.includes(nm))fav=best;}}return fav||best;}
+  for(const[nm,c] of bag()){if(c>maxCarry||(skip&&skip.has(nm)))continue;const e=c-C.adj,w=WEDGE.test(nm),part=BRK===80||wedgeRelax,lo=tee===true?.9:w&&!part?WFULL:MINPW;   // tee 2: tee rules relaxed, still up to a full 100% strike
+    if(e*hi>=d&&(d>=e*lo||tee!==true&&w&&part)){best={club:nm,e,pw:Math.round(d/e*100)};if(FAV.includes(nm))fav=best;}}return fav||best;}
 function shotClear(g,a,T,e){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
   return (w===0||.75*e>=w+10)&&!treeBlock(g,a,T);}
@@ -748,7 +748,8 @@ function onSafeSide(n,b,res){if(!res||!res.T||fwAt(n,res.T[0],res.T[1])===null||
     const sc=miss?mMiss*wMiss+Math.min(mOther,10)*3:Math.min(mL/wL,mR/wR);
     if(!best||sc-Math.abs(off)*.05>best.sc)best={sc:sc-Math.abs(off)*.05,T:[x,y]};}
   if(!best)return res;const d=dm(g,b[0],b[1],best.T[0],best.T[1]);
-  if(res.c&&res.c.e&&res.c.club&&d/res.c.e<(WEDGE.test(res.c.club)?WFULL:MINPW))return res;   // the safer side would need less than an 80% swing: keep the spot
+  if(res.c&&res.c.e&&res.c.club&&d/res.c.e<(WEDGE.test(res.c.club)?WFULL:MINPW))return res;
+  if(res.c&&res.c.e&&d>res.c.e+.5)return res;   // the safer side would need more than a full strike: keep the spot   // the safer side would need less than an 80% swing: keep the spot
   return Object.assign({},res,{T:best.T,d,c:res.c&&res.c.e?Object.assign({},res.c,{pw:Math.round(d/res.c.e*100)}):res.c});}
 /* point at a given distance (px) along a polyline, or null if the line is shorter */
 function along(pts,dist){for(let i=0;i+1<pts.length;i++){const a=pts[i],c=pts[i+1],L=Math.hypot(c[0]-a[0],c[1]-a[1]);
@@ -847,7 +848,7 @@ function advise(n,b,recover,skip,maxc){
   const lim=Math.min(recover&&!B80?(carryOf("7 IRON")||140):1e9,maxc||1e9),FM=Math.min(B80?1e9:capOf(ST.layMax),lim);
   const R=(kind,T,d,c,x)=>Object.assign({kind,T,d,c,D},x||{});
   if(onGreen(n,b))return R("putt",P,D,null);
-  const TE=teeOf(n),atTee=dm(g,b[0],b[1],TE[0],TE[1])<15,pick=(d,cap,sk)=>clubPick(d,cap,sk,atTee&&!teeRuleOff);
+  const TE=teeOf(n),atTee=dm(g,b[0],b[1],TE[0],TE[1])<15,pick=(d,cap,sk)=>clubPick(d,cap,sk,atTee?(teeRuleOff?2:true):false);
   const tsk3=B80?[]:(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)||[],far3=par===3&&!bag().some(([nm,c])=>!tsk3.includes(nm)&&c-C.adj>=D*.98);   // clubs this break allows off the tee
   /* RULE (13 Nov 2026): hard holes play super safe (Break 90/100: SI 1-8, Break 80: SI 1-5). No full shot goes at the green:
      the full shots end on a chip spot just short of the green, then 1 chip and 1 putt for bogey. */
@@ -880,9 +881,9 @@ function advise(n,b,recover,skip,maxc){
     // no allowed club reaches the plan spot: the longest club this break allows, full swing along the line, if it lands safe
     const top=bag().find(([nm])=>!skip.has(nm));
     if(top){const e=top[1]-C.adj,t=Math.min(1,e/d),T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
-      if(landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e*t,{club:top[0],e,pw:100},plan));}
+      if((landOK(g,T2)||par===3&&onGreen(n,T2))&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e*t,{club:top[0],e,pw:100},plan));}   // par 3: a full strike that finishes on the green is fine
     // forced by the course (e.g. a carry over water no allowed club makes): any club that does it
-    const cF=clubPick(d,1e9,new Set(["DRIVER"]))||bag().filter(c=>c[1]-C.adj>=d).map(([nm,c])=>({club:nm,e:c-C.adj,pw:Math.round(d/(c-C.adj)*100)})).pop();
+    const cF=clubPick(d,1e9,new Set(["DRIVER"]),2)||bag().filter(c=>c[1]-C.adj>=d).map(([nm,c])=>({club:nm,e:c-C.adj,pw:Math.round(d/(c-C.adj)*100)})).pop();
     if(cF)return onSafeSide(n,b,R("tee",T,d,cF,plan));
     const tp=top||bag()[0],e=tp[1]-C.adj,t=Math.min(1,e/d),T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
     return onSafeSide(n,b,R("tee",T2,e*t,{club:tp[0],e,pw:100},plan));}}
