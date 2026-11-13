@@ -269,6 +269,16 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .qrisph{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;font:800 34px var(--f-num);color:var(--ink2)}
 .qrisph small{font-size:14px;font-weight:600}
 .qris.empty .qrisph{display:flex}.qris.empty img{display:none}
+.guide{position:fixed;inset:0;z-index:45}
+.guide[hidden]{display:none}
+.gring{position:absolute;border:3px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(6,12,26,.72);transition:all .25s ease;pointer-events:none}
+.gcard{position:absolute;left:12px;right:12px;display:flex;gap:10px;align-items:flex-start;background:#fff;border:2px solid var(--ink);border-radius:14px;padding:12px;box-shadow:0 8px 24px rgba(0,0,0,.35)}
+.gcat{width:46px;height:46px;border-radius:50%;flex:none;background:#0047af}
+.gcard small{font:800 12px var(--f-num);letter-spacing:.06em;text-transform:uppercase;color:var(--ink2)}
+.gcard h3{margin:2px 0 4px;font-size:19px}
+.gcard p{margin:0;font-size:14px;line-height:1.4}
+.gbtns{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.gnext{background:var(--gold);border-color:var(--ink)}
 .stneed{margin:2px 0 0;min-height:1.3em;text-align:center;font-size:13px;font-weight:600;color:#c9d2e6;border:2px solid var(--gold);border-radius:10px;padding:6px 10px;background:rgba(255,196,0,.08)}
 .stneed:empty{visibility:hidden}.stneed b{color:var(--gold)}
 #needNum{display:inline-block;min-width:3ch;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
@@ -372,6 +382,7 @@ tr.go{cursor:pointer}
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><span class="mlab">Tee</span><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
       <button class="tbtn" id="soundBtn" type="button"><span class="mlab">Suara</span><span id="soundTxt">Nyala</span></button>
+      <button class="tbtn" id="guideMenu" type="button">Cara pakai</button>
       <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
       <button class="tbtn" id="backStart" type="button">Kembali ke menu awal</button>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
@@ -460,6 +471,12 @@ tr.go{cursor:pointer}
   <div class="pgreen"><div class="pcup"></div><div class="pflag"></div><div class="pball"><img id="pballImg" alt=""></div></div>
   <div class="ptip" id="pTip"></div>
   <p>Menyiapkan caddy… <span class="pskip">ketuk untuk lewati</span></p>
+</div>
+
+<div class="guide" id="guide" hidden>
+  <div class="gring" id="gRing"></div>
+  <div class="gcard" id="gCard"><img class="gcat" alt=""><div><small id="gStep"></small><h3 id="gTitle"></h3><p id="gText"></p>
+    <div class="gbtns"><button class="close" id="gSkip" type="button">Lewati</button><button class="close gnext" id="gNext" type="button">Lanjut</button></div></div></div>
 </div>
 
 <div class="sheet gut" id="histSheet" hidden>
@@ -1179,6 +1196,29 @@ $("closeDone").addEventListener("click",()=>{$("doneSheet").hidden=true;});
 $("doneCard").addEventListener("click",()=>{$("doneSheet").hidden=true;openCard();});
 const qrisCheck=()=>{const q=$("qrisImg");q.parentNode.classList.toggle("empty",q.complete&&!q.naturalWidth);};   // placeholder until the owner's QRIS picture (qris.png) is uploaded
 $("qrisImg").addEventListener("error",qrisCheck);$("qrisImg").addEventListener("load",qrisCheck);qrisCheck();
+/* ---------- first-time guide (13 Nov 2026): 5 steps on the play screen, once; again from the menu ---------- */
+const GUIDE=[
+ [".shot","Saran Cat Caddy","Kotak kuning = club untuk pukulan ini. Kotak putih = jarak ke target. Garis kuning di peta = rencana pukulan berikutnya (2nd, 3rd …). Bidik ke titik AIM."],
+ ["#resbar","Setelah memukul, pilih hasilnya","Tap STRAIGHT kalau lurus, KIRI/KANAN kalau melenceng, GROUNDED atau TOPPING kalau pukulan gagal, PENALTI kalau OB atau masuk air."],
+ [".recbtn","Lalu tap bola untuk mencatat","Bola di peta pindah ke titik rencana. Kalau bola aslinya di tempat lain, tap peta di posisi bola sebenarnya. Salah catat? Tekan Mulligan di atas peta."],
+ [".map","Di green: pilih jumlah putt","Begitu bola di green, pilih 1, 2, 3 atau 4+ putt. Skor hole tersimpan, lalu lanjut ke hole berikutnya."],
+ [".brandrow","Kartu skor dan menu","LIHAT SKOR untuk kartu skor dan bagikan ke WhatsApp. Menu ☰ untuk jarak pukulan, warna tee, riwayat ronde, suara dan cara pakai ini."]];
+let gI=0;
+function guideShow(i){gI=i;const [sel,title,text]=GUIDE[i],el=document.querySelector(sel);
+  if(!el||!el.offsetWidth){if(i+1<GUIDE.length)return guideShow(i+1);return guideEnd();}   // step target not on screen now: skip it
+  const r=el.getBoundingClientRect(),pad=4,R=$("gRing"),Cd=$("gCard");
+  Object.assign(R.style,{left:(r.left-pad)+"px",top:(r.top-pad)+"px",width:(r.width+pad*2)+"px",height:(r.height+pad*2)+"px"});
+  $("gStep").textContent="Langkah "+(i+1)+" dari "+GUIDE.length;$("gTitle").textContent=title;$("gText").textContent=text;
+  $("gNext").textContent=i+1<GUIDE.length?"Lanjut":"Mulai main";
+  Cd.style.bottom="";const h=Cd.offsetHeight,below=r.bottom+12;   // card under the spot, else above it, else at the top: never off screen
+  Cd.style.top=(below+h<innerHeight-8?below:r.top-12-h>8?r.top-12-h:8)+"px";}
+function guideStart(){$("guide").hidden=false;guideShow(0);}
+function guideEnd(){$("guide").hidden=true;try{localStorage.setItem("caddy-guide-v1","1");}catch(e){}}
+$("gCard").querySelector(".gcat").src=$("cat").querySelector("img").src;
+$("gNext").addEventListener("click",()=>{if(gI+1<GUIDE.length)guideShow(gI+1);else guideEnd();});
+$("gSkip").addEventListener("click",guideEnd);
+$("guideMenu").addEventListener("click",()=>{menuOpen(false);guideStart();});
+function guideOnce(){let seen=false;try{seen=!!localStorage.getItem("caddy-guide-v1");}catch(e){}if(!seen)setTimeout(guideStart,350);}
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
   el.style.bottom=(document.querySelector(".tools").offsetHeight+16)+"px";}
 $("cat").addEventListener("click",()=>{catClosed=catTip;$("cat").hidden=true;});
@@ -1495,7 +1535,7 @@ $("stGo").addEventListener("click",()=>{showName();const pi=$("puttIntro");pi.hi
   if(SOUND){perkututSound();cupSound(4.45);}
   introT=[setTimeout(introEnd,4900)];});
 /* 5 s loading (13 Nov 2026); a tap ends it at once */
-let introT=[];function introEnd(){introT.forEach(clearTimeout);introT=[];const pi=$("puttIntro");if(pi.hidden)return;$("startSheet").hidden=true;VB=null;render();pi.hidden=true;pi.classList.remove("go");}
+let introT=[];function introEnd(){introT.forEach(clearTimeout);introT=[];const pi=$("puttIntro");if(pi.hidden)return;$("startSheet").hidden=true;VB=null;render();pi.hidden=true;pi.classList.remove("go");guideOnce();}
 $("puttIntro").addEventListener("click",introEnd);
 /* tip for the chosen break: how many strokes over par it allows, as bogeys / doubles */
 function breakTip(b){const par=H18.reduce((a,h)=>a+h[0],0),over=b-1-par;
