@@ -912,12 +912,15 @@ function advise(n,b,recover,skip,maxc){
   if(safe){const cs=chipSpot(cap,skip);if(cs)return cs;}
   /* rule (13 Nov 2026): when carrying the bunker/water in front would need a club beyond the rules, lay up short of it,
      30-50 m before the green, and pitch over it */
-  if(!direct&&!(B80&&atTee)){const fb=frontBack(n,b),hz=frontHz(fb);   // Break 80 par 3 tee shot keeps going for the green
-    if(hz&&fb&&DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP+20){const a0=Math.atan2(GT[1]-b[1],GT[0]-b[0]);let best=null;   // an approach (the green about in reach), not a long way out
+  /* Break 80 par 3 tee shot (user, 13 Nov 2026): goes for the green unless reaching it needs a club longer than the 5 iron; then lay up 30-50 m short */
+  const b80long=B80&&atTee&&par===3&&(()=>{const c=pick(DC,1e9,skip);return !c||carryOf(c.club)>capOf("5 IRON");})();
+  if(!direct&&!(B80&&atTee)||b80long){const fb=frontBack(n,b),hz=frontHz(fb);
+    if((hz||b80long)&&fb&&(b80long||DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP+20)){const a0=Math.atan2(GT[1]-b[1],GT[0]-b[0]);let best=null;   // an approach (the green about in reach), not a long way out
       for(let gap=30;gap<=50;gap+=4)for(const ang of [0,-5,5,-10,10,-15,15]){const dl=fb.f-gap;if(dl<40)continue;const t=a0+ang*Math.PI/180,T=[b[0]+Math.cos(t)*dl*g.scale,b[1]+Math.sin(t)*dl*g.scale];
         if(!landOK(g,T)||!missOK(g,b,T))continue;const c=pick(dl,Math.min(cap,FM),skip);if(!c||!shotClear(g,b,T,c.e))continue;
         const sc=Math.abs(gap-38)*.5+Math.abs(ang)*.6;if(!best||sc<best.sc)best={sc,T,dl,c};}
       if(best)return R("layup",best.T,best.dl,best.c,{left:dm(g,best.T[0],best.T[1],P[0],P[1]),pre:1});}}
+  if(!direct&&B80&&!safe){const c=pick(DC,cap,skip)||bag().filter(([nm,cr])=>nm!=="DRIVER"&&!(skip&&skip.has(nm))&&cr-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();if(c&&shotClear(g,b,GT,c.e)&&missOK(g,b,GT))direct=R("green",GT,DC,c);}   // Break 80: no safe layup before the trouble either, so it still goes for the green
   if(direct&&!safe&&(front||attack))return direct;
   if(!B80&&!safe&&front){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   if(!safe)for(let left=15;left<=(B80?(front?45:50):25);left+=5){const da=D-left,c=pick(da,cap,skip),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];
@@ -934,7 +937,7 @@ function advise(n,b,recover,skip,maxc){
   let best=null;
   for(const q of cands){const T=[q.x,q.y];if(T[0]<0||T[0]>1080||T[1]<g.top||T[1]>g.bot)continue;
     const r=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);if(r>D-(upd?10:20)||dl<40)continue;
-    if(safe&&(r<20||onGreen(n,T)))continue;   // super safe: a layup never ends on the green
+    if(onGreen(n,T)||safe&&r<20)continue;   // a layup never ends on the green
     const c=pick(dl,FM,skip);if(!c||c.pw<50||!landOK(g,T)||!shotClear(g,b,T,c.e)||!missOK(g,b,T))continue;
     const off=routeOff(g,T);if(off>25)continue;
     const nx=clubPick(safe?Math.max(30,r-24):r,150),ang=Math.abs(Math.atan2(vb[0]*(T[1]-P[1])-vb[1]*(T[0]-P[0]),vb[0]*(T[0]-P[0])+vb[1]*(T[1]-P[1])))*180/Math.PI;
