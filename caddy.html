@@ -716,6 +716,9 @@ function treeRun(g,a,T){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="stri
   return best;}
 function frontClear(g,a,P,D){for(let m=Math.max(0,D-50);m<=D-4;m+=3){const t=m/D,x=a[0]+(P[0]-a[0])*t,y=a[1]+(P[1]-a[1])*t;
   if(codeAt(g,x,y)||nearest(g,x,y,1,6)||nearest(g,x,y,2,10))return false;}return true;}
+/* rule (13 Nov 2026): a mishit (about 85% of the distance) must not finish in a bunker or water: the line from 85% to the target is checked */
+function missOK(g,a,T){const L=dm(g,a[0],a[1],T[0],T[1]);for(let m=L*.85;m<L-2;m+=2){const t=m/L,x=a[0]+(T[0]-a[0])*t,y=a[1]+(T[1]-a[1])*t;
+  if(onGreen(g.n,[x,y]))continue;if(codeAt(g,x,y)||nearest(g,x,y,1,2))return false;}return true;}   // short but still on the green is fine
 function landOK(g,T,wm){return !codeAt(g,T[0],T[1])&&!nearest(g,T[0],T[1],2,wm||22)&&!nearest(g,T[0],T[1],1,6)&&!inTrees(g.n,T);}   // never land in the trees   // wm: metres clear of water (22, less for a short layup in front of the green)
 function routeOff(g,T){const r=[g.tee,...g.land,g.pin];let best=1e9;
   for(let i=0;i+1<r.length;i++){const a=r[i],b=r[i+1],vx=b[0]-a[0],vy=b[1]-a[1],L2=vx*vx+vy*vy||1;
@@ -770,7 +773,7 @@ function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],
   const layCap=capOf(ST.layMax),wMax=Math.round(Math.max(...wedgeFull().map(w=>w[1])));let best=null;
   for(const[nm,cr] of bag()){if(skip&&skip.has(nm))continue;if(!tee&&(nm==="DRIVER"||cr>(maxc||1e9)||cr>layCap))continue;const e=cr-C.adj,lo=tee?.9:WEDGE.test(nm)?WFULL:MINPW,hi=tee?1:MAXP;
     for(let L=Math.ceil(e*lo);L<=e*hi;L+=2){const T=along(rt,L*g.scale);if(!T)continue;const r=dm(g,T[0],T[1],P[0],P[1]);
-      if(r<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
+      if(r<30||!landOK(g,T)||!shotClear(g,b,T,e)||!tee&&!missOK(g,b,T))continue;
       const appCap=capOf(frontClear(g,T,P,r)?ST.appClear:ST.appGuard);let shots=0,app=null;
       const a=fit(r,cr,appCap);if(a&&shotClear(g,T,P,a.e)&&(tee||frontClear(g,T,P,r))){shots=1;app=a;}
       else if(tee)for(let left=wMax;left>=40&&!shots;left-=3){   // from the tee one layup may come between: it leaves a full wedge
@@ -783,30 +786,38 @@ function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],
       if(!best||sc<best.sc)best={sc,T,L,r,c:{club:nm,e,pw:Math.round(L/e*100)}};}}
   return best?R(tee?"tee":"layup",best.T,best.L,best.c,Object.assign({left:best.r},plan||{})):null;}
 const TEEPLAN={};
-function planTeeSim(n,b,skip,ST,R,plan,extra,free){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]),SAFEH=BRK===80?H18[n-1][1]<=5:H18[n-1][1]<=8;
-  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+/* water off the tee when the normal rules leave only a short layup (13 Nov 2026, Pangkalan Jati 5):
+   "between": Break 100 lands between two hazards (8 m clear of water, a full strike carries the first by 5 m);
+   "carry": Break 90/80 carry them all (any tee club, 85% of a strike clears the water by 10 m) */
+function teeCarry(g,a,T,e,mode){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
+  for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
+  return w===0||(mode==="between"?e>=w+5:.85*e>=w+10);}
+const directRange=()=>(capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON")-C.adj)*MAXP;   // rule (13 Nov 2026): within this the green may be played straight at
+function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]),SAFEH=BRK===80?H18[n-1][1]<=5:H18[n-1][1]<=8;
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0,relax||""].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
   for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
     for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
       // the plan line can hug water (Imperial 4 and 13 run beside a lake): also try spots up to 32 m either side, on the hole's own fairway
       const T1=along(rt,(L+2)*g.scale)||T0,dl=Math.hypot(T1[0]-T0[0],T1[1]-T0[1])||1,px=-(T1[1]-T0[1])/dl,py=(T1[0]-T0[0])/dl;let T=null,off=0;
       for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];
-        if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0||!landOK(g,c)||!shotClear(g,b,c,e))continue;T=c;off=Math.abs(o);break;}
+        if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0&&relax!=="between"||!landOK(g,c,relax==="between"?8:undefined)||!(relax?teeCarry(g,b,c,e,relax):shotClear(g,b,c,e)))continue;T=c;off=Math.abs(o);break;}
       if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
-      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null;
+      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null,viol=false;
       const tu=treeUsed;
       for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr,org);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
         const fs=fr||k>0&&forcedShort(n,org,pos);
         if(!fs&&!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
         if(!fs&&k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
+        if(!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))viol=true;   // a later shot as long as the tee club
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
-        if(r.kind==="green"){inClub=r.c&&r.c.club;if(SAFEH)pen+=2;break;}   // super-safe hole: a full shot at the green is the fallback, not the plan
+        if(r.kind==="green"){inClub=r.c&&r.c.club;if(SAFEH&&r.d>directRange())pen+=2;break;}   // super-safe hole: a full shot at the green is the fallback, not the plan
         prev=r.c&&r.c.club||prev;org=pos;pos=r.T;}
       if(treeUsed>tu)pen+=2;   // the plan from this tee shot has to go over trees later
-      const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/1000;
-      if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
-  return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k}):null;}
+      const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.03)-L/1000;
+      if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),viol,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
+  return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k,viol:best.viol}):null;}
 /* shortest tee shot on hole n that still reaches the green within this break's budget for the hole (target minus 2 putts) (13 Nov 2026):
    it measures what the break needs, not what the plan happens to pick, so a shorter tee (red) does not "need" more than white */
 function teeNeed(n){const g=G[n],b=teeOf(n),P=g.pin,ST=STRAT[BRK]||STRAT[90],B80=BRK===80,attack=B80||H18[n-1][1]>=ST.attackSI;
@@ -843,16 +854,18 @@ function advise(n,b,recover,skip,maxc){
   const safe=BRK===80?si<=5:si<=8;
   const chipSpot=(cap,sk)=>{const fb=frontBack(n,b),fe=fb?Math.max(0,D-fb.f):8,a0=Math.atan2(b[1]-P[1],b[0]-P[0]);let best=null;
     for(let left=Math.ceil(fe+4);left<=Math.min(45,Math.max(fe+14,30));left+=2)for(const ang of [0,-6,6,-12,12,-18,18,-27,27,-36,36,-45,45]){const t=a0+ang*Math.PI/180,T=[P[0]+Math.cos(t)*left*g.scale,P[1]+Math.sin(t)*left*g.scale];
-      if(onGreen(n,T)||!landOK(g,T,10))continue;const da=dm(g,b[0],b[1],T[0],T[1]);if(da<30)continue;const c=pick(da,cap,sk);if(!c||!shotClear(g,b,T,c.e))continue;
+      if(onGreen(n,T)||!landOK(g,T,10))continue;const da=dm(g,b[0],b[1],T[0],T[1]);if(da<30||!atTee&&!missOK(g,b,T))continue;const c=pick(da,cap,sk);if(!c||!shotClear(g,b,T,c.e))continue;
       const sc=left+Math.abs(ang)*.8;if(!best||sc<best.sc)best={sc,T,da,c,left};}   // closest to the green, on the line in
     return best?R("apron",best.T,best.da,best.c,{left:best.left,safe:1}):null;};
   if(safe&&atTee&&par===3){const cs=chipSpot(1e9,new Set([...(skip||[]),...tsk3]));if(cs)return cs;}   // par 3: the tee shot stops short of the green too
   if(atTee&&!(B80&&par===3)){   // Break 80 par 3: straight at the green below
-    if(B80&&!safe){const dr=driveB80(n,b,skip,R);if(dr)return onSafeSide(n,b,dr);}
+    if(B80&&!safe){const dr=driveB80(n,b,skip,R);if(dr&&(par===3||carryOf(dr.c.club)>=((bag()[3]||bag()[bag().length-1])[1])))return onSafeSide(n,b,dr);}
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
     if((par>3||far3)&&!teeRuleOff){const sw=BRK===100&&par===5?["WOOD 2","WOOD"].find(nm=>carryOf(nm)>0):null;
-      const pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);if(pt)return onSafeSide(n,b,pt);}
+      const pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);
+      if(pt&&pt.viol){const mode=BRK===100?"between":"carry",p2=planTeeSim(n,b,tsk,ST,R,plan,mode==="carry"?Object.fromEntries([...tsk].filter(c=>!(skip&&skip.has(c))).map(c=>[c,.5])):null,false,mode);if(p2&&!p2.viol)return onSafeSide(n,b,p2);}   // water forces a layup off the tee: Break 100 between the hazards, Break 90/80 over them
+      if(pt)return onSafeSide(n,b,pt);}
     if(!pick(d,cap,tsk)&&par>3){const top=bag().find(([nm])=>!tsk.has(nm));   // plan spot past the longest allowed club: land that club at a full swing short of it
       if(top){const e=top[1]-C.adj,t=e/d,T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
         if(e<d&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e,{club:top[0],e,pw:100},plan));}}
@@ -884,12 +897,23 @@ function advise(n,b,recover,skip,maxc){
   const front=frontClear(g,b,P,D),cap=Math.min(lim,B80?1e9:capOf(attack&&ST.appAttack?ST.appAttack:front?ST.appClear:ST.appGuard));
   /* Rule (11 Nov 2026): bunker or water in front of the green -> lay up short of it and chip to the centre; fly it only on SI 16-18 or when no layup works */
   const fullGap=x=>Math.min(...bag().filter(([nm,c])=>nm!=="DRIVER"&&c<=cap&&!(skip&&skip.has(nm))).map(([nm,c])=>{const e=c-C.adj,lo=e*(WEDGE.test(nm)?WFULL:MINPW),hi=e*MAXP;return x<lo?lo-x:x>hi?x-hi:0;}).concat([999]));   // metres outside the nearest full-swing window
+  /* approach club (13 Nov 2026): with sand or water short of the green on the line, take the shortest club whose mishit (85%) still carries it
+     and whose good strike stays on the green; the club that only just reaches is shown as the minimum */
+  const upClub=cp=>{const c=pick(DC,cp,skip);if(!c||!shotClear(g,b,GT,c.e))return null;const fb=frontBack(n,b);if(!fb)return R("green",GT,DC,c);
+    let hz=0;for(let m=8;m<fb.f;m+=2){const t=m/DC,x=b[0]+(GT[0]-b[0])*t,y=b[1]+(GT[1]-b[1])*t;if(codeAt(g,x,y)||nearest(g,x,y,1,3))hz=m;}
+    if(!hz||.85*DC>=hz+3)return R("green",GT,DC,c);
+    for(const[nm,cr] of bag().slice().reverse()){if(nm==="DRIVER"||cr>cp||skip&&skip.has(nm))continue;const e=cr-C.adj;if(e<=c.e)continue;
+      const aim=Math.min(e*MAXP,fb.b-4);if(aim<DC||.85*aim<hz+3||aim/e<MINPW||!shotClear(g,b,GT,e))continue;   // aim deeper on the green so a mishit still carries the trouble
+      const T=[b[0]+(GT[0]-b[0])*aim/DC,b[1]+(GT[1]-b[1])*aim/DC];return R("green",T,aim,{club:nm,e,pw:Math.round(aim/e*100)},{minClub:c.club});}
+    return null;};   // no club does both: not straight at the green
+  let direct=upClub(cap);
+  if(!direct&&DC<=directRange())direct=upClub(capOf(BRK===100?"7 IRON":BRK===90?"6 IRON":"5 IRON"));   // within range a club or two more is fine to carry the trouble
+  if(direct&&DC<=directRange())return direct;   // rule (13 Nov 2026): within 9 iron (Break 100), 8 iron (90), 7 iron (80) play straight at the green
   if(safe){const cs=chipSpot(cap,skip);if(cs)return cs;}
-  let direct=null;{const c=pick(DC,cap,skip);if(c&&shotClear(g,b,GT,c.e))direct=R("green",GT,DC,c);}
   if(direct&&!safe&&(front||attack))return direct;
   if(!B80&&!safe&&front){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   if(!safe)for(let left=15;left<=(B80?(front?45:50):25);left+=5){const da=D-left,c=pick(da,cap,skip),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];
-    if(c&&c.pw>=50&&da>=40&&shotClear(g,b,T,c.e)&&(left===15&&front||landOK(g,T,front?22:Math.max(10,da*.12))))return R("apron",T,da,c,{left});}   // no 30 m "layups" in front of the green
+    if(c&&c.pw>=50&&da>=40&&shotClear(g,b,T,c.e)&&missOK(g,b,T)&&(left===15&&front||landOK(g,T,front?22:Math.max(10,da*.12))))return R("apron",T,da,c,{left});}   // no 30 m "layups" in front of the green
   if(direct&&!safe)return direct;
   if(!B80&&!safe){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   const vb=[b[0]-P[0],b[1]-P[1]],a0=Math.atan2(vb[1],vb[0]),cands=g.land.map((p,k)=>({x:p[0],y:p[1],plan:k+1}));
@@ -903,7 +927,7 @@ function advise(n,b,recover,skip,maxc){
   for(const q of cands){const T=[q.x,q.y];if(T[0]<0||T[0]>1080||T[1]<g.top||T[1]>g.bot)continue;
     const r=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);if(r>D-(upd?10:20)||dl<40)continue;
     if(safe&&(r<20||onGreen(n,T)))continue;   // super safe: a layup never ends on the green
-    const c=pick(dl,FM,skip);if(!c||c.pw<50||!landOK(g,T)||!shotClear(g,b,T,c.e))continue;
+    const c=pick(dl,FM,skip);if(!c||c.pw<50||!landOK(g,T)||!shotClear(g,b,T,c.e)||!missOK(g,b,T))continue;
     const off=routeOff(g,T);if(off>25)continue;
     const nx=clubPick(safe?Math.max(30,r-24):r,150),ang=Math.abs(Math.atan2(vb[0]*(T[1]-P[1])-vb[1]*(T[0]-P[0]),vb[0]*(T[0]-P[0])+vb[1]*(T[1]-P[1])))*180/Math.PI;
     const wgap=safe?fullGap(r-24):B80?0:Math.min(...wedgeFull().map(([a,z])=>r<a?a-r:r>z?r-z:0).concat([999]));   // metres outside the nearest full-wedge window
@@ -917,7 +941,8 @@ function advise(n,b,recover,skip,maxc){
   for(let t=0;t<=1;t+=.02){const k=Math.min(rt.length-2,Math.floor(t*(rt.length-1))),u=t*(rt.length-1)-k;
     const T=[rt[k][0]+(rt[k+1][0]-rt[k][0])*u,rt[k][1]+(rt[k+1][1]-rt[k][1])*u],rr=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);
     if(rr<D&&dl<=70&&landOK(g,T)&&(!pb||dl<pb.dl))pb={T,dl,r:rr};}
-  if(safe&&direct)return direct;   // super safe, but no chip spot or layup works from here: a full shot at the green beats a punch-out
+  if(!direct){const c=pick(DC,cap,skip)||pick(DC,1e9,skip);if(c&&shotClear(g,b,GT,c.e))direct=R("green",GT,DC,c);}   // nothing safer is left: the plain shot at the green
+  if(direct)return direct;   // super safe, but no chip spot or layup works from here: a full shot at the green beats a punch-out
   if(!treeOff&&!recover&&!inTrees(n,b)){treeOff=true;const r2=advise(n,b,recover,skip,maxc);treeOff=false;if(r2.kind!=="punch"&&r2.kind!=="none"){treeUsed++;return r2;}}   // the ball is where the plan put it (no miss, not in the trees) and trees block every shot: over them (forced by the course) rather than a punch-out
   if(pb)return R("punch",pb.T,pb.dl,{club:"PUNCH"},{left:pb.r,short:1});
   if(atTee&&par===3){const c=clubPick(DC,1e9,null,true)||clubPick(DC,1e9,null)||bag().filter(x=>x[1]-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();
@@ -1297,7 +1322,7 @@ function tgtText0(r){
   if(r.kind==="tee")return(r.plan?"ke landing area":"ke tengah green")+" · "+m0(r.d)+" m";
   if(r.kind==="green"&&r.chip==="run")return"chip & run · mendarat 1–2 m di green, sisanya menggelinding";
   if(r.kind==="green"&&r.chip==="lob")return"angkat bola lewati rintangan · mendarat di green";
-  if(r.kind==="green")return"ke tengah green · "+m0(r.d)+" m";
+  if(r.kind==="green")return"ke tengah green · "+m0(r.d)+" m"+(r.minClub&&r.minClub!==r.c.club?" · minimal "+clubName(r.minClub)+", ambil "+clubName(r.c.club)+" biar aman lewat rintangan":"");
   if(r.kind==="apron")return(r.safe?"main aman · ":"")+"ke depan green · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
   if(r.kind==="layup")return"layup "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
   if(r.kind==="punch")return"keluar ke fairway · "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
