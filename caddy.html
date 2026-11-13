@@ -686,20 +686,21 @@ function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],
       if(!best||sc<best.sc)best={sc,T,L,r,c:{club:nm,e,pw:Math.round(L/e*100)}};}}
   return best?R(tee?"tee":"layup",best.T,best.L,best.c,Object.assign({left:best.r},plan||{})):null;}
 const TEEPLAN={};
-function planTeeSim(n,b,skip,ST,R,plan){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
-  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join()].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{})].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
-  for(const[nm,cr] of bag()){if(skip.has(nm))continue;const e=cr-C.adj;
+  for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
     for(const f of [.9,.95,1]){const L=e*f,T=along(rt,L*g.scale);if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);
       if(r0<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
       const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=T,prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
       for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev,k===0);if(!r||r.kind==="putt")break;strokes++;
-        if(r.kind==="punch"||r.kind==="none"){pen+=6;break;}   // a punch-out costs the punch and more shots after it
+        if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
         if(!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
+        if(k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
         prev=r.c&&r.c.club||prev;pos=r.T;}
-      const sc=strokes+pen+(inClub?carryOf(inClub)/2000:.2)-L/100000;
+      const sc=strokes+pen+(xp||0)+(inClub?carryOf(inClub)/2000:.2)-L/100000;
       if(!best||sc<best.sc)best={sc,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?R("tee",best.T,best.L,best.c,plan):null;}
 const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
@@ -727,7 +728,8 @@ function advise(n,b,recover,skip,maxc){
     if(B80){const dr=driveB80(n,b,skip,R);if(dr)return onSafeSide(n,b,dr);}
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
-    if((par>3||far3)&&!teeRuleOff){const pt=planTeeSim(n,b,tsk,ST,R,plan);if(pt)return onSafeSide(n,b,pt);}
+    if((par>3||far3)&&!teeRuleOff){const sw=BRK===100&&par===5?["WOOD 2","WOOD"].find(nm=>carryOf(nm)>0):null;
+      const pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);if(pt)return onSafeSide(n,b,pt);}
     if(!pick(d,cap,tsk)&&par>3){const top=bag().find(([nm])=>!tsk.has(nm));   // plan spot past the longest allowed club: land that club at a full swing short of it
       if(top){const e=top[1]-C.adj,t=e/d,T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
         if(e<d&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e,{club:top[0],e,pw:100},plan));}}
@@ -737,11 +739,17 @@ function advise(n,b,recover,skip,maxc){
     if(c0&&!teeRuleOff&&nxt&&carryOf(nxt.club)>carryOf(c0.club)){const up=bag().filter(([nm,cr])=>cr>carryOf(c0.club)&&cr<=cap&&!(skip&&skip.has(nm))).pop();
       if(up){const e=up[1]-C.adj,dd=e*.9,T2=[b[0]+(T[0]-b[0])*dd/d,b[1]+(T[1]-b[1])*dd/d];
         if(dd-d<=10&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,dd,{club:up[0],e,pw:90},plan));}}
-    {const cT=c0||clubPick(d,1e9,skip)||clubPick(d,1e9,new Set(["DRIVER"]))||bag().filter(c=>c[1]-C.adj>=d).map(([nm,c])=>({club:nm,e:c-C.adj,pw:Math.round(d/(c-C.adj)*100)})).pop();
+    {const cT=c0||clubPick(d,1e9,skip);
     if(cT)return onSafeSide(n,b,R("tee",T,d,cT,plan));
-    // back tees (e.g. black/gold) where no club reaches the plan spot: the longest club this break allows, full swing along the line
-    const top=bag().find(([nm])=>!skip.has(nm))||bag()[0],e=top[1]-C.adj,t=Math.min(1,e/d),T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
-    return onSafeSide(n,b,R("tee",T2,e*t,{club:top[0],e,pw:100},plan));}}
+    // no allowed club reaches the plan spot: the longest club this break allows, full swing along the line, if it lands safe
+    const top=bag().find(([nm])=>!skip.has(nm));
+    if(top){const e=top[1]-C.adj,t=Math.min(1,e/d),T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
+      if(landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e*t,{club:top[0],e,pw:100},plan));}
+    // forced by the course (e.g. a carry over water no allowed club makes): any club that does it
+    const cF=clubPick(d,1e9,new Set(["DRIVER"]))||bag().filter(c=>c[1]-C.adj>=d).map(([nm,c])=>({club:nm,e:c-C.adj,pw:Math.round(d/(c-C.adj)*100)})).pop();
+    if(cF)return onSafeSide(n,b,R("tee",T,d,cF,plan));
+    const tp=top||bag()[0],e=tp[1]-C.adj,t=Math.min(1,e/d),T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
+    return onSafeSide(n,b,R("tee",T2,e*t,{club:tp[0],e,pw:100},plan));}}
   skip=new Set([...(skip||[]),"DRIVER"]);   // off the tee there is no driver
   const GT=GC[n]||P,DC=dm(g,b[0],b[1],GT[0],GT[1]);
   const SHORT=B80?50:Math.max(50,...wedgeFull().map(w=>w[0]).concat([0]).filter(x=>x>0).slice(-1));   // shortest full wedge (bag is sorted long to short)
@@ -799,6 +807,7 @@ function playsLike(n,b,r,skip,maxc){if(!terrain||!r||!r.c||!r.c.e||r.short||r.ki
   const z0=elevationAt(n,b),z1=elevationAt(n,r.T);if(z0==null||z1==null)return r;const dz=Math.round(z1-z0);
   if(Math.abs(dz)<2)return Object.assign({},r,{dz});
   const pl=r.d+dz,TE=teeOf(n),atTee=dm(G[n],b[0],b[1],TE[0],TE[1])<15,sk=new Set([...(skip||[]),...(r.c.club==="DRIVER"?[]:["DRIVER"])]);
+  if(atTee&&BRK!==80&&STRAT[BRK]){const ST=STRAT[BRK],att=H18[n-1][1]>=ST.attackSI;((att&&ST.teeSkipAttack)||ST.teeSkip).forEach(nm=>{if(nm!==r.c.club)sk.add(nm);});}   // uphill tee shots keep the clubs this break allows off the tee
   const c2=clubPick(pl,maxc||1e9,sk,atTee),step=Math.abs(carryOf(c2&&c2.club)-carryOf(r.c.club));
   return Object.assign({},r,{dz,plays:pl},c2&&step<=15?{c:c2}:{});}
 /* ---------- screen ---------- */
