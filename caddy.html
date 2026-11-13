@@ -253,6 +253,22 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .trivia p{margin:0;font-size:15px;line-height:1.4}.trivia p+p{margin-top:6px}
 .trivia b.f{color:var(--good)}
 .triv-more{color:var(--ink);border-color:var(--ink);text-align:center}
+.hsum{width:100%;border-collapse:collapse;font-size:14px;margin:4px 0 14px}
+.hsum th,.hsum td{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left}
+.hsum th{font-family:var(--f-num);font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink2)}
+.hsum td.n{text-align:right;font-family:var(--f-num);font-weight:800;font-size:17px}
+.hsum tr.hbest td{background:#fff6d6;font-weight:700}.hsum .badge{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:6px;background:var(--good);color:#fff;font:800 11px var(--f-num);letter-spacing:.04em;text-transform:uppercase}
+.hround{display:flex;justify-content:space-between;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.hround b{font-family:var(--f-num);font-size:20px}.hround small{display:block;color:var(--ink2)}
+.donecard{width:100%;border-radius:12px;border:2px solid var(--ink);background:#0c162d}
+.doneshare{background:#25d366;color:#fff}
+.tips{border:2px dashed var(--ink2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
+.tips p{margin:0;font-size:14px}
+.qris{position:relative;width:min(240px,70vw);aspect-ratio:1;border-radius:12px;background:#fff;border:2px solid var(--ink);overflow:hidden}
+.qris img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.qrisph{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;font:800 34px var(--f-num);color:var(--ink2)}
+.qrisph small{font-size:14px;font-weight:600}
+.qris.empty .qrisph{display:flex}.qris.empty img{display:none}
 .stneed{margin:2px 0 0;min-height:1.3em;text-align:center;font-size:13px;font-weight:600;color:#c9d2e6;border:2px solid var(--gold);border-radius:10px;padding:6px 10px;background:rgba(255,196,0,.08)}
 .stneed:empty{visibility:hidden}.stneed b{color:var(--gold)}
 #needNum{display:inline-block;min-width:3ch;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
@@ -356,6 +372,7 @@ tr.go{cursor:pointer}
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><span class="mlab">Tee</span><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
       <button class="tbtn" id="soundBtn" type="button"><span class="mlab">Suara</span><span id="soundTxt">Nyala</span></button>
+      <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
       <button class="tbtn" id="backStart" type="button">Kembali ke menu awal</button>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
     </div>
@@ -445,6 +462,27 @@ tr.go{cursor:pointer}
   <p>Menyiapkan caddy… <span class="pskip">ketuk untuk lewati</span></p>
 </div>
 
+<div class="sheet gut" id="histSheet" hidden>
+  <div class="sheetin">
+    <div class="sheethead"><h2>Riwayat ronde<small>Per golfer dan caddy, dari HP ini</small></h2><button class="close" id="closeHist" type="button">Tutup</button></div>
+    <div id="histBody"></div>
+  </div>
+</div>
+
+<div class="sheet gut" id="doneSheet" hidden>
+  <div class="sheetin">
+    <div class="sheethead"><h2>Nice round today!<small id="doneSub"></small></h2><button class="close" id="closeDone" type="button">Tutup</button></div>
+    <img class="donecard" id="doneImg" alt="Kartu skor ronde ini">
+    <button class="stgo doneshare" id="doneShare" type="button">Bagikan ke WhatsApp</button>
+    <section class="tips">
+      <h3>Tips untuk Cat Caddy</h3>
+      <p>Suka dibantu Cat Caddy hari ini? Screenshot QRIS ini, lalu bayar dari aplikasi bank atau e-wallet kamu.</p>
+      <div class="qris"><img id="qrisImg" src="qris.png" alt="QRIS tips Cat Caddy"><div class="qrisph">QRIS<br><small>segera hadir</small></div></div>
+    </section>
+    <button class="close" id="doneCard" type="button">Lihat kartu skor</button>
+  </div>
+</div>
+
 <div class="sheet gut" id="creditSheet" hidden>
   <div class="sheetin">
     <div class="sheethead"><h2>Sumber data</h2><button class="close" id="closeCredit" type="button">Tutup</button></div>
@@ -484,6 +522,7 @@ tr.go{cursor:pointer}
     <div class="rowbtns">
       <button class="close" id="openClubs" type="button">Jarak club saya</button>
       <button class="close share" id="shareCard" type="button">Bagikan skor</button>
+      <button class="close" id="histBtn" type="button">Riwayat</button>
       <button class="reset" id="reset" type="button">Mulai ronde baru</button>
     </div>
     <div class="confirm" id="confirm" hidden>
@@ -547,7 +586,15 @@ const hole=n=>state.holes[n]||(state.holes[n]={log:[],putts:null,adj:0,ball:null
 const peek=n=>state.holes[n]||{log:[],putts:null,adj:0,ball:null};
 const strokes=h=>h.log.reduce((s,e)=>s+(e.r==="pen"?2:1),0);
 const holeScore=h=>h.putts!=null?strokes(h)+h.putts+(h.adj||0):null;
-function save(){state.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}queueSync();}
+function save(){state.updated=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}queueSync();recordHistory();}
+/* round history (13 Nov 2026): every round with a score is kept on this phone, with golfer and caddy, so the best golfer/caddy pairing shows up */
+const HKEY="caddy-history-v1";
+function readHistory(){try{return JSON.parse(localStorage.getItem(HKEY)||"[]");}catch(e){return [];}}
+function recordHistory(){const sc=H18.map((_,i)=>holeScore(peek(i+1)));const n=sc.filter(v=>v!=null).length;if(!n)return;
+  if(!state.id){state.id=Date.now();try{localStorage.setItem(KEY,JSON.stringify(state));}catch(e){}}
+  const par=H18.reduce((a,h)=>a+h[0],0),tot=sc.reduce((a,v)=>a+(v||0),0),parPlayed=H18.reduce((a,h,i)=>a+(sc[i]!=null?h[0]:0),0);
+  const e={id:state.id,date:state.id,course:C.id,courseName:C.name,golfer:state.golfer||"",caddy:state.caddy||"",tee:TEES[teeI].name,brk:BRK,par,scores:sc,n,total:tot,vsPar:tot-parPlayed};
+  const h=readHistory().filter(x=>x.id!==e.id);h.unshift(e);try{localStorage.setItem(HKEY,JSON.stringify(h.slice(0,200)));}catch(e2){}}
 function totals(){let tot=0,n=0,bank=0,proj=0;H18.forEach((h,i)=>{const s=holeScore(peek(i+1));if(s!=null){tot+=s;n++;bank+=holeTarget(i)-s;proj+=s;}else proj+=holeTarget(i);});return{tot,n,bank,proj};}
 function budgetText(t){
   if(t.n===18)return "Skor akhir "+t.tot+" · "+(t.tot<=GOAL?"Break "+BRK+" tercapai":"Target "+GOAL+" terlewat "+(t.tot-GOAL)+" pukulan");
@@ -1069,6 +1116,62 @@ $("triviaMore").addEventListener("click",()=>{shuffleTrivia();$("triviaSheet").s
 $("creditsLink").addEventListener("click",ev=>{ev.preventDefault();$("creditSheet").hidden=false;});
 $("closeCredit").addEventListener("click",()=>{$("creditSheet").hidden=true;});
 $("closeTrivia").addEventListener("click",()=>{$("triviaSheet").hidden=true;});
+/* ---------- history page ---------- */
+const esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+function summary(list,key){const m={};list.forEach(r=>{const k=(r[key]||"").trim()||"(tanpa nama)";(m[k]=m[k]||[]).push(r);});
+  return Object.entries(m).map(([k,rs])=>{const full=rs.filter(r=>r.n===18);const avg=full.length?full.reduce((a,r)=>a+r.total,0)/full.length:null;
+    return{k,rounds:rs.length,full:full.length,avg,best:full.length?Math.min(...full.map(r=>r.total)):null};}).sort((a,b)=>(a.avg==null)-(b.avg==null)||(a.avg-b.avg));}
+function sumTable(rows,title){if(!rows.length)return"";const best=rows.find(r=>r.avg!=null);
+  return '<h3>'+title+'</h3><table class="hsum"><thead><tr><th>Nama</th><th>Ronde</th><th>Rata2</th><th>Terbaik</th></tr></thead><tbody>'+rows.map(r=>'<tr class="'+(r===best&&rows.length>1?"hbest":"")+'"><td>'+esc(r.k)+(r===best&&rows.length>1?'<span class="badge">paling cocok</span>':"")+'</td><td class="n">'+r.rounds+'</td><td class="n">'+(r.avg==null?"–":r.avg.toFixed(1))+'</td><td class="n">'+(r.best==null?"–":r.best)+'</td></tr>').join("")+'</tbody></table>';}
+function openHistory(){const all=readHistory();
+  const golfer=(GOLFER||"").trim(),mine=golfer?all.filter(r=>(r.golfer||"").trim().toLowerCase()===golfer.toLowerCase()):all;
+  let h=all.length?"":'<p class="help">Belum ada ronde tersimpan. Ronde tercatat otomatis begitu ada skor hole pertama.</p>';
+  if(all.length){h+=sumTable(summary(mine,"caddy"),"Caddy"+(golfer?" untuk "+esc(golfer):""))+'<p class="help">Rata-rata dari ronde 18 hole. Skor lebih kecil = lebih cocok.</p>';
+    h+=sumTable(summary(all,"golfer"),"Golfer");
+    h+='<h3>Semua ronde</h3>'+all.map(r=>'<div class="hround"><div>'+new Date(r.date).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+' · '+esc(r.courseName)+'<small>'+esc(r.golfer||"(tanpa nama)")+(r.caddy?" · caddy "+esc(r.caddy):"")+' · tee '+esc(r.tee)+' · Break '+r.brk+'</small></div><div style="text-align:right"><b>'+r.total+'</b><small>'+(r.n===18?(r.vsPar>=0?"+":"")+r.vsPar:r.n+" hole")+'</small></div></div>').join("");}
+  $("histBody").innerHTML=h;$("histSheet").hidden=false;$("histSheet").scrollTop=0;}
+$("histMenu").addEventListener("click",()=>{menuOpen(false);openHistory();});
+$("histBtn").addEventListener("click",openHistory);
+$("closeHist").addEventListener("click",()=>{$("histSheet").hidden=true;});
+
+/* ---------- round finished: scorecard picture to share + tips ---------- */
+function cardImage(){const W=1080,Hh=1350,cv=document.createElement("canvas");cv.width=W;cv.height=Hh;const x=cv.getContext("2d");
+  const sc=H18.map((_,i)=>holeScore(peek(i+1))),par=H18.map(h=>h[0]),tot=sc.reduce((a,v)=>a+(v||0),0),ptot=par.reduce((a,v)=>a+v,0);
+  const F=(w,sz,f)=>w+" "+sz+"px "+(f||'"Barlow Condensed",Arial,sans-serif');
+  x.fillStyle="#0c162d";x.fillRect(0,0,W,Hh);x.fillStyle="#ffc400";x.fillRect(0,250,W,6);
+  const logo=document.querySelector(".herologo");try{x.save();x.beginPath();x.arc(140,130,90,0,7);x.clip();x.drawImage(logo,50,40,180,180);x.restore();}catch(e){}
+  x.fillStyle="#fff";x.font=F("700",84,'"Fredoka",Arial,sans-serif');x.fillText("Parkutut",260,120);
+  x.fillStyle="#ffc400";x.font=F("600",40,'"Fredoka",Arial,sans-serif');x.fillText("Nice round today!",262,180);
+  x.fillStyle="#fff";x.font=F("800",56);x.fillText(C.name.toUpperCase(),60,340);
+  x.fillStyle="#c9d2e6";x.font=F("600",34,"Barlow,Arial,sans-serif");
+  x.fillText(new Date().toLocaleDateString("id-ID",{weekday:"long",day:"numeric",month:"long",year:"numeric"})+" · tee "+TEES[teeI].name+" · Break "+BRK,60,392);
+  x.fillText((GOLFER?"Golfer: "+GOLFER:"")+(GOLFER&&CADDY?"   ·   ":"")+(CADDY?"Caddy: "+CADDY:""),60,440);
+  const cw=88,x0=60+cw*0;const rowsY=[520,840];
+  [[0,9,"OUT"],[9,18,"IN"]].forEach(([a,b,lab],r)=>{const y=rowsY[r];
+    for(let i=a;i<=b;i++){const cx=60+(i-a)*cw+(i===b?10:0),last=i===b;
+      x.fillStyle="#1c2a4a";x.fillRect(cx,y,cw-6,250);
+      x.fillStyle="#9aa6bf";x.font=F("800",30);x.textAlign="center";x.fillText(last?lab:String(i+1),cx+(cw-6)/2,y+44);
+      x.fillStyle="#c9d2e6";x.font=F("600",28);x.fillText(last?String(par.slice(a,b).reduce((p,v)=>p+v,0)):"par "+par[i],cx+(cw-6)/2,y+90);
+      const v=last?sc.slice(a,b).reduce((p,q)=>p+(q||0),0):sc[i],d=last?0:(v==null?0:v-par[i]);
+      x.fillStyle=last?"#ffc400":v==null?"#56627f":d<0?"#44d07b":d===0?"#ffffff":d===1?"#ffd666":"#ff6b6b";
+      x.font=F("800",last?64:72);x.fillText(v==null?"–":String(v),cx+(cw-6)/2,y+190);}
+    x.textAlign="left";});
+  x.fillStyle="#ffc400";x.fillRect(60,1130,W-120,150);x.fillStyle="#0c162d";x.font=F("800",48);x.fillText("TOTAL",100,1222);
+  x.textAlign="right";x.font=F("800",110);x.fillText(String(tot),W-260,1245);x.font=F("800",54);x.fillText((tot-ptot>=0?"+":"")+(tot-ptot),W-100,1225);x.textAlign="left";
+  x.fillStyle="#9aa6bf";x.font=F("600",26,"Barlow,Arial,sans-serif");x.fillText("Parkutut · Cat Caddy  —  angga142-web.github.io/golf-plan",60,1318);
+  return cv;}
+let doneBlob=null;
+function openDone(){recordHistory();const cv=cardImage();$("doneImg").src=cv.toDataURL("image/png");cv.toBlob(b=>{doneBlob=b;},"image/png");
+  const t=totals();$("doneSub").textContent=C.name+" · skor "+t.tot;$("doneSheet").hidden=false;$("doneSheet").scrollTop=0;qrisCheck();}
+$("doneShare").addEventListener("click",async()=>{const txt=scoreText();
+  if(doneBlob&&navigator.canShare){const f=new File([doneBlob],"parkutut-kartu-skor.png",{type:"image/png"});
+    if(navigator.canShare({files:[f]})){try{await navigator.share({files:[f],text:txt});return;}catch(e){if(e&&e.name==="AbortError")return;}}}
+  if(doneBlob){const a=document.createElement("a");a.href=URL.createObjectURL(doneBlob);a.download="parkutut-kartu-skor.png";a.click();}   // no file sharing: save the picture, then open WhatsApp with the text
+  window.open("https://wa.me/?text="+encodeURIComponent(txt),"_blank","noopener");});
+$("closeDone").addEventListener("click",()=>{$("doneSheet").hidden=true;});
+$("doneCard").addEventListener("click",()=>{$("doneSheet").hidden=true;openCard();});
+const qrisCheck=()=>{const q=$("qrisImg");q.parentNode.classList.toggle("empty",q.complete&&!q.naturalWidth);};   // placeholder until the owner's QRIS picture (qris.png) is uploaded
+$("qrisImg").addEventListener("error",qrisCheck);$("qrisImg").addEventListener("load",qrisCheck);qrisCheck();
 function placeCat(){const el=$("cat");if(!catTip||catTip===catClosed){el.hidden=true;return;}el.hidden=false;$("catb").innerHTML=catTip;
   el.style.bottom=(document.querySelector(".tools").offsetHeight+16)+"px";}
 $("cat").addEventListener("click",()=>{catClosed=catTip;$("cat").hidden=true;});
@@ -1188,7 +1291,7 @@ function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const 
   else if(a==="on"){const pk=picked;logShot(pk?pk.v:"ok",pk&&pk.p||undefined);h.ball=G[cur+1].pin.slice();h.on=strokes(h);note="";save();render();}
   else if(a==="plus"){h.adj=(h.adj||0)+1;save();render();}
   else if(a==="minus"){if(holeScore(h)>1){h.adj=(h.adj||0)-1;save();render();}}
-  else if(a==="next"){if(cur<17)go(cur+1);else openCard();}}
+  else if(a==="next"){if(cur<17)go(cur+1);else if(H18.every((_,i)=>holeScore(peek(i+1))!=null))openDone();else openCard();}}
 /* gestures: one finger (or mouse) drags the map, two fingers pinch, the wheel zooms; a tap without movement still places the ball */
 const ptr=new Map();let gest=null,dragged=false,wheelT=0;
 function applyVB(v){const g=G[cur+1],FB=fullBox(cur+1),w=Math.min(FB[2]*1.6,Math.max(60*g.scale,v[2])),k=w/v[2],cx=v[0]+v[2]/2,cy=v[1]+v[3]/2;
@@ -1263,7 +1366,7 @@ function closeCard(){$("sheet").hidden=true;$("confirm").hidden=true;}
 $("openCard").addEventListener("click",openCard);$("closeCard").addEventListener("click",closeCard);
 $("reset").addEventListener("click",()=>{$("confirm").hidden=false;});
 $("no").addEventListener("click",()=>{$("confirm").hidden=true;});
-$("yes").addEventListener("click",()=>{state={holes:{},updated:0};save();closeCard();go(0);});
+$("yes").addEventListener("click",()=>{recordHistory();state={holes:{},updated:0,golfer:GOLFER,caddy:CADDY};save();closeCard();go(0);});   // the finished round stays in the history
 
 /* ---------- club distances ---------- */
 let clubUnit="m";try{if(localStorage.getItem("caddy-unit-v1")==="yd")clubUnit="yd";}catch(e){}
