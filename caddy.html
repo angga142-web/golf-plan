@@ -232,7 +232,10 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 #stTee .dot{margin:0;width:14px;height:14px}
 .start .stclubs{padding:8px 12px;font-size:13px;line-height:1.3}
 .start .stclubs b{font-size:18px}
-.stneed{margin:0;min-height:1.3em;text-align:center;font-size:13px;font-weight:600;color:#c9d2e6}.stneed b{color:var(--gold)}
+.stneed{margin:2px 0 0;min-height:1.3em;text-align:center;font-size:13px;font-weight:600;color:#c9d2e6;border:2px solid var(--gold);border-radius:10px;padding:6px 10px;background:rgba(255,196,0,.08)}
+.stneed:empty{visibility:hidden}.stneed b{color:var(--gold)}
+#needNum{display:inline-block;min-width:3ch;font-family:var(--f-num);font-size:18px;font-variant-numeric:tabular-nums}
+#needNum.set{animation:needpop .3s ease-out}@keyframes needpop{50%{transform:scale(1.25)}}
 .stcopy{margin:0;text-align:center;font-size:12px;color:#7f8aa6}.stcopy b{color:var(--gold);font-weight:700}
 .stgo{display:flex;align-items:center;justify-content:center;gap:10px}.stgo .teeic{width:26px;height:34px}
 .start .stgo{margin-top:2px;height:clamp(48px,7.5vh,60px);font-size:24px}
@@ -674,7 +677,7 @@ function advise(n,b,recover,skip,maxc){
     if(B80){const dr=driveB80(n,b,skip,R);if(dr)return onSafeSide(n,b,dr);}
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
-    if(!B80&&par>3&&!teeRuleOff){const pt=planTeeSim(n,b,tsk,ST,R,plan);if(pt)return onSafeSide(n,b,pt);}
+    if(par>3&&!teeRuleOff){const pt=planTeeSim(n,b,tsk,ST,R,plan);if(pt)return onSafeSide(n,b,pt);}
     if(!pick(d,cap,tsk)&&par>3){const top=bag().find(([nm])=>!tsk.has(nm));   // plan spot past the longest allowed club: land that club at a full swing short of it
       if(top){const e=top[1]-C.adj,t=e/d,T2=[b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t];
         if(e<d&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,e,{club:top[0],e,pw:100},plan));}}
@@ -684,7 +687,7 @@ function advise(n,b,recover,skip,maxc){
     if(c0&&!teeRuleOff&&nxt&&carryOf(nxt.club)>carryOf(c0.club)){const up=bag().filter(([nm,cr])=>cr>carryOf(c0.club)&&cr<=cap&&!(skip&&skip.has(nm))).pop();
       if(up){const e=up[1]-C.adj,dd=e*.9,T2=[b[0]+(T[0]-b[0])*dd/d,b[1]+(T[1]-b[1])*dd/d];
         if(dd-d<=10&&landOK(g,T2)&&shotClear(g,b,T2,e))return onSafeSide(n,b,R("tee",T2,dd,{club:up[0],e,pw:90},plan));}}
-    return onSafeSide(n,b,R("tee",T,d,c0||clubPick(d,1e9,skip)||clubPick(d,1e9,new Set(["DRIVER"])),plan));}
+    return onSafeSide(n,b,R("tee",T,d,c0||clubPick(d,1e9,skip)||clubPick(d,1e9,new Set(["DRIVER"]))||bag().filter(c=>c[1]-C.adj>=d).map(([nm,c])=>({club:nm,e:c-C.adj,pw:Math.round(d/(c-C.adj)*100)})).pop(),plan));}
   skip=new Set([...(skip||[]),"DRIVER"]);   // off the tee there is no driver
   const GT=GC[n]||P,DC=dm(g,b[0],b[1],GT[0],GT[1]);
   const SHORT=B80?50:Math.max(50,...wedgeFull().map(w=>w[0]).concat([0]).filter(x=>x>0).slice(-1));   // shortest full wedge (bag is sorted long to short)
@@ -725,6 +728,8 @@ function advise(n,b,recover,skip,maxc){
     const T=[rt[k][0]+(rt[k+1][0]-rt[k][0])*u,rt[k][1]+(rt[k+1][1]-rt[k][1])*u],rr=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);
     if(rr<D&&dl<=70&&landOK(g,T)&&(!pb||dl<pb.dl))pb={T,dl,r:rr};}
   if(pb)return R("punch",pb.T,pb.dl,{club:"PUNCH"},{left:pb.r,short:1});
+  if(atTee&&par===3){const c=clubPick(DC,1e9,null,true)||clubPick(DC,1e9,null)||bag().filter(x=>x[1]-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();
+    if(c)return R("green",GT,DC,c);}
   return R("none",P,D,{club:"KELUAR"},{short:1});}
 
 /* Rule (11 Nov 2026): the next shot does not use a longer club than the shot before, unless that leaves only a punch-out */
@@ -1224,12 +1229,15 @@ function renderStart(){$("stCourseName").textContent=C.name+" · 18 hole · par 
   $("stBreak").innerHTML=BREAKS.map(b=>'<button type="button" data-brk="'+b+'" aria-pressed="'+(b===BRK)+'">Break '+b+'</button>').join("");
   $("stTee").innerHTML=TEES.map((t,i)=>'<button type="button" data-tee="'+i+'" aria-pressed="'+(i===teeI)+'"><i class="dot" style="background:'+t.fill+'"></i>'+t.name+'<small>'+(t.m?t.m.reduce((a,x)=>a+x,0)+" m":"")+'</small></button>').join("");
   let saved=false;try{saved=!!localStorage.getItem(CKEY);}catch(e){}
-  $("stClubs").innerHTML='<b>Isi jarak pukulan ▸</b>'+(saved?"Tersimpan · driver "+carryOf("DRIVER")+" m · 7 iron "+carryOf("7 IRON")+" m · PW "+carryOf("PW")+" m":"Belum diisi · template driver &lt; 200 m, dipakai "+carryOf("DRIVER")+" m (stik lain menyesuaikan)");
+  $("stClubs").innerHTML='<b>Isi jarak pukulan ▸</b>'+(saved?"Tersimpan · driver "+carryOf("DRIVER")+" m · 7 iron "+carryOf("7 IRON")+" m · PW "+carryOf("PW")+" m":"Belum diisi · pakai template driver "+carryOf("DRIVER")+" m");
   needLine();}
 /* the longest tee shot the plan for this break asks for, read from the course with the player's bag */
 let needT=null;function needLine(){const el=$("stNeed");el.textContent="";clearTimeout(needT);needT=setTimeout(()=>{let mx=0;
-  for(let n=1;n<=18;n++){if(H18[n-1][0]<4)continue;const r=advise(n,teeOf(n),false,null,0);if(r&&(r.kind==="tee"||r.kind==="drive"))mx=Math.max(mx,r.d);}
-  if(mx)el.innerHTML="Kamu cuma perlu tee off <b>"+Math.ceil(mx/5)*5+" m</b> untuk Break "+BRK;},30);}
+  for(let n=1;n<=18;n++){if(H18[n-1][0]<4)continue;const r=advise(n,teeOf(n),false,null,0);if(r&&r.c&&r.c.e&&(r.kind==="tee"||r.kind==="drive"))mx=Math.max(mx,r.d);}
+  if(!mx)return;const v=Math.ceil(mx/5)*5;el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*150))+"</b> <b>m</b> untuk Break "+BRK;
+  const nb=$("needNum");clearInterval(needRoll);let k=0;needRoll=setInterval(()=>{k++;if(k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}
+    nb.textContent=100+Math.floor(Math.random()*150);},45);},30);}
+let needRoll=null;
 function openStart(){renderStart();$("startSheet").hidden=false;}
 const COURSES=[["Imperial Karawaci","imperial-karawaci"],["Pangkalan Jati Golf","pangkalan-jati"],["Pondok Indah Golf Course"],["Royale Jakarta Golf Club"],["Damai Indah Golf · BSD"],["Damai Indah Golf · PIK"],["Senayan National Golf Club"],
   ["Halim Golf"],["Rainbow Hills Golf Club"],["Gunung Geulis Country Club"],["Klub Golf Bogor Raya"],["Emeralda Golf Club"],["Jagorawi Golf & Country Club"],
