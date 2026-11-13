@@ -912,6 +912,22 @@ function advise(n,b,recover,skip,maxc){
   const inRange=DC<=directRange();
   let direct=upClub(inRange?Math.min(cap,capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON")):cap);   // more club only within this break's rules
   if(direct&&inRange)return direct;   // rule (13 Nov 2026): within 9 iron (Break 100), 8 iron (90), 7 iron (80) play straight at the green
+  /* rule (14 Nov 2026, every break): when the green itself is not a safe target, the approach may finish 1-5 m off the green
+     on a spot clear of sand and water (a mishit too), club by the rules above; then chip on */
+  const nearGreen=()=>{const poly=GREEN[n],c=[0,0];poly.forEach(q=>{c[0]+=q[0]/poly.length;c[1]+=q[1]/poly.length;});
+    const a0=Math.atan2(b[1]-c[1],b[0]-c[0]),rc=capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON"),DR=directRange();let best=null;
+    for(const ang of [0,-15,15,-30,30,-45,45,-60,60,-90,90,-120,120,180]){const t=a0+ang*Math.PI/180,ux=Math.cos(t)*g.scale,uy=Math.sin(t)*g.scale;
+      let e=0;while(e<80&&inPoly(poly,[c[0]+ux*e,c[1]+uy*e]))e+=.5;   // green edge on this ray
+      for(let k=1;k<=5;k++){const T=[c[0]+ux*(e+k),c[1]+uy*(e+k)];if(onGreen(n,T)||!landOK(g,T,10))continue;
+        const da=dm(g,b[0],b[1],T[0],T[1]);if(!(da<=DR||!safe&&(front||attack)))continue;   // same as going at the green
+        const cl=pick(da,da<=DR?Math.min(cap,rc):cap,skip);if(!cl||!shotClear(g,b,T,cl.e)||!missOK(g,b,T))continue;
+        if(B80&&atTee&&par===3&&carryOf(cl.club)>capOf("5 IRON"))continue;   // Break 80 par 3 tee: past the 5 iron it lays up instead
+        let hz=0;for(let m=8;m<da;m+=2){const q=m/da,x=b[0]+(T[0]-b[0])*q,y=b[1]+(T[1]-b[1])*q;if(codeAt(g,x,y)||nearest(g,x,y,1,3))hz=m;}
+        if(hz&&.85*da<hz+3)continue;   // a mishit must still carry the trouble
+        let clr=true;for(let q=.1;q<1;q+=.1)if(codeAt(g,T[0]+(GT[0]-T[0])*q,T[1]+(GT[1]-T[1])*q))clr=false;if(!clr)continue;   // the chip on is clear
+        const sc=k+Math.abs(ang)*.15;if(!best||sc<best.sc)best={sc,T,da,cl,k};}}
+    return best?R("apron",best.T,best.da,best.cl,{left:Math.round(dm(g,best.T[0],best.T[1],P[0],P[1])),near:best.k}):null;};
+  if(!direct){const ng=nearGreen();if(ng)return ng;}
   if(safe){const cs=chipSpot(cap,skip);if(cs)return cs;}
   /* rule (13 Nov 2026): when carrying the bunker/water in front would need a club beyond the rules, lay up short of it,
      30-50 m before the green, and pitch over it */
@@ -1337,6 +1353,7 @@ function tgtText0(r){
   if(r.kind==="green"&&r.chip==="run")return"chip & run · mendarat 1–2 m di green, sisanya menggelinding";
   if(r.kind==="green"&&r.chip==="lob")return"angkat bola lewati rintangan · mendarat di green";
   if(r.kind==="green")return"ke tengah green · "+m0(r.d)+" m"+(r.minClub&&r.minClub!==r.c.club?" · minimal "+clubName(r.minClub)+", ambil "+clubName(r.c.club)+" biar aman lewat rintangan":"");
+  if(r.kind==="apron"&&r.near)return"ke pinggir green (±"+r.near+" m dari green, aman dari bunker/air) · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
   if(r.kind==="apron")return(r.safe?"main aman · ":"")+"ke depan green · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
   if(r.kind==="layup"&&r.pre)return"layup sebelum rintangan · "+m0(r.d)+" m, sisa "+m0(r.left)+" m lalu pitch ke green";
   if(r.kind==="layup")return"layup "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
