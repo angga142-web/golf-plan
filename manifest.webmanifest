@@ -1,0 +1,16 @@
+{
+  "name": "Parkutut · Cat Caddy",
+  "short_name": "Parkutut",
+  "description": "Caddy golf di HP: rencana pukulan per hole, jarak, elevasi dan kartu skor.",
+  "start_url": "caddy.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0c162d",
+  "theme_color": "#0c162d",
+  "lang": "id",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable"}
+  ]
+}
