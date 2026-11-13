@@ -761,8 +761,8 @@ function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],
       if(!best||sc<best.sc)best={sc,T,L,r,c:{club:nm,e,pw:Math.round(L/e*100)}};}}
   return best?R(tee?"tee":"layup",best.T,best.L,best.c,Object.assign({left:best.r},plan||{})):null;}
 const TEEPLAN={};
-function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
-  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{})].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+function planTeeSim(n,b,skip,ST,R,plan,extra,free){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
   for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
     for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
@@ -772,16 +772,26 @@ function planTeeSim(n,b,skip,ST,R,plan,extra){const g=G[n],P=g.pin,D=dm(g,b[0],b
         if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0||!landOK(g,c)||!shotClear(g,b,c,e))continue;T=c;off=Math.abs(o);break;}
       if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
       const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
-      for(let k=0;k<6;k++){const r=adviseAfter(n,pos,false,null,prev,k===0);if(!r||r.kind==="putt")break;strokes++;
+      for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
-        if(!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
-        if(k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
+        if(!fr&&!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
+        if(!fr&&k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
         prev=r.c&&r.c.club||prev;pos=r.T;}
       const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/1000;
-      if(!best||sc<best.sc)best={sc,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
-  return TEEPLAN[key]=best?R("tee",best.T,best.L,best.c,plan):null;}
+      if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
+  return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k}):null;}
+/* shortest tee shot on hole n that still reaches the green within this break's budget for the hole (target minus 2 putts) (13 Nov 2026):
+   it measures what the break needs, not what the plan happens to pick, so a shorter tee (red) does not "need" more than white */
+function teeNeed(n){const g=G[n],b=teeOf(n),P=g.pin,ST=STRAT[BRK]||STRAT[90],B80=BRK===80,attack=B80||H18[n-1][1]>=ST.attackSI;
+  const D=dm(g,b[0],b[1],P[0],P[1]),plan={plan:g.land.length?1:0},R=(kind,T,d,c,x)=>Object.assign({kind,T,d,c,D},x||{});   // same as advise(), so cached plans stay identical
+  const base=B80?[]:(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)||[],sw=BRK===100&&H18[n-1][0]===5?["WOOD 2","WOOD"].find(nm=>carryOf(nm)>0):null;
+  const run=mx=>{const ex=sw&&carryOf(sw)<=mx?{[sw]:1.5}:null;return planTeeSim(n,b,new Set([...base,...bag().filter(([,c])=>c>mx).map(([nm])=>nm)]),ST,R,plan,ex,true);};
+  const cs=bag().filter(([nm])=>!base.includes(nm)||nm===sw).map(c=>c[1]).reverse(),tgt=holeTarget(n-1)-2;   // allowed tee clubs, shortest first
+  if(!cs.length)return null;const top=run(cs[cs.length-1]);if(!top)return null;if(top.k>tgt+.01)return cs[cs.length-1]-C.adj;   // even the longest allowed tee misses the budget: it needs at least that club
+  let lo=0,hi=cs.length-1,best=top;while(lo<hi){const m=(lo+hi)>>1,r=run(cs[m]);if(r&&r.k<=tgt+.01){best=r;hi=m;}else lo=m+1;}   // a longer tee never needs more shots
+  return best.d;}
 const SHOW_ON=false;   // ON button hidden for now (12 Nov 2026), the user is rethinking where it goes
 let teeRuleOff=false,wedgeRelax=false;   // wedgeRelax: no full wedge fits (gap between two wedges), allow a part swing rather than a punch
 /* Strategy per break (11 Nov 2026). Club limits are named clubs, so they follow each player's own distances.
@@ -1495,13 +1505,18 @@ function renderStart(){document.querySelectorAll("#stHoles [data-h]").forEach(x=
   $("stClubs").innerHTML='<b>Isi jarak pukulan ▸</b>'+(saved?"Tersimpan · driver "+carryOf("DRIVER")+" m · 7 iron "+carryOf("7 IRON")+" m · PW "+carryOf("PW")+" m":"Belum diisi · pakai template driver "+carryOf("DRIVER")+" m");
   needLine();}
 /* the longest tee shot the plan for this break asks for, read from the course with the player's bag */
-let needT=null;function needLine(){const el=$("stNeed");el.textContent="";clearTimeout(needT);needT=setTimeout(()=>{let mx=0;
-  const ds=[],[ha,hb]=span();   // longest tee shot the plan asks for, and on how many holes of this round
-  for(let n=ha+1;n<=hb;n++){if(H18[n-1][0]<4)continue;const r=advise(n,teeOf(n),false,null,0);if(r&&r.c&&r.c.e&&(r.kind==="tee"||r.kind==="drive"))ds.push(Math.ceil(r.d/5)*5);}
-  if(!ds.length)return;const v=Math.max(...ds),cnt=ds.filter(x=>x>=v-10).length;   // holes that need about that much (within 10 m of the longest)
-  el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*150))+"</b> <b>m</b> untuk Break "+BRK+(cnt<=6?", dan itu di <b>"+cnt+" hole</b> saja":", di <b>"+cnt+" hole</b>");
-  const nb=$("needNum");clearInterval(needRoll);let k=0;needRoll=setInterval(()=>{k++;if(k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}
-    nb.textContent=100+Math.floor(Math.random()*150);},45);},30);}
+let needT=null,needGen=0;function needLine(){const el=$("stNeed");el.textContent="";clearTimeout(needT);clearInterval(needRoll);const gen=++needGen;
+  const ds=[],[ha,hb]=span();let n=ha+1,v=null,k=0,nb=null;   // shortest tee shot each hole needs for this break; show the longest and on how many holes
+  const roll=()=>{if(gen!==needGen)return clearInterval(needRoll);k++;if(v!=null&&k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}nb.textContent=100+Math.floor(Math.random()*150);};
+  const t1=performance.now(),step=()=>{if(gen!==needGen)return;const t=performance.now();
+    if(n===ha+1&&t-t1<5000){let wait=false;for(let i=ha;i<hb;i++){loadFW(i);if(FW[i+1]==="loading")wait=true;}if(wait){needT=setTimeout(step,100);return;}}   // fairway maps first, so the numbers match the plan on the course
+    while(n<=hb&&performance.now()-t<40){if(H18[n-1][0]>=4){const d=teeNeed(n);if(d)ds.push(Math.ceil(d/5)*5);}n++;}
+    if(n<=hb){needT=setTimeout(step,0);return;}
+    if(!ds.length){el.textContent="";clearInterval(needRoll);return;}
+    v=Math.max(...ds);const cnt=ds.filter(x=>x>=v-10).length;   // holes that need about that much (within 10 m of the longest)
+    $("needHoles").innerHTML=cnt<=6?", dan itu di <b>"+cnt+" hole</b> saja":", di <b>"+cnt+" hole</b>";};
+  needT=setTimeout(()=>{el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*150))+"</b> <b>m</b> untuk Break "+BRK+"<span id=\"needHoles\"></span>";
+    nb=$("needNum");needRoll=setInterval(roll,45);step();},30);}
 let needRoll=null;
 let GOLFER="";try{GOLFER=localStorage.getItem("caddy-name-v1")||"";}catch(e){}
 let CADDY="";try{CADDY=localStorage.getItem("caddy-caddyname-v1")||"";}catch(e){}
