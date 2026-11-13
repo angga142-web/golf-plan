@@ -633,7 +633,7 @@ const sgn=d=>d===0?"±0":(d>0?"+"+d:""+d);
 const scoreName=d=>d<=-1?"Birdie":d===0?"Par":d===1?"Bogey":d===2?"Double":"+"+d;
 
 /* ---------- geometry (all in the hole image's 1080x2160 pixel space) ---------- */
-Object.keys(G).forEach(k=>{const g=G[k];g.cells=new Uint8Array(g.cols*g.rows);let p=0;for(let i=0;i<g.rle.length;i+=2){g.cells.fill(g.rle[i],p,p+g.rle[i+1]);p+=g.rle[i+1];}});
+Object.keys(G).forEach(k=>{const g=G[k];g.n=+k;g.cells=new Uint8Array(g.cols*g.rows);let p=0;for(let i=0;i<g.rle.length;i+=2){g.cells.fill(g.rle[i],p,p+g.rle[i+1]);p+=g.rle[i+1];}});
 function ll2px(n,ll){const t=C.pxmap[n],u=(ll[0]-t.ref[0])*1e5,v=(ll[1]-t.ref[1])*1e5;return[t.o[0]+t.m[0][0]*u+t.m[0][1]*v,t.o[1]+t.m[1][0]*u+t.m[1][1]*v];}
 const GREEN={};Object.keys(C.gps||{}).forEach(n=>{GREEN[n]=C.gps[n].green.map(p=>ll2px(n,p));});Object.keys(C.greenpx||{}).forEach(n=>{GREEN[n]=C.greenpx[n];});
 const GC={};Object.keys(GREEN).forEach(n=>{const q=GREEN[n];GC[n]=[q.reduce((a,p)=>a+p[0],0)/q.length,q.reduce((a,p)=>a+p[1],0)/q.length];});   // green centre: approach and chip target
@@ -692,10 +692,31 @@ function clubPick(d,maxCarry,skip,tee){const hi=tee?1:MAXP;let best=null,fav=nul
     if(e*hi>=d&&(d>=e*lo||!tee&&w&&part)){best={club:nm,e,pw:Math.round(d/e*100)};if(FAV.includes(nm))fav=best;}}return fav||best;}
 function shotClear(g,a,T,e){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
-  return w===0||.75*e>=w+10;}
+  return (w===0||.75*e>=w+10)&&!treeBlock(g,a,T);}
+let treeOff=false,treeUsed=0;   // treeUsed counts plans that had to go over trees   // set only when every other plan is a punch-out: then a shot over trees is allowed (forced by the course)
+const treeBlock=(g,a,T)=>{if(treeOff)return false;const TE=teeOf(g.n);return dm(g,a[0],a[1],TE[0],TE[1])>=15&&treeRun(g,a,T)>=6;};   // tee shots fly over the tree strips by the tee boxes
+/* trees (13 Nov 2026): the dark green of the hole picture is the tree line. A high handicap does not shoot over or through it,
+   so a shot after the tee shot whose line crosses 6 m or more of it (more than 12 m off the hole's line), or of the blank area outside the hole, is not planned (the first 15 m from the ball are left out: lies sit next to trees) */
+/* forced short (13 Nov 2026): the shot a->T was as long as the course allowed: from a, no shot 15 m or more longer
+   lands safely closer to the green with a clear line (trees, water). Then the next shot may use a longer club (dogleg corner, layup before water). */
+const FORCED={};
+function forcedShort(n,a,T){if(!a)return false;const g=G[n],P=g.pin,L=dm(g,a[0],a[1],T[0],T[1]);if(L<30)return false;
+  const key=[n,teeI,typeof FW[n],a.map(Math.round),T.map(Math.round)].join("|");if(key in FORCED)return FORCED[key];
+  const top=Math.max(0,...bag().filter(([nm])=>nm!=="DRIVER").map(c=>c[1]-C.adj))*MAXP,rT=dm(g,T[0],T[1],P[0],P[1]),a0=Math.atan2(P[1]-a[1],P[0]-a[0]);
+  for(let d=L+15;d<=top;d+=10)for(let ang=-48;ang<=48;ang+=8){const t=a0+ang*Math.PI/180,X=[a[0]+Math.cos(t)*d*g.scale,a[1]+Math.sin(t)*d*g.scale];
+    if(X[1]<g.top||X[1]>g.bot||dm(g,X[0],X[1],P[0],P[1])>=rT)continue;
+    if(landOK(g,X)&&fwAt(n,X[0],X[1])!==false&&shotClear(g,a,X,d/.9))return FORCED[key]=false;}
+  return FORCED[key]=true;}
+function inTrees(n,b){const f=FW[n],mp=C.maps[n-1],g=G[n];if(!f||typeof f==="string"||!mp)return false;const px=Math.round((b[0]-mp.x)*2),py=Math.round((b[1]-g.top)*2);
+  if(px<0||py<0||px>=f.w||py>=f.h)return false;const k=(py*f.w+px)*4;return f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,b)>12;}   // dark green on the hole's own line is a map artefact (auto maps), not trees
+function treeRun(g,a,T){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="string"||!mp)return 0;const L=dm(g,a[0],a[1],T[0],T[1]);let run=0,best=0;
+  for(let s=15;s<=L;s+=1.5){const t=s/L,px=Math.round((a[0]+(T[0]-a[0])*t-mp.x)*2),py=Math.round((a[1]+(T[1]-a[1])*t-g.top)*2);
+    if(px<0||py<0||px>=f.w||py>=f.h){run+=1.5;if(run>best)best=run;continue;}const k=(py*f.w+px)*4;
+    if(f.d[k]>215&&f.d[k+1]>215&&f.d[k+2]>215||f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,[a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t])>12){run+=1.5;if(run>best)best=run;}else run=0;}   // trees, or off the hole picture (outside the hole: unknown, trees or OB)
+  return best;}
 function frontClear(g,a,P,D){for(let m=Math.max(0,D-50);m<=D-4;m+=3){const t=m/D,x=a[0]+(P[0]-a[0])*t,y=a[1]+(P[1]-a[1])*t;
   if(codeAt(g,x,y)||nearest(g,x,y,1,6)||nearest(g,x,y,2,10))return false;}return true;}
-function landOK(g,T,wm){return !codeAt(g,T[0],T[1])&&!nearest(g,T[0],T[1],2,wm||22)&&!nearest(g,T[0],T[1],1,6);}   // wm: metres clear of water (22, less for a short layup in front of the green)
+function landOK(g,T,wm){return !codeAt(g,T[0],T[1])&&!nearest(g,T[0],T[1],2,wm||22)&&!nearest(g,T[0],T[1],1,6)&&!inTrees(g.n,T);}   // never land in the trees   // wm: metres clear of water (22, less for a short layup in front of the green)
 function routeOff(g,T){const r=[g.tee,...g.land,g.pin];let best=1e9;
   for(let i=0;i+1<r.length;i++){const a=r[i],b=r[i+1],vx=b[0]-a[0],vy=b[1]-a[1],L2=vx*vx+vy*vy||1;
     const t=Math.max(0,Math.min(1,((T[0]-a[0])*vx+(T[1]-a[1])*vy)/L2));best=Math.min(best,Math.hypot(a[0]+vx*t-T[0],a[1]+vy*t-T[1]));}
@@ -717,7 +738,7 @@ function onSafeSide(n,b,res){if(!res||!res.T||fwAt(n,res.T[0],res.T[1])===null||
   const room=(x,y,sd)=>{let m=0;while(m<40&&fwAt(n,x+rx*sd*(m+1)*g.scale,y+ry*sd*(m+1)*g.scale))m++;return m;};
   const edgeRisk=(x,y,sd,m)=>{for(let k=1;k<=8;k++){const c=codeAt(g,x+rx*sd*(m+k)*g.scale,y+ry*sd*(m+k)*g.scale);if(c)return 1.5;}return 1;};   // sand or water just past the fairway edge
   let best=null;
-  for(let off=-30;off<=30;off+=2){const x=T[0]+rx*off*g.scale,y=T[1]+ry*off*g.scale;if(!fwAt(n,x,y)||!landOK(g,[x,y]))continue;
+  for(let off=-30;off<=30;off+=2){const x=T[0]+rx*off*g.scale,y=T[1]+ry*off*g.scale;if(!fwAt(n,x,y)||!landOK(g,[x,y])||treeBlock(g,b,[x,y]))continue;
     const mR=room(x,y,1),mL=room(x,y,-1),wR=edgeRisk(x,y,1,mR),wL=edgeRisk(x,y,-1,mL);
     // with a miss side: as much room there as possible while keeping about 10 m on the other side; without one: the middle, away from hazards
     const mMiss=miss>0?mR:mL,mOther=miss>0?mL:mR,wMiss=miss>0?wR:wL;
@@ -735,6 +756,7 @@ function driveB80(n,b,skip,R){const g=G[n],P=g.pin,par=H18[n-1][0],rt=[b,...g.la
   for(const[nm,cr] of bag()){if(skip&&skip.has(nm))continue;const e=cr-C.adj,L=e,T=along(rt,L*g.scale);   // tee shot: full swingif(!T)continue;
     const r=dm(g,T[0],T[1],P[0],P[1]);if(r<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
     if(par===4&&r>50&&!clubPick(r,1e9,skip))continue;
+    {const tu=treeUsed,nx=adviseAfter(n,T,false,null,null,false);if(!nx||nx.kind==="punch"||nx.kind==="none"||treeUsed>tu)continue;}   // no drive into a spot that leaves only a punch-out or a shot over trees
     return R("drive",T,L,{club:nm,e,pw:Math.round(L/e*100)},{left:r});}
   return null;}
 /* BASE RULE (12 Nov 2026), break 90/100, par 4 and 5: plan from the green back to the tee.
@@ -762,7 +784,7 @@ function planBack(n,b,skip,ST,R,tee,maxc,plan){const g=G[n],P=g.pin,D=dm(g,b[0],
   return best?R(tee?"tee":"layup",best.T,best.L,best.c,Object.assign({left:best.r},plan||{})):null;}
 const TEEPLAN={};
 function planTeeSim(n,b,skip,ST,R,plan,extra,free){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
-  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
   for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
     for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
@@ -771,14 +793,17 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free){const g=G[n],P=g.pin,D=dm(g,b
       for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];
         if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0||!landOK(g,c)||!shotClear(g,b,c,e))continue;T=c;off=Math.abs(o);break;}
       if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
-      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,strokes=1,pen=0,inClub=null;
-      for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr);if(!r||r.kind==="putt")break;strokes++;
+      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null;
+      const tu=treeUsed;
+      for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr,org);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
-        if(!fr&&!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
-        if(!fr&&k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
+        const fs=fr||k>0&&forcedShort(n,org,pos);
+        if(!fs&&!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
+        if(!fs&&k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;break;}
-        prev=r.c&&r.c.club||prev;pos=r.T;}
+        prev=r.c&&r.c.club||prev;org=pos;pos=r.T;}
+      if(treeUsed>tu)pen+=2;   // the plan from this tee shot has to go over trees later
       const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.2)-L/1000;
       if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k}):null;}
@@ -880,6 +905,7 @@ function advise(n,b,recover,skip,maxc){
   for(let t=0;t<=1;t+=.02){const k=Math.min(rt.length-2,Math.floor(t*(rt.length-1))),u=t*(rt.length-1)-k;
     const T=[rt[k][0]+(rt[k+1][0]-rt[k][0])*u,rt[k][1]+(rt[k+1][1]-rt[k][1])*u],rr=dm(g,T[0],T[1],P[0],P[1]),dl=dm(g,b[0],b[1],T[0],T[1]);
     if(rr<D&&dl<=70&&landOK(g,T)&&(!pb||dl<pb.dl))pb={T,dl,r:rr};}
+  if(!treeOff&&!recover&&!inTrees(n,b)){treeOff=true;const r2=advise(n,b,recover,skip,maxc);treeOff=false;if(r2.kind!=="punch"&&r2.kind!=="none"){treeUsed++;return r2;}}   // the ball is where the plan put it (no miss, not in the trees) and trees block every shot: over them (forced by the course) rather than a punch-out
   if(pb)return R("punch",pb.T,pb.dl,{club:"PUNCH"},{left:pb.r,short:1});
   if(atTee&&par===3){const c=clubPick(DC,1e9,null,true)||clubPick(DC,1e9,null)||bag().filter(x=>x[1]-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();
     if(c)return R("green",GT,DC,c);}
@@ -889,7 +915,7 @@ function advise(n,b,recover,skip,maxc){
   return R("none",P,D,{club:"KELUAR"},{short:1});}
 
 /* Rule (11 Nov 2026): the next shot does not use a longer club than the shot before, unless that leaves only a punch-out */
-function adviseAfter(n,b,recover,skip,prev,afterTee){const maxc=Math.max(0,carryOf(prev||"")-(afterTee?1:0));   // afterTee: strictly shorter than the tee club
+function adviseAfter(n,b,recover,skip,prev,afterTee,from){const maxc=from&&!afterTee&&forcedShort(n,from,b)?0:Math.max(0,carryOf(prev||"")-(afterTee?1:0));   // from: where the shot before was hit (not used right after the tee: the tee-club rule has its own exceptions)   // afterTee: strictly shorter than the tee club
   const r=advise(n,b,recover,skip,maxc||0);if(!maxc||(r.kind!=="punch"&&r.kind!=="none"))return playsLike(n,b,r,skip,maxc);
   const r2=advise(n,b,recover,skip);return playsLike(n,b,r2.kind!=="punch"&&r2.kind!=="none"?r2:r,skip);}
 /* elevation (DEMNAS, 12 Nov 2026): a target higher than the ball plays about 1 m longer per metre of rise, lower plays shorter.
@@ -962,8 +988,8 @@ function thinLabel(x,y,txt){const sd=x-(22+txt.length*11)*Z<VB[0]+6*Z?1:-1;
 /* the shots after this one, as the caddy would call them if this one comes off */
 const ordShot=k=>k===1?"Tee":k===2?"2nd":k===3?"3rd":k+"th";
 const clubTxt=c=>c&&c.club?clubName(c.club)+(c.pw&&c.pw<90?" · "+c.pw+"%":""):"";
-function nextShots(n,T,prev,fromTee){const out=[],bench=pattern().bench;let a=T;
-  for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev,fromTee&&i===0);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
+function nextShots(n,T,prev,fromTee,from){const out=[],bench=pattern().bench;let a=T;
+  for(let i=0;i<4;i++){const r=adviseAfter(n,a,false,bench,prev,fromTee&&i===0,from);if(r.kind==="putt"||r.kind==="none")break;out.push({a,r});from=a;a=r.T;if(r.c&&carryOf(r.c.club))prev=r.c.club;if(r.kind==="green"||r.short)break;}
   return out;}
 /* green slope estimate from the map: only water is used (greens are shaped to drain toward a nearby lake or pond).
    Bunkers say nothing reliable about slope, so with no water near the green there is no estimate. */
@@ -1095,7 +1121,7 @@ function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   if(rec&&rec.kind!=="putt"){const X=rec.T[0],Y=rec.T[1],AF=aimFor(n,b,rec.T),c=AF.c;
     let end=rec.T;const used=[[X,Y-14*Z],[X,Y+34*Z]];   // label spots taken, so follow-up labels do not stack
     const done=strokes(peek(n));let k=done+1;
-    nextShots(n,rec.T,rec.c&&rec.c.club,done===0).forEach(({a,r})=>{const q=bend(a,r.T);end=r.T;k++;   // planned follow-up: thin dashed yellow
+    nextShots(n,rec.T,rec.c&&rec.c.club,done===0,b).forEach(({a,r})=>{const q=bend(a,r.T);end=r.T;k++;   // planned follow-up: thin dashed yellow
       h+='<path d="'+q.d+'" fill="none" stroke="#0c162d" stroke-opacity=".35" stroke-width="'+zx(6)+'" stroke-linecap="round"/><path d="'+q.d+'" fill="none" stroke="#ffc400" stroke-width="'+zx(3.5)+'" stroke-dasharray="'+zx(14)+' '+zx(10)+'" stroke-linecap="round"/>';
       if(Math.hypot(r.T[0]-P[0],r.T[1]-P[1])/g.scale>=5)h+='<circle cx="'+r.T[0]+'" cy="'+r.T[1]+'" r="'+zx(14)+'" fill="none" stroke="#ffc400" stroke-width="'+zx(3.5)+'" stroke-dasharray="'+zx(7)+' '+zx(5)+'"/>';
       let ly=r.T[1];while(used.some(u=>Math.abs(u[0]-r.T[0])<260*Z&&Math.abs(u[1]-ly)<30*Z))ly-=30*Z;used.push([r.T[0],ly]);
@@ -1300,7 +1326,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   }else{
     const last=h.log[h.log.length-1],recover=!!last&&last.r!=="ok",pat=pattern();
     const prev=[...h.log].reverse().find(e=>carryOf(e.c)>0);
-    rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0]);
+    rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0],prev&&prev===last&&!recover?prev.b:null);
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     const fb=putt?null:frontBack(n,b);
