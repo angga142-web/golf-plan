@@ -716,7 +716,8 @@ function shotClear(g,a,T,e){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
   return (w===0||.75*e>=w+10)&&!treeBlock(g,a,T);}
 let treeOff=false,treeUsed=0;   // treeUsed counts plans that had to go over trees   // set only when every other plan is a punch-out: then a shot over trees is allowed (forced by the course)
-const treeBlock=(g,a,T)=>{if(treeOff)return false;const TE=teeOf(g.n);return dm(g,a[0],a[1],TE[0],TE[1])>=15&&treeRun(g,a,T)>=6;};   // tee shots fly over the tree strips by the tee boxes
+let teeTree=false;   // tee shots (15 Nov 2026, Pangkalan Jati 4): par 4/5 tee plans first try lines where, past the first 35 m (the tree strips by the tee boxes), no 12 m of trees is crossed
+const treeBlock=(g,a,T)=>{if(treeOff)return false;const TE=teeOf(g.n);if(dm(g,a[0],a[1],TE[0],TE[1])<15)return teeTree&&treeRun(g,a,T,35)>=12;return treeRun(g,a,T)>=6;};
 /* trees (13 Nov 2026): the dark green of the hole picture is the tree line. A high handicap does not shoot over or through it,
    so a shot after the tee shot whose line crosses 6 m or more of it (more than 12 m off the hole's line), or of the blank area outside the hole, is not planned (the first 15 m from the ball are left out: lies sit next to trees) */
 /* forced short (13 Nov 2026): the shot a->T was as long as the course allowed: from a, no shot 15 m or more longer
@@ -731,8 +732,8 @@ function forcedShort(n,a,T){if(!a)return false;const g=G[n],P=g.pin,L=dm(g,a[0],
   return FORCED[key]=true;}
 function inTrees(n,b){const f=FW[n],mp=C.maps[n-1],g=G[n];if(!f||typeof f==="string"||!mp)return false;const px=Math.round((b[0]-mp.x)*2),py=Math.round((b[1]-g.top)*2);
   if(px<0||py<0||px>=f.w||py>=f.h)return false;const k=(py*f.w+px)*4;return f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,b)>12;}   // dark green on the hole's own line is a map artefact (auto maps), not trees
-function treeRun(g,a,T){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="string"||!mp)return 0;const L=dm(g,a[0],a[1],T[0],T[1]);let run=0,runN=0,best=0;
-  for(let s=15;s<=L;s+=1.5){const t=s/L,px=Math.round((a[0]+(T[0]-a[0])*t-mp.x)*2),py=Math.round((a[1]+(T[1]-a[1])*t-g.top)*2);
+function treeRun(g,a,T,s0){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="string"||!mp)return 0;const L=dm(g,a[0],a[1],T[0],T[1]);let run=0,runN=0,best=0;
+  for(let s=s0||15;s<=L;s+=1.5){const t=s/L,px=Math.round((a[0]+(T[0]-a[0])*t-mp.x)*2),py=Math.round((a[1]+(T[1]-a[1])*t-g.top)*2);
     if(px<0||py<0||px>=f.w||py>=f.h){run+=1.5;if(run>best)best=run;continue;}const k=(py*f.w+px)*4;
     if(f.d[k]>215&&f.d[k+1]>215&&f.d[k+2]>215||f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,[a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t])>12){run+=1.5;if(run>best)best=run;}else run=0;
     if(!C.auto&&f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70){runN+=1.5;if(runN>=12&&runN>best)best=runN;}else runN=0;}   // traced maps (14 Nov 2026, Pangkalan Jati 1): 12 m or more of unbroken trees counts even on the hole's line (the line cuts the dogleg corner)   // trees, or off the hole picture (outside the hole: unknown, trees or OB)
@@ -763,8 +764,8 @@ function onSafeSide(n,b,res){if(!res||!res.T||fwAt(n,res.T[0],res.T[1])===null||
   const g=G[n],T=res.T,L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,rx=-(T[1]-b[1])/L,ry=(T[0]-b[0])/L,sh=SHAPES[shape],miss=sh.k?(sh.s>0?1:-1):0;
   const room=(x,y,sd)=>{let m=0;while(m<40&&fwAt(n,x+rx*sd*(m+1)*g.scale,y+ry*sd*(m+1)*g.scale))m++;return m;};
   const edgeRisk=(x,y,sd,m)=>{for(let k=1;k<=8;k++){const c=codeAt(g,x+rx*sd*(m+k)*g.scale,y+ry*sd*(m+k)*g.scale);if(c)return 1.5;}return 1;};   // sand or water just past the fairway edge
-  let best=null;
-  for(let off=-30;off<=30;off+=2){const x=T[0]+rx*off*g.scale,y=T[1]+ry*off*g.scale;if(!fwAt(n,x,y)||!landOK(g,[x,y])||treeBlock(g,b,[x,y]))continue;
+  let best=null;const TE=teeOf(n),tee=dm(g,b[0],b[1],TE[0],TE[1])<15&&!treeOff&&treeRun(g,b,T,35)<12;   // a tee line clear of trees stays clear when moved (15 Nov 2026, Pangkalan Jati 4)
+  for(let off=-30;off<=30;off+=2){const x=T[0]+rx*off*g.scale,y=T[1]+ry*off*g.scale;if(!fwAt(n,x,y)||!landOK(g,[x,y])||treeBlock(g,b,[x,y])||tee&&treeRun(g,b,[x,y],35)>=12)continue;
     const mR=room(x,y,1),mL=room(x,y,-1),wR=edgeRisk(x,y,1,mR),wL=edgeRisk(x,y,-1,mL);
     // with a miss side: as much room there as possible while keeping about 10 m on the other side; without one: the middle, away from hazards
     const mMiss=miss>0?mR:mL,mOther=miss>0?mL:mR,wMiss=miss>0?wR:wL;
@@ -818,7 +819,7 @@ function teeCarry(g,a,T,e,mode){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   return w===0||(mode==="between"?e>=w+5:.85*e>=w+10);}
 const directRange=()=>(capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON")-C.adj)*MAXP;   // rule (13 Nov 2026): within this the green may be played straight at
 function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]),SAFEH=BRK===80?H18[n-1][1]<=5:H18[n-1][1]<=8;
-  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0,relax||""].join("|");if(key in TEEPLAN)return TEEPLAN[key];
+  const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0,teeTree?1:0,relax||""].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
   for(const[nm,cr] of bag()){const xp=extra&&extra[nm];if(skip.has(nm)&&xp==null)continue;const e=cr-C.adj;   // extra: a club allowed only when needed, with a small cost
     for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
@@ -887,7 +888,8 @@ function advise(n,b,recover,skip,maxc){
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
     if((par>3||far3)&&!teeRuleOff){const sw=BRK===100&&par===5?["WOOD 2","WOOD"].find(nm=>carryOf(nm)>0):null;
-      const pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);
+      teeTree=true;let pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);teeTree=false;
+      {const p0=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);if(!pt||p0&&p0.k+1<pt.k)pt=p0;}   // a tee line clear of trees unless it costs more than a stroke (a tee chute that must be played)
       if(pt&&pt.viol){const mode=BRK===100?"between":"carry",p2=planTeeSim(n,b,tsk,ST,R,plan,mode==="carry"?Object.fromEntries([...tsk].filter(c=>!(skip&&skip.has(c))).map(c=>[c,.5])):null,false,mode);if(p2&&!p2.viol)return onSafeSide(n,b,p2);}   // water forces a layup off the tee: Break 100 between the hazards, Break 90/80 over them
       if(pt)return onSafeSide(n,b,pt);}
     if(!pick(d,cap,tsk)&&par>3){const top=bag().find(([nm])=>!tsk.has(nm));   // plan spot past the longest allowed club: land that club at a full swing short of it
