@@ -1448,7 +1448,7 @@ $("greenBtn").addEventListener("click",ev=>onAct(ev));$("puttPop").addEventListe
 $("card").addEventListener("click",ev=>onAct(ev));
 function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const a=bt.dataset.act,h=hole(cur+1);
   if(a==="pick"){const v=bt.dataset.v,p=bt.dataset.p||"";picked=isPicked(v,p)?null:{v,p};render();}
-  else if(a==="record"){if(picked)logShot(picked.v,picked.p||undefined);}
+  else if(a==="record"){if(picked&&SOUND&&rec.c)clubSound(rec.c.club,rec.short);if(picked)logShot(picked.v,picked.p||undefined);}
   else if(a==="penmenu"){penOpen=!penOpen;render();}
   else if(a==="putt"){h.putts=+bt.dataset.v;note="";save();render();}
   else if(a==="on"){const pk=picked;logShot(pk?pk.v:"ok",pk&&pk.p||undefined);h.ball=G[cur+1].pin.slice();h.on=strokes(h);note="";save();render();}
@@ -1643,6 +1643,23 @@ function cupSound(delay){try{const A=window.AudioContext||window.webkitAudioCont
     const n=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();f.type="bandpass";f.frequency.value=1800;f.Q.value=3;g.gain.value=v;n.buffer=b;n.connect(f).connect(g).connect(ac.destination);n.start(at);};
   knock(t,880,.5,.09);noise(t,.35,.05);knock(t+.07,620,.3,.07);knock(t+.12,700,.18,.05);knock(t+.09,150,.6,.18);
   setTimeout(()=>ac.close(),(delay+.8)*1000);}catch(e){}}
+/* swing sound on Record, by club (Web Audio, no file): driver/woods a long swoosh and a hollow metal "ting",
+   irons a crisp "click", wedges softer and shorter, chips a light tap, bunker a sand splash */
+function clubSound(club,short){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A();ac.resume&&ac.resume();
+  const wood=/DRIVER|WOOD/.test(club),wedge=/^(PW|GW|SW|LW)$/.test(club),sand=club==="KELUAR BUNKER",chip=short&&!sand;
+  const p=wood?(club==="DRIVER"?1:.85):wedge?.5:chip?.25:sand?.6:.7,swing=chip?.12:.18+.17*p,t=ac.currentTime+.03+swing;   // impact after the swoosh
+  const noise=(at,d,type,f,q,v,sweep)=>{const b=ac.createBuffer(1,Math.ceil(ac.sampleRate*d),ac.sampleRate),x=b.getChannelData(0);for(let i=0;i<x.length;i++)x[i]=Math.random()*2-1;
+    const n=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();fl.type=type;fl.frequency.setValueAtTime(f,at);if(sweep)fl.frequency.exponentialRampToValueAtTime(sweep,at+d);fl.Q.value=q;
+    n.buffer=b;n.connect(fl).connect(g).connect(ac.destination);return{g,start:()=>{n.start(at);n.stop(at+d);}};};
+  const tone=(at,f,d,v,type)=>{const o=ac.createOscillator(),g=ac.createGain();o.type=type||"sine";o.frequency.setValueAtTime(f,at);
+    g.gain.setValueAtTime(v,at);g.gain.exponentialRampToValueAtTime(.0005,at+d);o.connect(g).connect(ac.destination);o.start(at);o.stop(at+d+.02);};
+  {const sw=noise(t-swing,swing,"bandpass",300,1.2,0,900+1400*p);sw.g.gain.setValueAtTime(.0001,t-swing);sw.g.gain.exponentialRampToValueAtTime(.12+.25*p,t-.01);sw.g.gain.linearRampToValueAtTime(0,t);sw.start();}   // swoosh of the club
+  if(sand){const s=noise(t,.35,"lowpass",2500,.7);s.g.gain.setValueAtTime(.5,t);s.g.gain.exponentialRampToValueAtTime(.001,t+.35);s.start();tone(t,110,.12,.4);}
+  else{const hit=noise(t,wood?.06:.035,"bandpass",wood?4200:wedge||chip?1800:2800,wood?2:3);hit.g.gain.setValueAtTime(.3+.45*p,t);hit.g.gain.exponentialRampToValueAtTime(.001,t+(wood?.06:.035));hit.start();   // contact crack
+    tone(t,wood?170:wedge||chip?240:200,.08,.35+.3*p,"triangle");   // low thump of the ball
+    if(wood){tone(t,1350,.32,.22);tone(t,2900,.22,.1);tone(t,4700,.12,.05);}   // hollow titanium "ting"
+    else if(!chip)tone(t,wedge?850:1100,.06,.12);}
+  setTimeout(()=>ac.close(),(swing+.9)*1000);}catch(e){}}
 let SOUND=true;try{SOUND=localStorage.getItem("caddy-sound-v1")!=="off";}catch(e){}
 function perkututSound(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A();ac.resume&&ac.resume();const t0=ac.currentTime+.08;
   const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1600;lp.connect(ac.destination);
