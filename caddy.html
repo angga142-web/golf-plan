@@ -720,10 +720,11 @@ function forcedShort(n,a,T){if(!a)return false;const g=G[n],P=g.pin,L=dm(g,a[0],
   return FORCED[key]=true;}
 function inTrees(n,b){const f=FW[n],mp=C.maps[n-1],g=G[n];if(!f||typeof f==="string"||!mp)return false;const px=Math.round((b[0]-mp.x)*2),py=Math.round((b[1]-g.top)*2);
   if(px<0||py<0||px>=f.w||py>=f.h)return false;const k=(py*f.w+px)*4;return f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,b)>12;}   // dark green on the hole's own line is a map artefact (auto maps), not trees
-function treeRun(g,a,T){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="string"||!mp)return 0;const L=dm(g,a[0],a[1],T[0],T[1]);let run=0,best=0;
+function treeRun(g,a,T){const f=FW[g.n],mp=C.maps[g.n-1];if(!f||typeof f==="string"||!mp)return 0;const L=dm(g,a[0],a[1],T[0],T[1]);let run=0,runN=0,best=0;const offA=!C.auto&&routeOff(g,a)>12;   // ball off the hole's line: cutting across the trees the line itself runs through
   for(let s=15;s<=L;s+=1.5){const t=s/L,px=Math.round((a[0]+(T[0]-a[0])*t-mp.x)*2),py=Math.round((a[1]+(T[1]-a[1])*t-g.top)*2);
     if(px<0||py<0||px>=f.w||py>=f.h){run+=1.5;if(run>best)best=run;continue;}const k=(py*f.w+px)*4;
-    if(f.d[k]>215&&f.d[k+1]>215&&f.d[k+2]>215||f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,[a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t])>12){run+=1.5;if(run>best)best=run;}else run=0;}   // trees, or off the hole picture (outside the hole: unknown, trees or OB)
+    if(f.d[k]>215&&f.d[k+1]>215&&f.d[k+2]>215||f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70&&routeOff(g,[a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t])>12){run+=1.5;if(run>best)best=run;}else run=0;
+    if(offA&&f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70){runN+=1.5;if(runN>=15&&runN>best)best=runN;}else runN=0;}   // traced maps (14 Nov 2026, Pangkalan Jati 1): from off the line, 15 m or more of trees at a dogleg corner the line cuts counts too   // trees, or off the hole picture (outside the hole: unknown, trees or OB)
   return best;}
 function frontClear(g,a,P,D){for(let m=Math.max(0,D-50);m<=D-4;m+=3){const t=m/D,x=a[0]+(P[0]-a[0])*t,y=a[1]+(P[1]-a[1])*t;
   if(codeAt(g,x,y)||nearest(g,x,y,1,6)||nearest(g,x,y,2,10))return false;}return true;}
