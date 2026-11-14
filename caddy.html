@@ -838,7 +838,7 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=
         if(r.short){if(r.chip==="pitch")pen+=.7;break;}
         if(r.kind==="green"){inClub=r.c&&r.c.club;if(SAFEH&&r.d>directRange())pen+=2;break;}   // super-safe hole: a full shot at the green is the fallback, not the plan
         prev=r.c&&r.c.club||prev;org=pos;pos=r.T;}
-      if(treeUsed>tu)pen+=2;   // the plan from this tee shot has to go over trees later
+      if(treeUsed>tu)pen+=C.auto?2:10;   // the plan from this tee shot has to go over trees later: on traced maps as bad as a punch-out (14 Nov 2026, Pangkalan Jati 5 Biru), so any clear plan wins
       const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.03)-L/1000;
       if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),viol,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k,viol:best.viol}):null;}
