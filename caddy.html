@@ -1603,7 +1603,7 @@ function renderStart(){document.querySelectorAll("#stHoles [data-h]").forEach(x=
 /* the longest tee shot the plan for this break asks for, read from the course with the player's bag */
 let needT=null,needGen=0;function needLine(){const el=$("stNeed");el.textContent="";clearTimeout(needT);clearInterval(needRoll);const gen=++needGen;
   const ds=[],[ha,hb]=span();let n=ha+1,v=null,k=0,nb=null;   // shortest tee shot each hole needs for this break; show the longest and on how many holes
-  const roll=()=>{if(gen!==needGen)return clearInterval(needRoll);k++;if(v!=null&&k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}nb.textContent=100+Math.floor(Math.random()*150);};
+  const roll=()=>{if(gen!==needGen)return clearInterval(needRoll);k++;if(v!=null&&k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}nb.textContent=100+Math.floor(Math.random()*71);};
   const t1=performance.now(),step=()=>{if(gen!==needGen)return;const t=performance.now();
     if(n===ha+1&&t-t1<5000){let wait=false;for(let i=ha;i<hb;i++){loadFW(i);if(FW[i+1]==="loading")wait=true;}if(wait){needT=setTimeout(step,100);return;}}   // fairway maps first, so the numbers match the plan on the course
     while(n<=hb&&performance.now()-t<40){if(H18[n-1][0]>=4){const d=teeNeed(n);if(d)ds.push(Math.ceil(d/5)*5);}n++;}
@@ -1611,7 +1611,7 @@ let needT=null,needGen=0;function needLine(){const el=$("stNeed");el.textContent
     if(!ds.length){el.textContent="";clearInterval(needRoll);return;}
     v=Math.max(...ds);const cnt=ds.filter(x=>x>=v-10).length;   // holes that need about that much (within 10 m of the longest)
     $("needHoles").innerHTML=cnt<=6?", dan itu di <b>"+cnt+" hole</b> saja":", di <b>"+cnt+" hole</b>";};
-  needT=setTimeout(()=>{el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*150))+"</b> <b>m</b> untuk Break "+BRK+"<span id=\"needHoles\"></span>";
+  needT=setTimeout(()=>{el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*71))+"</b> <b>m</b> untuk Break "+BRK+"<span id=\"needHoles\"></span>";
     nb=$("needNum");needRoll=setInterval(roll,45);step();},30);}
 let needRoll=null;
 let GOLFER="";try{GOLFER=localStorage.getItem("caddy-name-v1")||"";}catch(e){}
