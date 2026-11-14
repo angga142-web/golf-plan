@@ -43,7 +43,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .menupop{position:absolute;z-index:30;right:max(16px,env(safe-area-inset-right,0px));top:calc(100% - 4px);min-width:220px;display:flex;flex-direction:column;gap:6px;padding:8px;background:var(--ink);border:2px solid #56627f;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .menupop[hidden]{display:none}
 .menupop .tbtn{text-align:left;padding:8px 12px;white-space:nowrap}
-.menupop .hico{width:20px;height:20px;vertical-align:-4px;margin-right:8px}
+.menupop .hico{width:20px;height:20px;vertical-align:-4px;margin-left:8px}
 .menupop .mlab{color:#9aa6bf;margin-right:8px}
 .tbtn{background:transparent;color:#fff;border:2px solid #56627f;border-radius:8px;padding:4px 10px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
 .tbtn i.tdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;margin-right:6px;vertical-align:-1px}
@@ -383,7 +383,7 @@ tr.go{cursor:pointer}
     <div class="lead">
     <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button><button class="tbtn homebtn" id="homeBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menuPop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Menu</span></button></div>
     <div class="menupop" id="menuPop" hidden>
-      <button class="tbtn" id="backStart" type="button"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5 12 4l8.5 7.5M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Kembali ke menu</button>
+      <button class="tbtn" id="backStart" type="button">Kembali ke menu<svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5 12 4l8.5 7.5M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><span class="mlab">Tee</span><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
       <button class="tbtn" id="soundBtn" type="button"><span class="mlab">Suara</span><span id="soundTxt">Nyala</span></button>
