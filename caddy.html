@@ -376,6 +376,13 @@ tr.go{cursor:pointer}
 .unitbtn{grid-column:1/-1;justify-self:stretch;text-align:center;border:2px solid var(--ink);background:var(--mist);border-radius:8px;padding:8px 12px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.03em;text-transform:uppercase}
 .clubs input{width:64px;height:44px;border:2px solid var(--ink);border-radius:8px;text-align:center;font:800 22px var(--f-num);color:var(--ink);background:#fff}
 .help{margin:0;font-size:14px;font-weight:600;color:var(--ink2);line-height:1.4}
+/* compact bars (14 Nov 2026): more room for the map */
+.top{padding-block:5px}.lead{gap:4px}.brand{font-size:16px}.brandrow .tbtn{font-size:15px;padding:2px 8px}
+.chips{gap:3px}.chip{padding:1px 0 0}.chip b{font-size:14px}.chip span{font-size:10px;height:10px}.clab{font-size:12px}
+.card{padding-block:4px calc(4px + env(safe-area-inset-bottom,0px))}.cardin{gap:3px}.status{font-size:14px}
+.dist{padding:2px 6px;min-width:74px}.dist b{font-size:30px}.shot{padding:4px 10px}.shot .club{font-size:24px}.shot .club.long{font-size:18px}
+.recbtn{width:64px;height:64px}.recbtn .ballname{font-size:14px}.puttc button{width:32px;height:32px;font-size:16px}
+.card .tip{padding:3px 7px}.card .tip .aim,.card .tip .tline{font-size:11.5px;line-height:1.22}
 </style>
 
 <header class="top gut">
@@ -1013,9 +1020,9 @@ function fullBox(n){const g=G[n],pad=30*g.scale,A=aspect(),pts=[teeOf(n),g.tee,g
   const fr=A<.6?Math.min(.4,(stackH()+16)/(map.getBoundingClientRect().height||600)):0;   // narrow map: keep the tee and its labels above the corner buttons
   const h=Math.max((y1-y0)/(1-fr),(x1-x0)/A),w=h*A;return[(x0+x1)/2-w/2,y0,w,h];}
 const stackH=()=>Math.max($("resbar").offsetHeight,document.querySelector(".tools").offsetHeight);
-function viewFor(g,pts,B){const A=B[2]/B[3],pad=30*g.scale,xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
+function viewFor(g,pts,B,minH){const A=B[2]/B[3],pad=30*g.scale,xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);
   const x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys),y1=Math.max(...ys);
-  const h=Math.min(B[3],Math.max(y1-y0+2*pad,(x1-x0+2*pad)/A,100*g.scale)),w=h*A;
+  const h=Math.min(B[3],Math.max(y1-y0+2*pad,(x1-x0+2*pad)/A,100*g.scale,minH||0)),w=h*A;
   return[Math.min(B[0]+B[2]-w,Math.max(B[0],(x0+x1)/2-w/2)),Math.min(B[1]+B[3]-h,Math.max(B[1],(y0+y1)/2-h/2)),w,h];}
 function setView(to,now){const from=now?to:VB||to;VB=to;Z=to[2]/(map.getBoundingClientRect().width||375)*375/1080;cancelAnimationFrame(anim);const t0=performance.now();
   const step=t=>{const k=Math.min(1,(t-t0)/350),e=1-Math.pow(1-k,3);map.setAttribute("viewBox",from.map((v,i)=>(v+(to[i]-v)*e).toFixed(1)).join(" "));if(k<1)anim=requestAnimationFrame(step);};
@@ -1183,7 +1190,9 @@ if("serviceWorker" in navigator&&/^(https:|http:\/\/localhost)/.test(location.hr
 if(location.protocol!=="file:")loadTerrain();
 function drawMap(n,b){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]);
   const zoomed=zoomOverride==null?D<=150:zoomOverride,land=rec&&rec.kind!=="putt"?[rec.T]:[];
-  const FB=fullBox(n);if(manualVB)setView(manualVB,true);else setView(zoomed?viewFor(g,(D>150?[b]:[b,P]).concat(land),FB):FB);   // far away a manual zoom frames ball and landing
+  const FB=fullBox(n);if(manualVB)setView(manualVB,true);else if(!zoomed&&land.length&&zoomOverride==null){const T=land[0],L=dm(g,T[0],T[1],P[0],P[1])||1,k=Math.min(1,40/L);   // a long shot (14 Nov 2026): zoom a little toward the landing spot, 40 m past it still in view
+    setView(viewFor(g,[b,[b[0],b[1]+45*g.scale],T,[T[0]+(P[0]-T[0])*k,T[1]+(P[1]-T[1])*k]],FB,FB[3]*.7));}
+  else setView(zoomed?viewFor(g,(D>150?[b]:[b,P]).concat(land),FB):FB);   // far away a manual zoom frames ball and landing
   $("zoomBtn").setAttribute("aria-pressed",zoomOverride!=null||!!manualVB);$("zoomBtn").textContent=zoomed||manualVB?"Zoom out":"Zoom";
   drawTerrain(n,g);
   let h=rings(n,g,D);
