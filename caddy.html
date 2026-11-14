@@ -43,6 +43,7 @@ button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
 .menupop{position:absolute;z-index:30;right:max(16px,env(safe-area-inset-right,0px));top:calc(100% - 4px);min-width:220px;display:flex;flex-direction:column;gap:6px;padding:8px;background:var(--ink);border:2px solid #56627f;border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 .menupop[hidden]{display:none}
 .menupop .tbtn{text-align:left;padding:8px 12px;white-space:nowrap}
+.menupop .hico{width:20px;height:20px;vertical-align:-4px;margin-right:8px}
 .menupop .mlab{color:#9aa6bf;margin-right:8px}
 .tbtn{background:transparent;color:#fff;border:2px solid #56627f;border-radius:8px;padding:4px 10px;font-family:var(--f-num);font-weight:800;font-size:17px;letter-spacing:.04em;text-transform:uppercase}
 .tbtn i.tdot{display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid #fff;margin-right:6px;vertical-align:-1px}
@@ -318,8 +319,8 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .pball img{display:block;width:100%;height:100%;border-radius:50%}
 .ptip{max-width:min(320px,86vw);text-align:center;font-family:var(--f-body);font-weight:600;font-size:15px;line-height:1.4;letter-spacing:0;text-transform:none;color:#fff}
 .ptip b{display:block;font-family:var(--f-brand);font-size:20px;color:var(--gold);margin-bottom:4px}
-.putt.go .pball{animation:roll 4.4s cubic-bezier(.35,.15,.6,1) forwards,drop .3s 4.4s ease-in forwards}
-.putt.go .pball img{animation:spin 4.4s cubic-bezier(.35,.15,.6,1) forwards}
+.putt.go .pball{animation:roll 2.5s cubic-bezier(.35,.15,.6,1) forwards,drop .3s 2.5s ease-in forwards}
+.putt.go .pball img{animation:spin 2.5s cubic-bezier(.35,.15,.6,1) forwards}
 @keyframes roll{to{left:calc(78% - 20px + 3px)}}
 @keyframes spin{to{transform:rotate(600deg)}}
 @keyframes drop{to{transform:translateY(12px) scale(.35);opacity:0}}
@@ -382,12 +383,12 @@ tr.go{cursor:pointer}
     <div class="lead">
     <div class="brandrow"><div class="brand" id="brand"></div><button class="tbtn gold" id="openCard" type="button">Lihat skor</button><button class="tbtn homebtn" id="homeBtn" type="button" aria-label="Menu" aria-expanded="false" aria-controls="menuPop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6.5h16M4 12h16M4 17.5h16" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/></svg><span>Menu</span></button></div>
     <div class="menupop" id="menuPop" hidden>
+      <button class="tbtn" id="backStart" type="button"><svg class="hico" viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 11.5 12 4l8.5 7.5M6 10v9.5h4.5v-5h3v5H18V10" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>Kembali ke menu</button>
       <button class="tbtn" id="clubBtn" type="button">Jarak pukulan</button>
       <button class="tbtn" id="teeBtn" type="button" aria-label="Ganti warna tee"><span class="mlab">Tee</span><i class="tdot" id="teeDot"></i><span id="teeName">Putih</span></button>
       <button class="tbtn" id="soundBtn" type="button"><span class="mlab">Suara</span><span id="soundTxt">Nyala</span></button>
       <button class="tbtn" id="guideMenu" type="button">Cara pakai</button>
       <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
-      <button class="tbtn" id="backStart" type="button">Kembali ke menu awal</button>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
     </div>
     </div>
@@ -1450,7 +1451,7 @@ function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const 
   if(a==="pick"){const v=bt.dataset.v,p=bt.dataset.p||"";picked=isPicked(v,p)?null:{v,p};render();}
   else if(a==="record"){if(picked&&SOUND&&rec.c)clubSound(rec.c.club,rec.short);if(picked)logShot(picked.v,picked.p||undefined);}
   else if(a==="penmenu"){penOpen=!penOpen;render();}
-  else if(a==="putt"){h.putts=+bt.dataset.v;note="";save();render();}
+  else if(a==="putt"){if(SOUND&&+bt.dataset.v>0)puttSound();h.putts=+bt.dataset.v;note="";save();render();}
   else if(a==="on"){const pk=picked;logShot(pk?pk.v:"ok",pk&&pk.p||undefined);h.ball=G[cur+1].pin.slice();h.on=strokes(h);note="";save();render();}
   else if(a==="plus"){h.adj=(h.adj||0)+1;save();render();}
   else if(a==="minus"){if(holeScore(h)>1){h.adj=(h.adj||0)-1;save();render();}}
@@ -1660,6 +1661,10 @@ function clubSound(club,short){try{const A=window.AudioContext||window.webkitAud
     if(wood){tone(t,1350,.32,.22);tone(t,2900,.22,.1);tone(t,4700,.12,.05);}   // hollow titanium "ting"
     else if(!chip)tone(t,wedge?850:1100,.06,.12);}
   setTimeout(()=>ac.close(),(swing+.9)*1000);}catch(e){}}
+/* putt recorded: soft putter "tok", the ball rolls, then drops in the cup */
+function puttSound(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A();ac.resume&&ac.resume();const t=ac.currentTime+.03;
+  [[620,.45,.07],[1250,.12,.04]].forEach(([f,v,d])=>{const o=ac.createOscillator(),g=ac.createGain();o.type="triangle";o.frequency.setValueAtTime(f,t);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.0005,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02);});
+  setTimeout(()=>ac.close(),400);cupSound(.75);}catch(e){}}
 let SOUND=true;try{SOUND=localStorage.getItem("caddy-sound-v1")!=="off";}catch(e){}
 function perkututSound(){try{const A=window.AudioContext||window.webkitAudioContext;if(!A)return;const ac=new A();ac.resume&&ac.resume();const t0=ac.currentTime+.08;
   const lp=ac.createBiquadFilter();lp.type="lowpass";lp.frequency.value=1600;lp.connect(ac.destination);
@@ -1673,9 +1678,9 @@ function perkututSound(){try{const A=window.AudioContext||window.webkitAudioCont
   setTimeout(()=>ac.close(),1600);}catch(e){}}
 $("stGo").addEventListener("click",()=>{showName();const pi=$("puttIntro");pi.hidden=false;pi.classList.remove("go");void pi.offsetWidth;pi.classList.add("go");
   $("pballImg").src=document.querySelector(".herologo").src;$("pTip").innerHTML=breakTip(BRK);
-  if(SOUND){perkututSound();cupSound(4.45);}
-  introT=[setTimeout(introEnd,4900)];});
-/* 5 s loading (13 Nov 2026); a tap ends it at once */
+  if(SOUND){perkututSound();cupSound(2.55);}
+  introT=[setTimeout(introEnd,3000)];});
+/* 3 s loading (14 Nov 2026); a tap ends it at once */
 let introT=[];function introEnd(){introT.forEach(clearTimeout);introT=[];const pi=$("puttIntro");if(pi.hidden)return;$("startSheet").hidden=true;VB=null;render();pi.hidden=true;pi.classList.remove("go");guideOnce();}
 $("puttIntro").addEventListener("click",introEnd);
 /* tip for the chosen break: how many strokes over par it allows, as bogeys / doubles */
