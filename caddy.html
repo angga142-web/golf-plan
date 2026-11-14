@@ -385,6 +385,17 @@ tr.go{cursor:pointer}
 .card .tip{padding:3px 7px}.card .tip .aim,.card .tip .tline{font-size:11.5px;line-height:1.22}
 </style>
 
+<style>
+.resbar.swap{border:0;background:none;overflow:visible;max-height:none}
+.resbar.swap .dist{background:#fff;max-width:146px;min-width:0;padding:2px 6px}.resbar.swap .dist b{font-size:26px}.resbar.swap .dist small{font-size:9px}.resbar.swap .dist .dtg{font-size:10.5px;margin-top:1px}
+.rescard{display:grid;grid-template-columns:1fr 1fr;align-content:start;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff;min-width:150px;max-width:172px}
+.rescard .sthead{grid-column:1/-1}
+.rescard button{border:0;border-top:1px solid var(--line);background:#fff;padding:5px 6px;font-family:var(--f-num);font-weight:800;font-size:13.5px;letter-spacing:.03em;text-transform:uppercase;text-align:left;color:var(--ink)}
+.rescard button:nth-child(even){border-right:1px solid var(--line)}
+.rescard button:active{background:var(--gold)}
+.rescard .good{color:var(--good)}.rescard .pen{color:var(--red)}.rescard .pen.sub{background:var(--redbg)}
+.rescard .sel{outline:3px solid var(--gold);outline-offset:-3px}
+</style>
 <header class="top gut">
   <div class="toprow">
     <div class="lead">
@@ -1325,7 +1336,7 @@ $("qrisImg").addEventListener("error",qrisCheck);$("qrisImg").addEventListener("
 /* ---------- first-time guide (13 Nov 2026): 5 steps on the play screen, once; again from the menu ---------- */
 const GUIDE=[
  [".shot","Saran Cat Caddy","Kotak kuning = club untuk pukulan ini. Kotak putih = jarak ke target. Garis kuning di peta = rencana pukulan berikutnya (2nd, 3rd …). Bidik ke titik AIM."],
- ["#resbar","Setelah memukul, pilih hasilnya","Tap STRAIGHT kalau lurus, KIRI/KANAN kalau melenceng, GROUNDED atau TOPPING kalau pukulan gagal, PENALTI kalau OB atau masuk air."],
+ [".rescard","Setelah memukul, pilih hasilnya","Tap STRAIGHT kalau lurus, KIRI/KANAN kalau melenceng, GROUNDED atau TOPPING kalau pukulan gagal, PENALTI kalau OB atau masuk air."],
  [".recbtn","Lalu tap bola untuk mencatat","Bola di peta pindah ke titik rencana. Kalau bola aslinya di tempat lain, tap peta di posisi bola sebenarnya. Salah catat? Tekan Mulligan di atas peta."],
  [".map","Di green: pilih jumlah putt","Begitu bola di green, pilih 1, 2, 3 atau 4+ putt. Skor hole tersimpan, lalu lanjut ke hole berikutnya."],
  [".brandrow","Kartu skor dan menu","LIHAT SKOR untuk kartu skor dan bagikan ke WhatsApp. Menu ☰ untuk jarak pukulan, warna tee, riwayat ronde, suara dan cara pakai ini."]];
@@ -1414,7 +1425,8 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     const fb=putt?null:frontBack(n,b);
     html=html.replace("<!--GD-->",putt?"":'<span class="gdist">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+' m</span>');
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
-    html+='<div class="call"><div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="dtg">'+tgtText(rec)+'</span>')+'</div>'+
+    const distHTML='<div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="dtg">'+tgtText(rec)+'</span>')+'</div>';
+    html+='<div class="call"><!--LEFT-->'+
       '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club).replace(/ (\d)/g,"&nbsp;$1").replace(" / ","&nbsp;/ ")+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":"")+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
@@ -1425,6 +1437,9 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     resHTML=sim||putt?"":'<div class="sthead">Status<br>pukulan</div>'+(STATUS.map(([v,t,cl])=>'<button class="'+cl+(isPicked(v,"")?" sel":"")+'" data-act="pick" data-v="'+v+'" type="button" aria-pressed="'+isPicked(v,"")+'">'+t+'</button>').join("")+
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
+    /* layout (14 Nov 2026): the shot-status menu sits in the card's left box and the distance moves onto the map */
+    if(resHTML){html=html.replace("<!--LEFT-->",'<div class="rescard" role="group" aria-label="Hasil pukulan">'+resHTML.replace("<br>"," ")+'</div>');resHTML=distHTML;}
+    else html=html.replace("<!--LEFT-->",distHTML);
     onLabel=(s+1)+" ON!";
     const rot=[];if(recover&&!putt)rot.push('<span class="treset"><b>Reset · napas dulu</b> '+RESET[last.r]+'</span>');
     if(catTip)rot.push('<span class="tcatx"><b>'+catTip.replace(/^<b>([^<]*)<\/b>/,"$1</b> ")+'</span>');
@@ -1435,7 +1450,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     html+='<div class="foot">'+
       '<span class="note">'+(note||"")+'</span></div>';
   }
-  $("card").innerHTML=html;$("resbar").innerHTML=resHTML;
+  $("card").innerHTML=html;$("resbar").innerHTML=resHTML;$("resbar").classList.toggle("swap",resHTML.startsWith('<div class="dist'));
   $("mulBtn").hidden=sim||!(h.log.length||h.putts!=null);
   $("antriBtn").hidden=sim||h.log.length>0||h.putts!=null||sc!=null;
   document.querySelector(".map").classList.toggle("has-antri",!$("antriBtn").hidden);   // status panel stays below the cat   // mulligan = take the last shot (or the putts) back
