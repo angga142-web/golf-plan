@@ -1065,7 +1065,8 @@ let shape="draw";try{const v=localStorage.getItem("caddy-shape-v1");if(SHAPES[v]
 /* Rule (12 Nov 2026): never aim at a bunker or water. If the shape's start line runs over or ends near sand or water, aim straight at the
    target instead and let the shape finish the ball to the other side: the goal is to be on (green or fairway), not close to the flag. */
 function aimFor(n,b,T){const sh=SHAPES[shape];if(!sh.k)return{ok:true,c:bend(b,T)};const g=G[n];
-  const safe=A=>{for(let i=3;i<=20;i++){const t=i/20;if(codeAt(g,b[0]+(A[0]-b[0])*t,b[1]+(A[1]-b[1])*t))return false;}
+  let tw=0;for(let i=1;i<=40;i++){const t=i/40;if(t<=.8&&codeAt(g,b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t))tw=t;}   // the shot itself carries trouble up to here (14 Nov 2026, Pangkalan Jati 3: over the pond)
+  const safe=A=>{for(let i=3;i<=20;i++){const t=i/20;if(t>tw+.05&&codeAt(g,b[0]+(A[0]-b[0])*t,b[1]+(A[1]-b[1])*t))return false;}
     return!(nearest(g,A[0],A[1],1,5)||nearest(g,A[0],A[1],2,10));};
   for(let f=10;f>=1;f--){const c=bend(b,T,f/10);if(safe(c.aim))return{ok:f===10,c};}   // less curve = aim closer to the target
   return{ok:false,c:bend(b,T,0)};}
