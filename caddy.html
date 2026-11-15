@@ -783,7 +783,7 @@ function along(pts,dist){for(let i=0;i+1<pts.length;i++){const a=pts[i],c=pts[i+
 /* Break 80 tee shot on a par 4/5: the longest club whose landing on the hole's route is clear (sand, water, carry rule)
    and, on a par 4, still leaves an approach the bag can reach */
 function driveB80(n,b,skip,R){const g=G[n],P=g.pin,par=H18[n-1][0],rt=[b,...g.land.filter(q=>dm(g,b[0],b[1],q[0],q[1])>20),P];
-  for(const[nm,cr] of bag()){if(skip&&skip.has(nm))continue;const e=cr-C.adj,L=e,T=along(rt,L*g.scale);   // tee shot: full swingif(!T)continue;
+  for(const[nm,cr] of bag()){if(skip&&skip.has(nm))continue;const e=cr-C.adj,L=e,T=along(rt,L*g.scale);if(!T)continue;   // tee shot: full swing
     const r=dm(g,T[0],T[1],P[0],P[1]);if(r<30||!landOK(g,T)||!shotClear(g,b,T,e))continue;
     if(par===4&&r>50&&!clubPick(r,1e9,skip))continue;
     {const tu=treeUsed,nx=adviseAfter(n,T,false,null,null,false);if(!nx||nx.kind==="punch"||nx.kind==="none"||treeUsed>tu)continue;}   // no drive into a spot that leaves only a punch-out or a shot over trees
@@ -922,12 +922,15 @@ function advise(n,b,recover,skip,maxc){
     const chip=sand?"sand":!clear?"lob":D<=30&&edge<=10?"run":"pitch";
     const club=chip==="sand"?"KELUAR BUNKER":chip==="lob"?"SW":chip==="run"?(D-edge>=15?"7 IRON":"8 IRON"):"PITCH";
     return R("green",GT,DC,{club},{short:1,chip,edge});}
-  const front=frontClear(g,b,P,D),cap=Math.min(lim,B80?1e9:capOf(attack&&ST.appAttack?ST.appAttack:front?ST.appClear:ST.appGuard));
+  const front=frontClear(g,b,P,D);let cap=Math.min(lim,B80?1e9:capOf(attack&&ST.appAttack?ST.appAttack:front?ST.appClear:ST.appGuard));
   /* Rule (11 Nov 2026): bunker or water in front of the green -> lay up short of it and chip to the centre; fly it only on SI 16-18 or when no layup works */
   const fullGap=x=>Math.min(...bag().filter(([nm,c])=>nm!=="DRIVER"&&c<=cap&&!(skip&&skip.has(nm))).map(([nm,c])=>{const e=c-C.adj,lo=e*(WEDGE.test(nm)?WFULL:MINPW),hi=e*MAXP;return x<lo?lo-x:x>hi?x-hi:0;}).concat([999]));   // metres outside the nearest full-swing window
   /* approach club (13 Nov 2026): with sand or water short of the green on the line, take the shortest club whose mishit (85%) still carries it
      and whose good strike stays on the green; the club that only just reaches is shown as the minimum */
   const frontHz=fb=>{let hz=0;if(fb)for(let m=8;m<fb.f;m+=2){const t=m/DC,x=b[0]+(GT[0]-b[0])*t,y=b[1]+(GT[1]-b[1])*t;if(codeAt(g,x,y)||nearest(g,x,y,1,3))hz=m;}return hz;};   // last sand/water short of the green on the line
+  /* rule (15 Nov 2026, Pangkalan Jati 5): sand or water on the approach line: the 7 iron at most (a 6 iron or longer mishit finds it);
+     out of 7 iron reach it goes to a safe landing spot instead */
+  const C7=capOf("7 IRON"),hz7=!atTee&&DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP&&frontHz(frontBack(n,b))>0;if(hz7)cap=Math.min(cap,C7);   // an approach: the green in reach of the club the rules allow
   const upClub=cp=>{const c=pick(DC,cp,skip);if(!c||!shotClear(g,b,GT,c.e))return null;const fb=frontBack(n,b);if(!fb)return R("green",GT,DC,c);
     const hz=frontHz(fb);if(!hz||.85*DC>=hz+3)return R("green",GT,DC,c);
     for(const[nm,cr] of bag().slice().reverse()){if(nm==="DRIVER"||cr>cp||skip&&skip.has(nm))continue;const e=cr-C.adj;if(e<=c.e)continue;
@@ -973,7 +976,7 @@ function advise(n,b,recover,skip,maxc){
         if(!landOK(g,T)||!missOK(g,b,T))continue;{const dp=dm(g,T[0],T[1],GT[0],GT[1]),cp2=clubPick(dp,1e9,new Set(["DRIVER"]))||clubPick(dp,1e9,new Set(["DRIVER"]),2);if(!shotClear(g,T,GT,cp2?cp2.e:dp/.9))continue;}   /* the pitch over from there must be clear (water: 75% rule) */const c=pick(dl,Math.min(cap,FM),skip);if(!c||!shotClear(g,b,T,c.e))continue;
         const sc=Math.abs(gap-38)*.5+Math.abs(ang)*.6;if(!best||sc<best.sc)best={sc,T,dl,c};}
       if(best)return R("layup",best.T,best.dl,best.c,{left:dm(g,best.T[0],best.T[1],P[0],P[1]),pre:1});}}
-  if(!direct&&B80&&!safe){const c=pick(DC,cap,skip)||bag().filter(([nm,cr])=>nm!=="DRIVER"&&!(skip&&skip.has(nm))&&cr-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();if(c&&shotClear(g,b,GT,c.e)&&missOK(g,b,GT))direct=R("green",GT,DC,c);}   // Break 80: no safe layup before the trouble either, so it still goes for the green
+  if(!direct&&B80&&!safe){const c=pick(DC,cap,skip)||bag().filter(([nm,cr])=>nm!=="DRIVER"&&!(skip&&skip.has(nm))&&!(hz7&&cr>C7)&&cr-C.adj>=DC).map(([nm,cr])=>({club:nm,e:cr-C.adj,pw:Math.round(DC/(cr-C.adj)*100)})).pop();if(c&&shotClear(g,b,GT,c.e)&&missOK(g,b,GT))direct=R("green",GT,DC,c);}   // Break 80: no safe layup before the trouble either, so it still goes for the green
   if(direct&&!safe&&(front||attack))return direct;
   if(!B80&&!safe&&front){const pb=planBack(n,b,skip,ST,R,false,FM);if(pb)return onSafeSide(n,b,pb);}
   if(!safe)for(let left=15;left<=(B80?(front?45:50):25);left+=5){const da=D-left,c=pick(da,cap,skip),t=da/D,T=[b[0]+(P[0]-b[0])*t,b[1]+(P[1]-b[1])*t];
