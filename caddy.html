@@ -272,6 +272,9 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .qrisph small{font-size:14px;font-weight:600}
 .qris.empty .qrisph{display:flex}.qris.empty img{display:none}
 .qris.empty+.qrissave{display:none}.qrissave{margin-top:12px;width:min(300px,78vw)}
+.sponsor{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
+.sponsor small{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.sponsor b{font-size:17px}.sponsor span{font-size:13px;color:var(--ink2);max-width:320px}
+.mapsbtn{margin-top:6px;padding:9px 16px;border:2px solid var(--ink);border-radius:10px;font-weight:700;color:var(--ink);text-decoration:none;background:#fff}
 .guide{position:fixed;inset:0;z-index:45}
 .guide[hidden]{display:none}
 .gring{position:absolute;border:3px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(6,12,26,.72);transition:all .25s ease;pointer-events:none}
@@ -523,6 +526,9 @@ tr.go{cursor:pointer}
       <p>Suka dibantu Cat Caddy hari ini? Simpan QRIS ini ke galeri, lalu bayar dari aplikasi bank atau e-wallet kamu.</p>
       <div class="qris"><img id="qrisImg" src="qris.png" alt="QRIS tips Cat Caddy"><div class="qrisph">QRIS<br><small>segera hadir</small></div></div>
       <button class="stgo qrissave" id="qrisSave" type="button">Simpan ke galeri</button>
+      <div class="sponsor"><small>Supported by</small><b>Seraya Coffee &amp; Pastry Bogor</b>
+        <span>Komplek KPP IPB, Jl. Baranangsiang III, Jl. Danau Tondano Blok H No. 8, RT 05/RW 08, Tegallega, Bogor Tengah, Kota Bogor 16129</span>
+        <a class="mapsbtn" href="https://maps.google.com/?cid=13400233823715429875" target="_blank" rel="noopener">📍 Buka di Google Maps</a></div>
     </section>
     <button class="close" id="doneCard" type="button">Lihat kartu skor</button>
   </div>
