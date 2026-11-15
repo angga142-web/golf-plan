@@ -265,12 +265,13 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .doneshare{background:#25d366;color:#fff}
 .tips{border:2px dashed var(--ink2);border-radius:12px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;align-items:center;text-align:center}
 .tips p{margin:0;font-size:14px}
-.qris{position:relative;width:min(240px,70vw);aspect-ratio:1;border-radius:12px;background:#fff;border:2px solid var(--ink);overflow:hidden}
-.qris img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.qris{position:relative;width:min(300px,78vw);aspect-ratio:900/1165;border-radius:14px;background:#fff;border:3px solid var(--ink);box-shadow:0 0 0 8px var(--gold),0 0 0 11px var(--ink);margin:14px 0 8px;overflow:hidden}
+.qris img{position:absolute;inset:8px;width:calc(100% - 16px);height:calc(100% - 16px);object-fit:contain}
+#doneSheet .sheetin{padding-bottom:40vh}   /* room to scroll the QRIS to the middle of the screen */
 .qrisph{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;font:800 34px var(--f-num);color:var(--ink2)}
 .qrisph small{font-size:14px;font-weight:600}
 .qris.empty .qrisph{display:flex}.qris.empty img{display:none}
-.qris.empty+.qrissave{display:none}.qrissave{margin-top:10px;width:min(240px,70vw)}
+.qris.empty+.qrissave{display:none}.qrissave{margin-top:12px;width:min(300px,78vw)}
 .guide{position:fixed;inset:0;z-index:45}
 .guide[hidden]{display:none}
 .gring{position:absolute;border:3px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(6,12,26,.72);transition:all .25s ease;pointer-events:none}
