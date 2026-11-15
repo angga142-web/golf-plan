@@ -390,6 +390,7 @@ tr.go{cursor:pointer}
 .resbar.swap .dist{background:#fff;max-width:146px;min-width:0;padding:2px 6px}.resbar.swap .dist b{font-size:26px}.resbar.swap .dist small{font-size:9px}.resbar.swap .dist .dtg{font-size:10.5px;margin-top:1px}
 .rescard{display:grid;grid-template-columns:1fr 1fr;align-content:start;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#fff;min-width:150px;max-width:172px}
 .rescard .sthead{grid-column:1/-1}
+.call.one{grid-template-columns:1fr}.shot.withres{grid-template-columns:1fr auto auto;padding:6px;padding-left:10px}.shot.withres .rescard{min-width:140px;max-width:150px}
 .rescard button{border:0;border-top:1px solid var(--line);background:#fff;padding:5px 6px;font-family:var(--f-num);font-weight:800;font-size:13.5px;letter-spacing:.03em;text-transform:uppercase;text-align:left;color:var(--ink)}
 .rescard button:nth-child(even){border-right:1px solid var(--line)}
 .rescard button:active{background:var(--gold)}
@@ -1463,7 +1464,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     html+='<div class="call"><!--LEFT-->'+
       '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(scClub(rec)).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(scClub(rec)).replace(/ (\d)/g,"&nbsp;$1").replace(" / ","&nbsp;/ ")+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":SC_LAB[rec.short&&rec.kind==="green"?rec.chip:""]||"")+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
-        :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
+        :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div><!--IN--></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
     if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||!!rec.gap||aimFor(n,b,rec.T).ok;
       bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
@@ -1471,8 +1472,8 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     resHTML=sim||putt?"":'<div class="sthead">Status<br>pukulan</div>'+(STATUS.map(([v,t,cl])=>'<button class="'+cl+(isPicked(v,"")?" sel":"")+'" data-act="pick" data-v="'+v+'" type="button" aria-pressed="'+isPicked(v,"")+'">'+t+'</button>').join("")+
       '<button class="pen" data-act="penmenu" type="button" aria-expanded="'+penOpen+'">Penalti '+(penOpen?"▴":"▾")+'</button>'+
       (penOpen?PENS.map(([k,t])=>'<button class="pen sub'+(isPicked("pen",k)?" sel":"")+'" data-act="pick" data-v="pen" data-p="'+k+'" type="button" aria-pressed="'+isPicked("pen",k)+'">'+t+'</button>').join(""):""));
-    /* layout (14 Nov 2026): the shot-status menu sits in the card's left box and the distance moves onto the map */
-    if(resHTML){html=html.replace("<!--LEFT-->",'<div class="rescard" role="group" aria-label="Hasil pukulan">'+resHTML.replace("<br>"," ")+'</div>');resHTML=distHTML;}
+    /* layout (15 Nov 2026): shot + ball first, the shot-status menu after it inside the same yellow frame (one activity); the distance moves onto the map */
+    if(resHTML){html=html.replace("<!--LEFT-->","").replace('<div class="call">','<div class="call one">').replace('<div class="shot">','<div class="shot withres">').replace("<!--IN-->",'<div class="rescard" role="group" aria-label="Hasil pukulan">'+resHTML.replace("<br>"," ")+'</div>');resHTML=distHTML;}
     else html=html.replace("<!--LEFT-->",distHTML);
     onLabel=(s+1)+" ON!";
     const rot=[];if(recover&&!putt)rot.push('<span class="treset"><b>Reset · napas dulu</b> '+RESET[last.r]+'</span>');
