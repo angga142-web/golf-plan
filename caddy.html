@@ -1084,10 +1084,24 @@ let shape="draw";try{const v=localStorage.getItem("caddy-shape-v1");if(SHAPES[v]
    target instead and let the shape finish the ball to the other side: the goal is to be on (green or fairway), not close to the flag. */
 function aimFor(n,b,T){const sh=SHAPES[shape];if(!sh.k)return{ok:true,c:bend(b,T)};const g=G[n];
   let tw=0;for(let i=1;i<=40;i++){const t=i/40;if(t<=.8&&codeAt(g,b[0]+(T[0]-b[0])*t,b[1]+(T[1]-b[1])*t))tw=t;}   // the shot itself carries trouble up to here (14 Nov 2026, Pangkalan Jati 3: over the pond)
-  const safe=A=>{for(let i=3;i<=20;i++){const t=i/20;if(t>tw+.05&&codeAt(g,b[0]+(A[0]-b[0])*t,b[1]+(A[1]-b[1])*t))return false;}
+  const safe=A=>{for(let i=3;i<=20;i++){const t=i/20,x=b[0]+(A[0]-b[0])*t,y=b[1]+(A[1]-b[1])*t,c=codeAt(g,x,y);if(t>tw+.05&&(c===2||t>=.75&&(c||nearest(g,x,y,1,2))))return false;}   // water anywhere past the carry; sand only where a short push lands (15 Nov 2026)
     return!(nearest(g,A[0],A[1],1,5)||nearest(g,A[0],A[1],2,10));};
-  for(let f=10;f>=1;f--){const c=bend(b,T,f/10);if(safe(c.aim))return{ok:f===10,c};}   // less curve = aim closer to the target
+  for(let f=10;f>=1;f--){const c=bend(b,T,f/10);if(safe(c.aim))return{ok:f===10,c,f:f/10};}   // less curve = aim closer to the target
   return{ok:false,c:bend(b,T,0)};}
+/* rule (15 Nov 2026, Pangkalan Jati 10): a shot at the green whose curve or start line (AIM) comes near a bunker or water:
+   aim at another spot on the green, between the hazards, with the club for the centre of the green */
+function curveOK(n,b,T){const g=G[n],L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,sh=SHAPES[shape],k=sh.k*L*sh.s,
+    cx=(b[0]+T[0])/2-(T[1]-b[1])/L*k,cy=(b[1]+T[1])/2+(T[0]-b[0])/L*k;
+  for(let i=16;i<20;i++){const t=i/20,x=(1-t)*(1-t)*b[0]+2*t*(1-t)*cx+t*t*T[0],y=(1-t)*(1-t)*b[1]+2*t*(1-t)*cy+t*t*T[1];
+    if(codeAt(g,x,y)||nearest(g,x,y,1,3)||nearest(g,x,y,2,5))return false;}
+  return true;}
+function aimGap(n,b,r){if(!r||r.kind!=="green"||r.short||!SHAPES[shape].k||aimFor(n,b,r.T).ok&&curveOK(n,b,r.T))return r;const g=G[n],T=r.T,L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,
+    rx=-(T[1]-b[1])/L,ry=(T[0]-b[0])/L,sd=-SHAPES[shape].s;   // first try the side away from the start line (draw: left)
+  for(let o=2;o<=14;o+=1)for(const s of [sd,-sd]){const T2=[T[0]+rx*s*o*g.scale,T[1]+ry*s*o*g.scale];
+    if(![[0,0],[3,0],[-3,0],[0,3],[0,-3]].every(([x,y])=>onGreen(n,[T2[0]+x*g.scale,T2[1]+y*g.scale])))continue;
+    if(!((aimFor(n,b,T2).f||0)>=.7)||!curveOK(n,b,T2)||!missOK(g,b,T2)||r.c.e&&!shotClear(g,b,T2,r.c.e))continue;   // most of the curve played, its end clear
+    return{...r,T:T2,gap:s>0?"kanan":"kiri"};}
+  return r;}
 function bend(a,T,f){const L=Math.hypot(T[0]-a[0],T[1]-a[1])||1,sh=SHAPES[shape],k=sh.k*L*sh.s*(f==null?1:f),rx=-(T[1]-a[1])/L,ry=(T[0]-a[0])/L;   // (rx,ry) = golfer's right
   const cx=(a[0]+T[0])/2+rx*k,cy=(a[1]+T[1])/2+ry*k,cl=Math.hypot(cx-a[0],cy-a[1])||1;
   return{aim:[a[0]+(cx-a[0])/cl*L,a[1]+(cy-a[1])/cl*L],d:'M'+a[0].toFixed(1)+' '+a[1].toFixed(1)+'Q'+cx.toFixed(1)+' '+cy.toFixed(1)+' '+T[0].toFixed(1)+' '+T[1].toFixed(1)};}
@@ -1394,6 +1408,7 @@ function tgtText0(r){
   if(r.kind==="tee")return(r.plan?"ke landing area":"ke tengah green")+" · "+m0(r.d)+" m";
   if(r.kind==="green"&&r.chip==="run")return"chip & run · mendarat 1–2 m di green, sisanya menggelinding";
   if(r.kind==="green"&&r.chip==="lob")return"angkat bola lewati rintangan · mendarat di green";
+  if(r.kind==="green"&&r.gap)return"bidik sisi "+r.gap+" green, di antara rintangan · stik jarak tengah green "+m0(r.d)+" m";
   if(r.kind==="green")return"ke tengah green · "+m0(r.d)+" m"+(r.minClub&&r.minClub!==r.c.club?" · minimal "+clubName(r.minClub)+", ambil "+clubName(r.c.club)+" biar aman lewat rintangan":"");
   if(r.kind==="apron"&&r.near)return"ke pinggir green (±"+r.near+" m dari green, aman dari bunker/air) · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
   if(r.kind==="apron")return(r.safe?"main aman · ":"")+"ke depan green · "+m0(r.d)+" m, lalu chip ±"+r.left+" m";
@@ -1438,7 +1453,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
   }else{
     const last=h.log[h.log.length-1],recover=!!last&&last.r!=="ok",pat=pattern();
     const prev=[...h.log].reverse().find(e=>carryOf(e.c)>0);
-    rec=adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0],prev&&prev===last&&!recover?prev.b:null);
+    rec=aimGap(n,b,adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0],prev&&prev===last&&!recover?prev.b:null));
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     const fb=putt?null:frontBack(n,b);
@@ -1450,7 +1465,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
-    if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||aimFor(n,b,rec.T).ok;
+    if(!putt&&!rec.short){const sh=SHAPES[shape],safe=!sh.k||!!rec.gap||aimFor(n,b,rec.T).ok;
       bubbleHTML+='<div class="tline"><b>'+shape[0].toUpperCase()+shape.slice(1)+':</b> '+(!sh.k?'bidik langsung ke target.':safe?'mulai bola ke '+sh.aim+' target (titik AIM), bola belok ke '+sh.go+'.':'<span class="warn">jangan bidik ke bunker/air.</span> Bidik lebih dekat ke '+(rec.kind==="green"?"tengah green":"target")+' (titik AIM), bola belok ke '+sh.go+' dan tetap ON. Yang penting ON, bukan dekat bendera.')+'</div>';}
     if(sim)html+='<div class="simnote">Ketuk peta untuk mencoba posisi bola. Skor ronde tetap sama.</div>';
     resHTML=sim||putt?"":'<div class="sthead">Status<br>pukulan</div>'+(STATUS.map(([v,t,cl])=>'<button class="'+cl+(isPicked(v,"")?" sel":"")+'" data-act="pick" data-v="'+v+'" type="button" aria-pressed="'+isPicked(v,"")+'">'+t+'</button>').join("")+
