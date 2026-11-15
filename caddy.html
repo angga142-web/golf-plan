@@ -832,7 +832,7 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=
       for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];
         if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0&&relax!=="between"||!landOK(g,c,relax==="between"?8:undefined)||!(relax?teeCarry(g,b,c,e,relax):shotClear(g,b,c,e)))continue;T=c;off=Math.abs(o);break;}
       if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
-      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null,viol=false;
+      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null,viol=false,last=0;
       const tu=treeUsed;
       for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr,org);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
@@ -840,10 +840,12 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=
         if(!fs&&!r.short&&r.c&&carryOf(r.c.club)>carryOf(prev))pen+=3;   // would break the descending rule
         if(!fs&&k===0&&!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))pen+=3;   // the shot after the tee must use a shorter club than the tee
         if(!r.short&&r.c&&carryOf(r.c.club)>=carryOf(nm))viol=true;   // a later shot as long as the tee club
-        if(r.short){if(r.chip==="pitch")pen+=.7;break;}
-        if(r.kind==="green"){inClub=r.c&&r.c.club;if(SAFEH&&r.d>directRange())pen+=2;break;}   // super-safe hole: a full shot at the green is the fallback, not the plan
+        if(r.short){last=r.d;break;}
+        if(r.kind==="green"){inClub=r.c&&r.c.club;last=r.d;if(SAFEH&&r.d>directRange())pen+=2;break;}   // super-safe hole: a full shot at the green is the fallback, not the plan
         prev=r.c&&r.c.club||prev;org=pos;pos=r.T;}
       if(treeUsed>tu)pen+=C.auto?2:10;   // the plan from this tee shot has to go over trees later: on traced maps as bad as a punch-out (14 Nov 2026, Pangkalan Jati 5 Biru), so any clear plan wins
+      /* rule (15 Nov 2026, Pangkalan Jati 14): same strokes -> the plan whose last shot (chip, pitch or shot at the green) is shortest; capped below one stroke */
+      pen+=Math.min(last,90)/100;
       const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.03)-L/1000;
       if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),viol,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k,viol:best.viol}):null;}
