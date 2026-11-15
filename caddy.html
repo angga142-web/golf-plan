@@ -270,6 +270,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .qrisph{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;font:800 34px var(--f-num);color:var(--ink2)}
 .qrisph small{font-size:14px;font-weight:600}
 .qris.empty .qrisph{display:flex}.qris.empty img{display:none}
+.qris.empty+.qrissave{display:none}.qrissave{margin-top:10px;width:min(240px,70vw)}
 .guide{position:fixed;inset:0;z-index:45}
 .guide[hidden]{display:none}
 .gring{position:absolute;border:3px solid var(--gold);border-radius:12px;box-shadow:0 0 0 9999px rgba(6,12,26,.72);transition:all .25s ease;pointer-events:none}
@@ -518,8 +519,9 @@ tr.go{cursor:pointer}
     <button class="stgo doneshare" id="doneShare" type="button">Bagikan ke WhatsApp</button>
     <section class="tips">
       <h3>Tips untuk Cat Caddy</h3>
-      <p>Suka dibantu Cat Caddy hari ini? Screenshot QRIS ini, lalu bayar dari aplikasi bank atau e-wallet kamu.</p>
+      <p>Suka dibantu Cat Caddy hari ini? Simpan QRIS ini ke galeri, lalu bayar dari aplikasi bank atau e-wallet kamu.</p>
       <div class="qris"><img id="qrisImg" src="qris.png" alt="QRIS tips Cat Caddy"><div class="qrisph">QRIS<br><small>segera hadir</small></div></div>
+      <button class="stgo qrissave" id="qrisSave" type="button">Simpan ke galeri</button>
     </section>
     <button class="close" id="doneCard" type="button">Lihat kartu skor</button>
   </div>
@@ -1401,6 +1403,10 @@ $("doneShare").addEventListener("click",async()=>{const txt=scoreText();
 $("closeDone").addEventListener("click",()=>{$("doneSheet").hidden=true;});
 $("doneCard").addEventListener("click",()=>{$("doneSheet").hidden=true;openCard();});
 const qrisCheck=()=>{const q=$("qrisImg");q.parentNode.classList.toggle("empty",q.complete&&!q.naturalWidth);};   // placeholder until the owner's QRIS picture (qris.png) is uploaded
+/* save the QRIS picture to the phone (15 Nov 2026): iPhone through the share sheet ("Simpan Gambar"), others as a download into the gallery */
+$("qrisSave").addEventListener("click",async()=>{try{const b=await (await fetch("qris.png",{cache:"no-cache"})).blob(),f=new File([b],"qris-cat-caddy.png",{type:"image/png"});
+  if(/iPhone|iPad|iPod/.test(navigator.userAgent)&&navigator.canShare&&navigator.canShare({files:[f]})){try{await navigator.share({files:[f]});}catch(e){}return;}
+  const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="qris-cat-caddy.png";document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);}catch(e){}});
 $("qrisImg").addEventListener("error",qrisCheck);$("qrisImg").addEventListener("load",qrisCheck);qrisCheck();
 /* ---------- first-time guide (13 Nov 2026): 5 steps on the play screen, once; again from the menu ---------- */
 const GUIDE=[
@@ -1800,7 +1806,8 @@ const FEEDBACK_URL=()=>"https://wa.me/6285714949997?text="+encodeURIComponent("M
 /* share the score card as text (WhatsApp or the phone's share sheet) */
 function scoreText(){const t=totals(),d=new Date(),par=H18.reduce((a,h)=>a+h[0],0);let lines=[];
   for(const [a,b,lab] of [[0,9,"OUT"],[9,18,"IN"]].filter(([a])=>inSpan(a))){let sum=0,n=0;const xs=[];for(let i=a;i<b;i++){const v=holeScore(peek(i+1));xs.push(v==null?"-":v);if(v!=null){sum+=v;n++;}}lines.push(lab+": "+xs.join(" ")+(n?" = "+sum:""));}
-  return "Parkutut · Cat Caddy\n"+(GOLFER?GOLFER+" · ":"")+(CADDY?"Caddy "+CADDY+" · ":"")+C.name+" · "+d.toLocaleDateString("id-ID")+"\nTee "+TEES[teeI].name+" · target Break "+BRK+"\n"+lines.join("\n")+"\nTotal "+(t.n?t.tot+" ("+t.n+" hole)":"belum ada")+(t.n===ROUND?" · "+(t.tot-parR()>=0?"+":"")+(t.tot-parR())+" dari par":"");}
+  return "Parkutut · Cat Caddy\n"+(GOLFER?GOLFER+" · ":"")+(CADDY?"Caddy "+CADDY+" · ":"")+C.name+" · "+d.toLocaleDateString("id-ID")+"\nTee "+TEES[teeI].name+" · target Break "+BRK+"\n"+lines.join("\n")+"\nTotal "+(t.n?t.tot+" ("+t.n+" hole)":"belum ada")+(t.n===ROUND?" · "+(t.tot-parR()>=0?"+":"")+(t.tot-parR())+" dari par":"")+"\n\nYuk main bareng Parkutut · Cat Caddy: "+APP_URL;}
+const APP_URL="https://angga142-web.github.io/golf-plan/caddy.html";
 const parR=()=>{const [a,b]=span();return H18.slice(a,b).reduce((p,h)=>p+h[0],0);};
 $("shareCard").addEventListener("click",async()=>{const txt=scoreText();
   if(navigator.share){try{await navigator.share({text:txt});return;}catch(e){if(e&&e.name==="AbortError")return;}}
