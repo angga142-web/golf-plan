@@ -886,11 +886,19 @@ function advise(n,b,recover,skip,maxc){
       if(onGreen(n,T)||!landOK(g,T,10))continue;const da=dm(g,b[0],b[1],T[0],T[1]);if(da<30||!atTee&&!missOK(g,b,T))continue;const c=pick(da,cap,sk);if(!c||!shotClear(g,b,T,c.e))continue;
       const sc=left+Math.abs(ang)*.8;if(!best||sc<best.sc)best={sc,T,da,c,left};}   // closest to the green, on the line in
     return best?R("apron",best.T,best.da,best.c,{left:best.left,safe:1}):null;};
+  /* rule (15 Nov 2026, Pangkalan Jati 13): a par 3 tee shot that does not go at the green stops just before the trouble,
+     close enough that the pitch or chip on is 35 m or less to the centre of the green (full tee swing, landing clear of sand and water) */
+  const preTrap=sk=>{const GT0=GC[n]||P,a0=Math.atan2(GT0[1]-b[1],GT0[0]-b[0]),D0=dm(g,b[0],b[1],GT0[0],GT0[1]);let best=null;
+    for(let left=8;left<=35;left++)for(const ang of [0,-4,4,-8,8,-12,12]){const dl=D0-left;if(dl<40)continue;const t=a0+ang*Math.PI/180,T=[b[0]+Math.cos(t)*dl*g.scale,b[1]+Math.sin(t)*dl*g.scale];
+      const lg=dm(g,T[0],T[1],GT0[0],GT0[1]);if(lg>35||onGreen(n,T)||!landOK(g,T,10)||fwAt(n,T[0],T[1])===false||!missOK(g,b,T))continue;
+      const c=pick(dl,1e9,sk);if(!c||!shotClear(g,b,T,c.e))continue;const sc=lg+Math.abs(ang)*.8;if(!best||sc<best.sc)best={sc,T,dl,c};}
+    return best?R("layup",best.T,best.dl,best.c,{left:dm(g,best.T[0],best.T[1],P[0],P[1]),pre:1}):null;};
   if(safe&&atTee&&par===3){const cs=chipSpot(1e9,new Set([...(skip||[]),...tsk3]));if(cs)return cs;}   // par 3: the tee shot stops short of the green too
   if(atTee&&!(B80&&par===3)){   // Break 80 par 3: straight at the green below
     if(B80&&!safe){const dr=driveB80(n,b,skip,R);if(dr&&(par===3||carryOf(dr.c.club)>=((bag()[3]||bag()[bag().length-1])[1])))return onSafeSide(n,b,dr);}
     const T=g.land.find(q=>dm(g,b[0],b[1],q[0],q[1])>=90)||(g.land.length?g.land[g.land.length-1]:P),d=dm(g,b[0],b[1],T[0],T[1]),   // a forward tee skips plan spots closer than 90 m
       plan={plan:g.land.length?1:0},tsk=new Set([...(skip||[]),...(attack&&ST.teeSkipAttack?ST.teeSkipAttack:ST.teeSkip)]),cap=1e9;
+    if(par===3&&(T!==P||far3)&&!teeRuleOff){const p3=preTrap(tsk);if(p3)return p3;}   // par 3 not at the green: just before the trap, 35 m or less left
     if((par>3||far3)&&!teeRuleOff){const sw=BRK===100&&par===5?["WOOD 2","WOOD"].find(nm=>carryOf(nm)>0):null;
       teeTree=true;let pt=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);teeTree=false;
       {const p0=planTeeSim(n,b,tsk,ST,R,plan,sw?{[sw]:1.5}:null);if(!pt||p0&&p0.k+1<pt.k)pt=p0;}   // a tee line clear of trees unless it costs more than a stroke (a tee chute that must be played)
@@ -974,6 +982,7 @@ function advise(n,b,recover,skip,maxc){
      30-50 m before the green, and pitch over it */
   /* Break 80 par 3 tee shot (user, 13 Nov 2026): goes for the green unless reaching it needs a club longer than the 5 iron; then lay up 30-50 m short */
   const b80long=B80&&atTee&&par===3&&(()=>{const c=pick(DC,1e9,skip);return !c||carryOf(c.club)>capOf("5 IRON");})();
+  if(b80long){const p3=preTrap(skip);if(p3)return p3;}
   if(!direct&&!(B80&&atTee)||b80long){const fb=frontBack(n,b),hz=frontHz(fb);
     if((hz||b80long)&&fb&&(b80long||DC<=(Math.min(cap,(bag().find(c=>c[0]!=="DRIVER")||[0,0])[1])-C.adj)*MAXP+20)){const a0=Math.atan2(GT[1]-b[1],GT[0]-b[0]);let best=null;   // an approach (the green about in reach), not a long way out
       for(let gap=30;gap<=50;gap+=4)for(const ang of [0,-5,5,-10,10,-15,15]){const dl=fb.f-gap;if(dl<40)continue;const t=a0+ang*Math.PI/180,T=[b[0]+Math.cos(t)*dl*g.scale,b[1]+Math.sin(t)*dl*g.scale];
