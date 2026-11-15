@@ -1114,7 +1114,20 @@ function curveOK(n,b,T){const g=G[n],L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,sh=SHA
   for(let i=16;i<20;i++){const t=i/20,x=(1-t)*(1-t)*b[0]+2*t*(1-t)*cx+t*t*T[0],y=(1-t)*(1-t)*b[1]+2*t*(1-t)*cy+t*t*T[1];
     if(codeAt(g,x,y)||nearest(g,x,y,1,3)||nearest(g,x,y,2,5))return false;}
   return true;}
-function aimGap(n,b,r){if(!r||r.kind!=="green"||r.short||!SHAPES[shape].k||aimFor(n,b,r.T).ok&&curveOK(n,b,r.T))return r;const g=G[n],T=r.T,L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,
+/* rule (15 Nov 2026, Pangkalan Jati 16): par 3 tee shot at the green with sand or water near the centre or where a short mishit
+   lands (85%): play safe, aim at the side of the green away from the traps (still well on the green), club for the centre distance */
+function par3Safe(n,b,r){const g=G[n];if(H18[n-1][0]!==3||!r||!GREEN[n]||!(r.kind==="green"||r.kind==="tee"&&onGreen(n,r.T))||r.short||dm(g,b[0],b[1],teeOf(n)[0],teeOf(n)[1])>15)return null;
+  const hz=(x,y)=>{const s1=nearest(g,x,y,1,20),w=nearest(g,x,y,2,30);return Math.min(s1?s1.d:20,w?w.d/1.5:20);},
+    hd=(x,y)=>Math.min(hz(x,y),hz(b[0]+(x-b[0])*.85,b[1]+(y-b[1])*.85)),T=r.T,h0=hd(T[0],T[1]);if(h0>=10)return null;
+  const poly=GREEN[n],xs=poly.map(q=>q[0]),ys=poly.map(q=>q[1]),L=Math.hypot(T[0]-b[0],T[1]-b[1])||1;let best=null;
+  for(let x=Math.min(...xs);x<=Math.max(...xs);x+=g.scale)for(let y=Math.min(...ys);y<=Math.max(...ys);y+=g.scale){const P=[x,y];
+    if(![[0,0],[3,0],[-3,0],[0,3],[0,-3]].every(([u,v])=>inPoly(poly,[x+u*g.scale,y+v*g.scale])))continue;
+    const dep=((x-T[0])*(T[0]-b[0])+(y-T[1])*(T[1]-b[1]))/L/g.scale;if(Math.abs(dep)>3)continue;   // sideways only: the club stays right for the centre
+    const sc=hd(x,y)-.15*dm(g,x,y,T[0],T[1]);if(best&&sc<=best.sc)continue;
+    if(!missOK(g,b,P)||r.c.e&&!shotClear(g,b,P,r.c.e))continue;best={sc,P,h:hd(x,y)};}
+  if(!best||best.h<h0+3)return null;const lat=((T[0]-b[0])*(best.P[1]-T[1])-(T[1]-b[1])*(best.P[0]-T[0]))/L/g.scale;if(Math.abs(lat)<3)return null;
+  return{...r,T:best.P,gap:lat>0?"kanan":"kiri",p3safe:1};}
+function aimGap(n,b,r){const p3=par3Safe(n,b,r);if(p3)return p3;if(!r||r.kind!=="green"||r.short||!SHAPES[shape].k||aimFor(n,b,r.T).ok&&curveOK(n,b,r.T))return r;const g=G[n],T=r.T,L=Math.hypot(T[0]-b[0],T[1]-b[1])||1,
     rx=-(T[1]-b[1])/L,ry=(T[0]-b[0])/L,sd=-SHAPES[shape].s;   // first try the side away from the start line (draw: left)
   for(let o=2;o<=14;o+=1)for(const s of [sd,-sd]){const T2=[T[0]+rx*s*o*g.scale,T[1]+ry*s*o*g.scale];
     if(![[0,0],[3,0],[-3,0],[0,3],[0,-3]].every(([x,y])=>onGreen(n,[T2[0]+x*g.scale,T2[1]+y*g.scale])))continue;
@@ -1423,6 +1436,7 @@ const RESET={duff:"Grounded sudah lewat. Tempo pelan, selesaikan ayunan.",top:"T
 const playsTxt=r=>r.plays?" · main seperti "+m0(r.plays)+" m ("+(r.dz>0?"↑":"↓")+Math.abs(r.dz)+" m)":"";
 function tgtText(r){return tgtText0(r)+playsTxt(r);}
 function tgtText0(r){
+  if(r.p3safe)return"main aman: bidik sisi "+r.gap+" green, jauh dari bunker · stik jarak tengah green "+m0(r.d)+" m";
   if(r.kind==="drive")return"tee shot ke fairway · "+m0(r.d)+" m, sisa "+m0(r.left)+" m";
   if(r.kind==="tee")return(r.plan?"ke landing area":"ke tengah green")+" · "+m0(r.d)+" m";
   if(r.kind==="green"&&r.chip==="run")return"chip & run · mendarat 1–2 m di green, sisanya menggelinding";
@@ -1439,7 +1453,8 @@ function aimText(n,b,r,pat){
   if(r.short&&r.kind==="green")return"<b>On dulu di mana saja, lalu 2 putt.</b> Jangan kejar pin.";
   if(r.short)return"<b>Satu pukulan untuk kembali ke fairway.</b> Jangan paksa ke green.";
   const out=[],risk=sideRisk(G[n],b,r.T);
-  if(risk&&risk.danger==="B")out.push('<span class="warn"><b>Bahaya dua sisi.</b></span> Bidik tengah, ayunan 80%.');
+  if(r.p3safe)out.push("<b>Bidik sisi "+r.gap+" green.</b> Jauh dari bunker/air, ayunan 80%. Yang penting ON, bukan dekat bendera.");
+  else   if(risk&&risk.danger==="B")out.push('<span class="warn"><b>Bahaya dua sisi.</b></span> Bidik tengah, ayunan 80%.');
   else if(risk)out.push("<b>Bidik sisi "+SIDE[OPP[risk.danger]]+" target.</b> Miss aman: "+SIDE[OPP[risk.danger]]+' · <span class="warn">'+risk.what+" di "+SIDE[risk.danger]+"</span>");
   else out.push("<b>Bidik tengah target.</b> Tidak ada bunker atau air di dekatnya.");
   if(pat.bias){const safe=OPP[pat.bias];
