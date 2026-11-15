@@ -822,6 +822,11 @@ function teeCarry(g,a,T,e,mode){const L=dm(g,a[0],a[1],T[0],T[1]);let w=0;
   for(let i=1;i<=60;i++){const t=i/60;if(codeAt(g,a[0]+(T[0]-a[0])*t,a[1]+(T[1]-a[1])*t)===2)w=t*L;}
   return w===0||(mode==="between"?e>=w+5:.85*e>=w+10);}
 const directRange=()=>(capOf(BRK===100?"9 IRON":BRK===90?"8 IRON":"7 IRON")-C.adj)*MAXP;   // rule (13 Nov 2026): within this the green may be played straight at
+/* metres from T to the nearest tree (dark green of a traced hole picture), up to mx; auto maps (dark green = artefacts near the line) say mx */
+function treeGap(n,T,mx){const f=FW[n],mp=C.maps[n-1],g=G[n];if(C.auto||!f||typeof f==="string"||!mp)return mx;
+  for(let r=0;r<mx;r++)for(let a=0;a<360;a+=r<3?45:12){const px=Math.round((T[0]+Math.cos(a*Math.PI/180)*r*g.scale-mp.x)*2),py=Math.round((T[1]+Math.sin(a*Math.PI/180)*r*g.scale-g.top)*2);
+    if(px<0||py<0||px>=f.w||py>=f.h)continue;const k=(py*f.w+px)*4;if(f.d[k]<50&&f.d[k+1]<120&&f.d[k+2]<70)return r;}
+  return mx;}
 function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=dm(g,b[0],b[1],P[0],P[1]),SAFEH=BRK===80?H18[n-1][1]<=5:H18[n-1][1]<=8;
   const key=[n,BRK,teeI,shape,FAV.join(),bag().map(c=>c[1]).join(),typeof FW[n],terrain?1:0,[...skip].join(),JSON.stringify(extra||{}),free?1:0,treeOff?1:0,teeTree?1:0,relax||""].join("|");if(key in TEEPLAN)return TEEPLAN[key];
   const rt=[b,...g.land.filter(q=>dm(g,q[0],q[1],P[0],P[1])<D-20&&dm(g,b[0],b[1],q[0],q[1])>20),P];let best=null;
@@ -829,10 +834,10 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=
     for(const f of [.9,.95,1]){const L=e*f,T0=along(rt,L*g.scale);if(!T0)continue;
       // the plan line can hug water (Imperial 4 and 13 run beside a lake): also try spots up to 32 m either side, on the hole's own fairway
       const T1=along(rt,(L+2)*g.scale)||T0,dl=Math.hypot(T1[0]-T0[0],T1[1]-T0[1])||1,px=-(T1[1]-T0[1])/dl,py=(T1[0]-T0[0])/dl;let T=null,off=0;
-      for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];
-        if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0&&relax!=="between"||!landOK(g,c,relax==="between"?8:undefined)||!(relax?teeCarry(g,b,c,e,relax):shotClear(g,b,c,e)))continue;T=c;off=Math.abs(o);break;}
+      let tp=0;for(const tg of [10,0])if(!T)for(const o of [0,8,-8,16,-16,24,-24,32,-32]){const c=[T0[0]+px*o*g.scale,T0[1]+py*o*g.scale];   // first pass: landing 10 m or more clear of the trees (traced maps)
+        if(c[1]<g.top||c[1]>g.bot||fwAt(n,c[0],c[1])===false&&o!==0&&relax!=="between"||!landOK(g,c,relax==="between"?8:undefined)||tg&&treeGap(n,c,tg)<tg||!(relax?teeCarry(g,b,c,e,relax):shotClear(g,b,c,e)))continue;T=c;off=Math.abs(o);break;}
       if(!T)continue;const r0=dm(g,T[0],T[1],P[0],P[1]);if(r0<30)continue;
-      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T,/* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null,viol=false,last=0;
+      const pl=playsLike(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}},skip);let pos=onSafeSide(n,b,{kind:"tee",T,d:L,D,c:{club:nm,e,pw:Math.round(f*100)}}).T;tp=treeGap(n,pos,7)<7?.9:0;let /* simulate from where the app will really put the ball */prev=pl.c&&pl.c.club||nm,org=b,strokes=1,pen=0,inClub=null,viol=false,last=0;
       const tu=treeUsed;
       for(let k=0;k<6;k++){const fr=free&&k===0,r=adviseAfter(n,pos,false,null,fr?null:prev,k===0&&!fr,org);if(!r||r.kind==="putt")break;strokes++;
         if(r.kind==="punch"||r.kind==="none"){pen+=10;break;}   // a punch-out costs the punch and more shots after it
@@ -846,6 +851,7 @@ function planTeeSim(n,b,skip,ST,R,plan,extra,free,relax){const g=G[n],P=g.pin,D=
       if(treeUsed>tu)pen+=C.auto?2:10;   // the plan from this tee shot has to go over trees later: on traced maps as bad as a punch-out (14 Nov 2026, Pangkalan Jati 5 Biru), so any clear plan wins
       /* rule (15 Nov 2026, Pangkalan Jati 14): same strokes -> the plan whose last shot (chip, pitch or shot at the green) is shortest; capped below one stroke */
       pen+=Math.min(last,90)/100;
+      pen+=tp;   // rule (15 Nov 2026, Pangkalan Jati 15): a tee landing hugging the trees (< 7 m) costs almost a stroke: with equal strokes the landing clear of trees wins
       const sc=strokes+pen+(xp||0)+off/200+(inClub?carryOf(inClub)/2000:.03)-L/1000;
       if(!best||sc<best.sc)best={sc,k:strokes+pen+(xp||0),viol,T,L,c:{club:nm,e,pw:Math.round(f*100)}};}}
   return TEEPLAN[key]=best?Object.assign(R("tee",best.T,best.L,best.c,plan),{k:best.k,viol:best.viol}):null;}
