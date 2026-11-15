@@ -611,6 +611,8 @@ const $=id=>document.getElementById(id);
 /* club gaps (13 Nov 2026): TrackMan LPGA Tour averages 2024, carry in yards (driver 94 mph, 218 yd). It is the closest speed profile
    to a 170-200 m driver, so the whole bag scales from it. The 4 iron is not in the LPGA set: between the 5 wood and the 5 iron. */
 const DEF_CLUBS=[["DRIVER",218],["WOOD",195],["WOOD 2",180],["4 IRON",170],["5 IRON",160],["6 IRON",150],["7 IRON",139],["8 IRON",127],["9 IRON",114],["PW",101],["GW",87],["SW",72],["LW",57]];
+/* rule (15 Nov 2026): short game shows the club with the shot type under it */
+const SC_LAB={run:"CHIP",pitch:"PITCH",sand:"SAND",lob:"LOB"},scClub=r=>r.short&&r.kind==="green"&&(r.chip==="pitch"||r.chip==="sand")?"SW":r.c.club;
 const CLUB_NAME={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3"},clubName=nm=>CLUB_NAME[nm]||nm;   // shown everywhere; the stored keys stay WOOD / WOOD 2
 const CLUB_LABEL={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3","4 IRON":"4 IRON / HYBRID","5 IRON":"5 IRON / HYBRID","6 IRON":"6 IRON / HYBRID","7 IRON":"7 IRON / HYBRID"};   // names stay the keys; labels only in Club Setting
 /* template (13 Nov 2026): built from the driver, written as "under 200 m"; a high handicapper starts at 170 m and every club scales with it */
@@ -1439,7 +1441,7 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
     const distHTML='<div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="dtg">'+tgtText(rec)+'</span>')+'</div>';
     html+='<div class="call"><!--LEFT-->'+
-      '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(rec.c.club).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(rec.c.club).replace(/ (\d)/g,"&nbsp;$1").replace(" / ","&nbsp;/ ")+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":"")+'</div></div>'+
+      '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(scClub(rec)).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(scClub(rec)).replace(/ (\d)/g,"&nbsp;$1").replace(" / ","&nbsp;/ ")+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":SC_LAB[rec.short&&rec.kind==="green"?rec.chip:""]||"")+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div></div></div>';
     bubbleHTML='<div class="aim">'+(putt?"<b>Target 2 putt.</b> Atur jarak dulu, garis belakangan.":aimText(n,b,rec,pat))+'</div>';
