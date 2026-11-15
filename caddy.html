@@ -919,7 +919,9 @@ function advise(n,b,recover,skip,maxc){
   const SHORT=B80?50:Math.max(50,...wedgeFull().map(w=>w[0]).concat([0]).filter(x=>x>0).slice(-1));   // shortest full wedge (bag is sorted long to short)
   if(D<=SHORT){const sand=codeAt(g,b[0],b[1])===1,fb=frontBack(n,b),clear=frontClear(g,b,P,D),edge=fb?fb.f:0;
     // chip & run when the way in is clear and the ball is near the green: 7 iron when there is a lot of green to roll on, else 8 iron
-    const chip=sand?"sand":!clear?"lob":D<=30&&edge<=10?"run":"pitch";
+    /* rule (15 Nov 2026, Pangkalan Jati 6): lob only when sand or water is on the line itself; a bunker beside the line is a pitch */
+    let onLine=false;for(let m=2;m<DC-2;m+=1.5){const t=m/DC,x=b[0]+(GT[0]-b[0])*t,y=b[1]+(GT[1]-b[1])*t;if(codeAt(g,x,y)||nearest(g,x,y,1,2)||nearest(g,x,y,2,3)){onLine=true;break;}}
+    const chip=sand?"sand":onLine?"lob":clear&&D<=30&&edge<=10?"run":"pitch";
     const club=chip==="sand"?"KELUAR BUNKER":chip==="lob"?"SW":chip==="run"?(D-edge>=15?"7 IRON":"8 IRON"):"PITCH";
     return R("green",GT,DC,{club},{short:1,chip,edge});}
   const front=frontClear(g,b,P,D);let cap=Math.min(lim,B80?1e9:capOf(attack&&ST.appAttack?ST.appAttack:front?ST.appClear:ST.appGuard));
