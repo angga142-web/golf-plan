@@ -882,10 +882,10 @@ function advise(n,b,recover,skip,maxc){
      the full shots end on a chip spot just short of the green, then 1 chip and 1 putt for bogey. */
   const safe=BRK===80?si<=5:si<=8;
   const chipSpot=(cap,sk)=>{const fb=frontBack(n,b),fe=fb?Math.max(0,D-fb.f):8,a0=Math.atan2(b[1]-P[1],b[0]-P[0]);let best=null;
-    for(let left=Math.ceil(fe+4);left<=Math.min(45,Math.max(fe+14,30));left+=2)for(const ang of [0,-6,6,-12,12,-18,18,-27,27,-36,36,-45,45]){const t=a0+ang*Math.PI/180,T=[P[0]+Math.cos(t)*left*g.scale,P[1]+Math.sin(t)*left*g.scale];
+    for(let left=Math.ceil(fe+4);left<=45;left+=2)for(const ang of [0,-6,6,-12,12,-18,18,-27,27,-36,36,-45,45]){const t=a0+ang*Math.PI/180,T=[P[0]+Math.cos(t)*left*g.scale,P[1]+Math.sin(t)*left*g.scale];
       if(onGreen(n,T)||!landOK(g,T,10))continue;const da=dm(g,b[0],b[1],T[0],T[1]);if(da<30||!atTee&&!missOK(g,b,T))continue;const c=pick(da,cap,sk);if(!c||!shotClear(g,b,T,c.e))continue;
       const sc=left+Math.abs(ang)*.8;if(!best||sc<best.sc)best={sc,T,da,c,left};}   // closest to the green, on the line in
-    return best?R("apron",best.T,best.da,best.c,{left:best.left,safe:1}):null;};
+    return best?R("apron",best.T,best.da,best.c,{left:best.left,safe:1}):null;};   // rule (15 Nov 2026, Pangkalan Jati 14): out to 45 m short when nothing closer is in reach, rather than a wedge layup chain
   /* rule (15 Nov 2026, Pangkalan Jati 13): a par 3 tee shot that does not go at the green stops just before the trouble,
      close enough that the pitch or chip on is 35 m or less to the centre of the green (full tee swing, landing clear of sand and water) */
   const preTrap=sk=>{const GT0=GC[n]||P,a0=Math.atan2(GT0[1]-b[1],GT0[0]-b[0]),D0=dm(g,b[0],b[1],GT0[0],GT0[1]);let best=null;
