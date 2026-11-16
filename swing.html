@@ -24,6 +24,7 @@ button.ghost{background:var(--mist);color:var(--ink);border:1px solid var(--line
 button.on{outline:3px solid var(--gold)}
 button:disabled{opacity:.4}
 #stage{position:relative;background:#000;border-radius:12px;overflow:hidden}
+#c3{display:block;width:100%;height:auto;background:var(--ink);border-radius:12px;touch-action:none;cursor:grab;margin-bottom:8px}
 #cv{display:block;width:100%;height:auto;touch-action:manipulation}
 #vid{position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 #msg{font-size:13px;color:#55607a;min-height:19px;margin:8px 0 0}
@@ -82,17 +83,28 @@ td.now{font-weight:700;background:#fff8dc}
 <section class="card" id="angles" hidden>
   <h2>2 · Sudut sendi</h2>
   <table id="tbl"></table>
-  <p class="note">Kiri/kanan = sisi badan pemain. Sudut diukur dari gambar 2D, jadi sendi yang tertutup badan atau mengarah ke kamera bisa meleset.</p>
+  <p class="note">Kiri/kanan = sisi badan pemain. Sudut dihitung dari rangka 3D hasil perkiraan dari satu kamera, jadi sendi yang tertutup badan bisa meleset.</p>
+</section>
+
+<section class="card" id="d3" hidden>
+  <h2>3 · Estimasi 3D</h2>
+  <canvas id="c3" width="600" height="600"></canvas>
+  <div class="btns b3">
+    <button class="ghost" data-v3="0,0.1">Dari kamera</button>
+    <button class="ghost" data-v3="1.57,0.1">Dari samping</button>
+    <button class="ghost" data-v3="0,1.45">Dari atas</button>
+  </div>
+  <p class="note">Geser gambar untuk memutar. Biru = sisi kiri pemain, oranye = sisi kanan, kuning = jejak tangan. Kedalaman ditebak model dari satu kamera, dan stik tidak ikut digambar.</p>
 </section>
 
 <section class="card" id="plane" hidden>
-  <h2>3 · Swing plane</h2>
+  <h2>4 · Swing plane</h2>
   <div class="btns b2"><button class="ghost" data-mark="c">Tandai kepala stik saat address</button><button class="ghost" id="clrC">Hapus garis</button></div>
   <p class="note" id="planeMsg">Pindah ke frame address, tekan tombol, lalu ketuk kepala stik di gambar. Muncul garis shaft plane (kuning) dan shoulder plane (putih); jejak tangan digambar di atasnya.</p>
 </section>
 
 <section class="card" id="speed" hidden>
-  <h2>4 · Kecepatan</h2>
+  <h2>5 · Kecepatan</h2>
   <div class="row">
     <div><div class="note" style="margin:0">Tangan (terukur)</div><div class="big" id="hand">–</div></div>
     <div><div class="note" style="margin:0">Kepala stik (estimasi)</div><div class="big" id="club">–</div></div>
@@ -112,8 +124,8 @@ const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
       MODEL="https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/latest/pose_landmarker_full.task";
 const $=id=>document.getElementById(id),v=$("vid"),cv=$("cv"),cx=cv.getContext("2d");
 const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
-let pl=null,F=[],step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},marks={},mode=null,ppm=0,ts=0,playing=0;
-window.SW={get F(){return F},get K(){return K},get ppm(){return ppm},marks};
+let pl=null,F=[],W=[],ry=.6,rx=.12,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},marks={},mode=null,ppm=0,ts=0,playing=0;
+window.SW={get F(){return F},get W(){return W},meas:i=>meas(i),get K(){return K},get ppm(){return ppm},marks};
 
 const msg=t=>$("msg").innerHTML=t;
 const seek=t=>new Promise(r=>{let done=0;const h=()=>{if(done)return;done=1;v.removeEventListener("seeked",h);r();};
@@ -124,7 +136,12 @@ const dist=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
 const ang=(a,b,c)=>{const u=[a[0]-b[0],a[1]-b[1]],w=[c[0]-b[0],c[1]-b[1]];
   return Math.acos(Math.max(-1,Math.min(1,(u[0]*w[0]+u[1]*w[1])/((Math.hypot(...u)*Math.hypot(...w))||1))))*180/Math.PI;};
 const hands=L=>mid(P(L,15),P(L,16));
-const tilt=(a,b)=>{const d=Math.atan2(b[1]-a[1],b[0]-a[0])*180/Math.PI;return Math.abs(d)>90?180-Math.abs(d):Math.abs(d);};
+const V3=(w,i)=>[w[i].x,w[i].y,w[i].z],M3=(w,a,b)=>V3(w,a).map((x,k)=>(x+V3(w,b)[k])/2),len=x=>Math.hypot(...x);
+const ang3=(w,a,b,c)=>{const B=V3(w,b),u=V3(w,a).map((x,k)=>x-B[k]),q=V3(w,c).map((x,k)=>x-B[k]);
+  return Math.acos(Math.max(-1,Math.min(1,(u[0]*q[0]+u[1]*q[1]+u[2]*q[2])/(len(u)*len(q)||1))))*180/Math.PI;};
+/* rotation of a left-right body line about the vertical, compared with address */
+const yaw=(w,a,b)=>Math.atan2(w[b].z-w[a].z,w[b].x-w[a].x)*180/Math.PI;
+const turn=(w,w0,a,b)=>Math.abs(((yaw(w,a,b)-yaw(w0,a,b)+540)%360)-180);
 
 async function model(){
   const fs=await FilesetResolver.forVisionTasks(MP);
@@ -132,23 +149,28 @@ async function model(){
   try{return await mk("GPU");}catch(e){return await mk("CPU");}
 }
 
-/* what we read off one frame */
-function meas(L){
-  if(!L)return null;const p=i=>P(L,i),sh=mid(p(11),p(12)),hp=mid(p(23),p(24));
-  const m={"Siku kiri":ang(p(11),p(13),p(15)),"Siku kanan":ang(p(12),p(14),p(16)),
-    "Lutut kiri":ang(p(23),p(25),p(27)),"Lutut kanan":ang(p(24),p(26),p(28)),
-    "Tulang belakang (dari tegak)":Math.atan2(Math.abs(sh[0]-hp[0]),hp[1]-sh[1])*180/Math.PI};
-  if($("view").value==="fo"){m["Kemiringan bahu"]=tilt(p(11),p(12));m["Kemiringan pinggul"]=tilt(p(23),p(24));}
+/* what we read off one frame (from the 3D skeleton, so it does not depend on the camera angle) */
+function meas(i){
+  const w=W[i],w0=W[K.a];if(!w||!F[i])return null;
+  const sp=M3(w,11,12).map((x,k)=>x-M3(w,23,24)[k]);
+  const m={"Siku kiri":ang3(w,11,13,15),"Siku kanan":ang3(w,12,14,16),"Lutut kiri":ang3(w,23,25,27),"Lutut kanan":ang3(w,24,26,28),
+    "Tulang belakang (dari tegak)":Math.acos(Math.max(-1,Math.min(1,-sp[1]/(len(sp)||1))))*180/Math.PI};
+  if(w0){m["Putaran bahu (dari address)"]=turn(w,w0,11,12);m["Putaran pinggul (dari address)"]=turn(w,w0,23,24);}
   return m;
 }
 
-/* address = first frame with a body (or the one the user picked), top = hands highest, impact = hands back at address */
+/* the fastest hand movement is the downswing; top = hands highest in the 1.5 s before it (the finish is higher, so
+   "highest overall" is wrong); address = last moment the hands were still before the top; impact = hands back at address */
 function keys(addr){
   const ok=F.map((L,i)=>L?i:-1).filter(i=>i>=0);if(!ok.length)return false;
-  K.a=addr!=null&&F[addr]?addr:ok[0];
-  const after=ok.filter(i=>i>=K.a);
-  K.t=after.reduce((b,i)=>hands(F[i])[1]<hands(F[b])[1]?i:b,after[0]);
-  const h0=hands(F[K.a]),dn=after.filter(i=>i>K.t);
+  const hi=a=>a.reduce((b,i)=>hands(F[i])[1]<hands(F[b])[1]?i:b,a[0]);
+  const win=1.5*(+$("slow").value||1)/step;let pk=ok[0],pv=0;
+  for(const i of ok)if(i>=(addr||0)+2&&F[i-2]){const d=dist(hands(F[i]),hands(F[i-2]));if(d>pv){pv=d;pk=i;}}
+  const bs=ok.filter(i=>i<=pk&&i>=pk-win&&i>=(addr||0));
+  if(addr!=null&&F[addr]){K.a=addr;K.t=hi(bs.length?bs:[addr]);}
+  else{K.t=hi(bs);K.a=ok[0];const thr=.012*dist(P(F[K.t],11),P(F[K.t],27));
+    for(let j=K.t-1;j>=2;j--)if(F[j]&&F[j-1]&&F[j-2]&&hands(F[j])[1]>hands(F[K.t])[1]+12*thr&&dist(hands(F[j]),hands(F[j-2]))<thr){K.a=j;break;}}
+  const h0=hands(F[K.a]),dn=ok.filter(i=>i>K.t&&i<=K.t+win*.7);
   K.i=dn.length?dn.reduce((b,i)=>dist(hands(F[i]),h0)<dist(hands(F[b]),h0)?i:b,dn[0]):K.t;
   /* scale: shin + thigh + trunk is about 78% of standing height */
   const L=F[K.a],seg=(a,b,c,d)=>dist(P(L,a),P(L,b))+dist(P(L,b),P(L,c))+dist(P(L,c),P(L,d));
@@ -167,7 +189,7 @@ function handSpeed(){
 const spd=s=>s?s.toFixed(1)+" <small style='font-size:13px'>m/s</small><div class='note' style='margin:0'>"+Math.round(s*2.237)+" mph</div>":"–";
 
 function stats(){
-  const cols=[["Address",K.a],["Top",K.t],["Impact",K.i],["Sekarang",cur]].map(c=>[c[0],meas(F[c[1]])]);
+  const cols=[["Address",K.a],["Top",K.t],["Impact",K.i],["Sekarang",cur]].map(c=>[c[0],meas(c[1])]);
   const rows=Object.keys(cols.find(c=>c[1])?.[1]||{});
   let h="<tr><th></th>"+cols.map(c=>"<th>"+c[0]+"</th>").join("")+"</tr>";
   for(const r of rows)h+="<tr><td>"+r+"</td>"+cols.map((c,k)=>"<td"+(k===3?" class='now'":"")+">"+(c[1]?Math.round(c[1][r])+"°":"–")+"</td>").join("")+"</tr>";
@@ -197,17 +219,31 @@ function draw(){
   if(L){
     for(const [a,b] of BONES)line(P(L,a),P(L,b),"#7dffb0",2.5*u);
     for(const i of [11,12,13,14,15,16,23,24,25,26,27,28,0])dot(P(L,i),"#fff",3*u);
-    const m=meas(L);
+    const m=meas(cur);
     tag(P(L,13),Math.round(m["Siku kiri"])+"°");tag(P(L,14),Math.round(m["Siku kanan"])+"°");
     tag(P(L,25),Math.round(m["Lutut kiri"])+"°");tag(P(L,26),Math.round(m["Lutut kanan"])+"°");
   }
   for(const k of ["A","B"])if(marks[k]){dot([marks[k].x,marks[k].y],"#ff3b6b",4*u);tag([marks[k].x,marks[k].y],k);}
-  stats();
+  stats();draw3();
+}
+
+/* rotatable 3D skeleton from the model's world landmarks (metres, origin between the hips) */
+function draw3(){
+  const c=$("c3"),g=c.getContext("2d"),S=270,w=W[cur],w0=W[K.a]||w;g.clearRect(0,0,600,600);if(!w)return;
+  const cy=Math.cos(ry),sy=Math.sin(ry),cp=Math.cos(rx),sp=Math.sin(rx);
+  const pr=p=>{const x=p[0]*cy+p[2]*sy,z=-p[0]*sy+p[2]*cy;return [300+x*S,270+(p[1]*cp-z*sp)*S];};
+  const ln=(a,b,col,wd)=>{g.strokeStyle=col;g.lineWidth=wd;g.lineCap="round";g.beginPath();g.moveTo(...pr(a));g.lineTo(...pr(b));g.stroke();};
+  const fl=Math.max(...[27,28,29,30,31,32].map(i=>w0[i].y));
+  for(let k=-4;k<=4;k++){ln([k/4,fl,-1],[k/4,fl,1],"rgba(255,255,255,.14)",1);ln([-1,fl,k/4],[1,fl,k/4],"rgba(255,255,255,.14)",1);}
+  for(let j=K.a+1;j<=cur;j++)if(W[j]&&W[j-1])ln(M3(W[j-1],15,16),M3(W[j],15,16),"#ffc400",2);
+  for(const [a,b] of BONES)ln(V3(w,a),V3(w,b),a%2===b%2?(a%2?"#3fe0ff":"#ff9a3c"):"#fff",6);
+  const n=pr(V3(w,0));g.fillStyle="#fff";g.beginPath();g.arc(n[0],n[1],.1*S,0,7);g.fill();
+  for(const i of [13,14,15,16,25,26,27,28]){const q=pr(V3(w,i));g.fillStyle="#fff";g.beginPath();g.arc(q[0],q[1],5,0,7);g.fill();}
 }
 
 async function go(i){
   want=Math.max(0,Math.min(F.length-1,i));if(busy)return;busy=1;
-  do{cur=want;$("scrub").value=cur;await seek(cur*step);draw();}while(cur!==want);
+  do{cur=want;$("scrub").value=cur;await seek((cur+.5)*step);draw();}while(cur!==want);
   busy=0;
 }
 
@@ -217,15 +253,15 @@ async function run(){
     if(!pl){msg("Memuat model pose (sekali saja, ±10 MB)…");pl=await model();}
     const dur=v.duration;step=Math.max(1/30,dur/450);const n=Math.max(1,Math.floor(dur/step));
     cv.width=Math.min(720,v.videoWidth);cv.height=Math.round(cv.width*v.videoHeight/v.videoWidth);
-    F=[];marks.c=marks.A=marks.B=null;$("lab").hidden=false;
+    F=[];W=[];marks.c=marks.A=marks.B=null;$("lab").hidden=false;
     for(let i=0;i<n;i++){
-      await seek(i*step);ts+=34;
-      const r=pl.detectForVideo(v,ts);F.push(r.landmarks&&r.landmarks[0]||null);
+      await seek((i+.5)*step);ts+=34;
+      const r=pl.detectForVideo(v,ts);F.push(r.landmarks&&r.landmarks[0]||null);W.push(r.worldLandmarks&&r.worldLandmarks[0]||null);
       cx.drawImage(v,0,0,cv.width,cv.height);
       if(i%5===0)msg("Membaca gerakan… <b>"+Math.round(i/n*100)+"%</b>");
     }
     if(!keys()){msg("Badan tidak terbaca di video ini. Coba rekam dengan seluruh badan terlihat dan cahaya cukup.");return;}
-    $("scrub").max=F.length-1;for(const id of ["angles","plane","speed"])$(id).hidden=false;
+    $("scrub").max=F.length-1;for(const id of ["angles","d3","plane","speed"])$(id).hidden=false;
     $("plane").hidden=$("view").value!=="dtl";
     msg("Selesai: <b>"+F.length+" frame</b>"+(dur>15?" (video panjang, dibaca tiap "+(step*1000|0)+" ms; potong ke satu swing supaya lebih rapat)":"")+". Geser slider atau pakai tombol Address / Top / Impact.");
     await go(K.a);
@@ -249,7 +285,12 @@ $("clrS").onclick=()=>{marks.A=marks.B=null;draw();};
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.go)go(cur+ +b.dataset.go);
   else if(b.dataset.key)go(K[b.dataset.key]);
+  else if(b.dataset.v3){[ry,rx]=b.dataset.v3.split(",").map(Number);draw3();}
   else if(b.dataset.mark){mode=b.dataset.mark;document.querySelectorAll("[data-mark]").forEach(x=>x.classList.toggle("on",x===b));}});
+{const c=$("c3");let d=null;
+  c.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);});
+  c.addEventListener("pointermove",e=>{if(!d)return;ry+=(e.clientX-d[0])*.01;rx=Math.max(-1.5,Math.min(1.5,rx+(e.clientY-d[1])*.01));d=[e.clientX,e.clientY];draw3();});
+  c.addEventListener("pointerup",()=>d=null);c.addEventListener("pointercancel",()=>d=null);}
 cv.addEventListener("click",e=>{if(!mode)return;const r=cv.getBoundingClientRect();
   marks[mode]={x:(e.clientX-r.left)/r.width*cv.width,y:(e.clientY-r.top)/r.height*cv.height,f:cur};
   mode=null;document.querySelectorAll("[data-mark]").forEach(x=>x.classList.remove("on"));draw();});
