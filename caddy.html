@@ -284,7 +284,7 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .chipmsg{margin:0;font-weight:600;font-size:15px;min-height:42px}
 .chipclubs{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
 .chipclubs button{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:8px 0;font-family:var(--f-num);font-weight:800;font-size:20px}
-.chipclubs button:disabled{opacity:.45}.chipclubs button.sel{background:var(--ink);color:var(--gold);opacity:1}.chipclubs button.best{background:var(--good);color:#fff;border-color:var(--good);opacity:1}
+.chipclubs small{display:block;font-family:var(--f-body);font-weight:600;font-size:12px}.chipclubs button{padding:5px 0}.chipclubs button:disabled{opacity:.45}.chipclubs button.sel{background:var(--ink);color:var(--gold);opacity:1}.chipclubs button.best{background:var(--good);color:#fff;border-color:var(--good);opacity:1}
 .chipbars{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:13px;font-weight:600}
 .chipbars .bar{display:flex;height:16px;border-radius:5px;overflow:hidden;background:var(--mist)}
 .chipbars .bar i{background:var(--gold)}.chipbars .bar b{background:var(--good)}
@@ -659,7 +659,7 @@ const $=id=>document.getElementById(id);
 const DEF_CLUBS=[["DRIVER",218],["WOOD",195],["WOOD 2",180],["4 IRON",170],["5 IRON",160],["6 IRON",150],["7 IRON",139],["8 IRON",127],["9 IRON",114],["PW",101],["GW",87],["SW",72],["LW",57]];
 /* rule (15 Nov 2026): short game shows the club with the shot type under it */
 const SC_LAB={run:"CHIP",pitch:"PITCH",sand:"SAND",lob:"LOB"},scClub=r=>r.short&&r.kind==="green"&&(r.chip==="pitch"||r.chip==="sand")?"SW":r.c.club;
-const CLUB_NAME={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3"},clubName=nm=>CLUB_NAME[nm]||nm;   // shown everywhere; the stored keys stay WOOD / WOOD 2
+const CLUB_NAME={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3","GW":"AW"},clubName=nm=>CLUB_NAME[nm]||nm;   // shown everywhere; the stored keys stay WOOD / WOOD 2
 const CLUB_LABEL={"WOOD":"WOOD 3 / HYBRID 2","WOOD 2":"WOOD 5 / HYBRID 3","4 IRON":"4 IRON / HYBRID","5 IRON":"5 IRON / HYBRID","6 IRON":"6 IRON / HYBRID","7 IRON":"7 IRON / HYBRID"};   // names stay the keys; labels only in Club Setting
 /* template (13 Nov 2026): built from the driver, written as "under 200 m"; a high handicapper starts at 170 m and every club scales with it */
 const DRV_DEF=170,scaleBag=dr=>DEF_CLUBS.map(([nm,c])=>[nm,Math.round(c*dr/218)]);
@@ -1408,15 +1408,15 @@ function openHistory(){const all=readHistory();
 $("histMenu").addEventListener("click",()=>{menuOpen(false);openHistory();});
 /* ---------- mini game chipping (v2, 16 Nov 2026) ----------
    Teaches which club to chip with from the edge of the green: every chip lands 1 m onto the green, then rolls.
-   Carry : roll on a flat green (rule of thumb): LW 1:0.5, SW 1:1, GW 1:1.5, PW 1:2, 9i 1:3, 8i 1:4, 7i 1:5. Drawn in an isometric view. */
-const CHIP=[["LW",.5,.5],["SW",1,.42],["GW",1.5,.36],["PW",2,.3],["9i",3,.22],["8i",4,.17],["7i",5,.13]],CHIP_N=6;   // name, roll per metre of carry, apex height per metre of carry
+   Carry : roll on a flat green (rule of thumb): LW 1:0.5, SW 1:1, AW 1:1.5, PW 1:2, 9i 1:3, 8i 1:4, 7i 1:5. Drawn in an isometric view. */
+const CHIP=[["LW",.5,.5,60],["SW",1,.42,56],["AW",1.5,.36,52],["PW",2,.3,46],["9i",3,.22,41],["8i",4,.17,37],["7i",5,.13,33]],CHIP_N=6;   // name, roll per metre of carry, apex height per metre of carry, typical loft (deg)
 let chip=null;
 function chipNew(){const k=Math.floor(Math.random()*CHIP.length),f=1+Math.floor(Math.random()*4),c=f+1;   // f: ball to green edge, c: carry (lands 1 m on)
   const p=Math.max(2,Math.round(1+c*CHIP[k][1]+(Math.random()-.5)));   // pin from the green edge
   chip.q={f,p,c,need:f+p,best:CHIP.reduce((a,x,i)=>Math.abs(c*(1+x[1])-(f+p))<Math.abs(c*(1+CHIP[a][1])-(f+p))?i:a,0),pick:null,x:0,z:0};
   chip.end=false;chip.i++;$("chipSub").textContent="Soal "+chip.i+" / "+CHIP_N+" · skor "+chip.sc;$("chipNext").hidden=true;$("chipBars").innerHTML="";
   $("chipMsg").innerHTML="Bola <b>"+f+" m</b> dari pinggir green, bendera <b>"+p+" m</b> dari pinggir. Bola mendarat 1 m di dalam green (carry <b>"+c+" m</b>), sisanya roll <b>"+(p-1)+" m</b>. Pilih stik.";
-  $("chipClubs").innerHTML=CHIP.map((x,i)=>'<button type="button" data-chip="'+i+'">'+x[0]+'</button>').join("");chipDraw();}
+  $("chipClubs").innerHTML=CHIP.map((x,i)=>'<button type="button" data-chip="'+i+'">'+x[0]+'<small>'+x[3]+'°</small></button>').join("");chipDraw();}
 function chipDraw(){const q=chip.q,L=q.need+3,a=20,ox=0,oy=0,FS=((L+8)*a*.87+16)/34,P=(x,y,z)=>[(ox+(x-y)*a*.87).toFixed(1),(oy-(x+y)*a*.5-(z||0)*a).toFixed(1)],
     poly=(pts,fill)=>'<polygon points="'+pts.map(v=>P(...v).join(",")).join(" ")+'" fill="'+fill+'"/>',ln=(A,B,st,w,ex)=>{const p1=P(...A),p2=P(...B);return'<line x1="'+p1[0]+'" y1="'+p1[1]+'" x2="'+p2[0]+'" y2="'+p2[1]+'" stroke="'+st+'" stroke-width="'+(w||1)+'" '+(ex||"")+'/>';},
     txt=(A,t,ex)=>{const v=P(...A);return'<text x="'+v[0]+'" y="'+v[1]+'" font-size="'+FS.toFixed(1)+'" font-weight="700" font-family="Barlow,Arial" text-anchor="middle" '+(ex||'fill="#0c162d"')+'>'+t+'</text>';};
@@ -1440,9 +1440,9 @@ function chipHit(i){const q=chip.q;if(q.pick!=null)return;q.pick=i;chip.end=fals
     if(t<T1+T2){chipDraw();requestAnimationFrame(step);return;}
     q.x=end;chip.end=true;chipDraw();const miss=end-q.need,pt=i===q.best?3:Math.abs(i-q.best)===1?1:0,f1=v=>v.toFixed(1).replace(".0","");chip.sc+=pt;
     document.querySelectorAll("#chipClubs button")[q.best].classList.add("best");
-    $("chipMsg").innerHTML=(pt===3?"<b>Pas!</b> ":pt?"<b>Lumayan.</b> ":"<b>Belum pas.</b> ")+nm+": carry "+q.c+" m + roll "+f1(end-q.c)+" m, berhenti "+(Math.abs(miss)<.5?"di dekat lubang":f1(Math.abs(miss))+" m "+(miss>0?"lewat":"kurang"))+"."+(pt===3?"":" Paling pas: <b>"+CHIP[q.best][0]+"</b>.")+" +"+pt+" poin";
+    $("chipMsg").innerHTML=(pt===3?"<b>Pas!</b> ":pt?"<b>Lumayan.</b> ":"<b>Belum pas.</b> ")+nm+" ("+CHIP[i][3]+"°): carry "+q.c+" m + roll "+f1(end-q.c)+" m, berhenti "+(Math.abs(miss)<.5?"di dekat lubang":f1(Math.abs(miss))+" m "+(miss>0?"lewat":"kurang"))+"."+(pt===3?"":" Paling pas: <b>"+CHIP[q.best][0]+"</b>.")+" +"+pt+" poin";
     const mx=Math.max(...CHIP.map(x=>q.c*(1+x[1])));
-    $("chipBars").innerHTML='<div class="hd">Ayunan sama, mendarat di titik yang sama:<i></i>carry<b></b>roll · bendera '+q.need+' m</div>'+CHIP.map((x,k)=>{const e=q.c*(1+x[1]),cl=k===q.best?"ok":k===i?"me":"";return'<span class="'+cl+'">'+x[0]+' 1:'+x[1]+'</span><div class="bar"><i style="width:'+(q.c/mx*100)+'%"></i><b style="width:'+((e-q.c)/mx*100)+'%"></b></div><span class="'+cl+'">'+f1(e)+' m'+(k===q.best?" ✓":"")+'</span>';}).join("");
+    $("chipBars").innerHTML='<div class="hd">Ayunan sama, mendarat di titik yang sama:<i></i>carry<b></b>roll · bendera '+q.need+' m</div>'+CHIP.map((x,k)=>{const e=q.c*(1+x[1]),cl=k===q.best?"ok":k===i?"me":"";return'<span class="'+cl+'">'+x[0]+' '+x[3]+'° · 1:'+x[1]+'</span><div class="bar"><i style="width:'+(q.c/mx*100)+'%"></i><b style="width:'+((e-q.c)/mx*100)+'%"></b></div><span class="'+cl+'">'+f1(e)+' m'+(k===q.best?" ✓":"")+'</span>';}).join("");
     $("chipSub").textContent="Soal "+chip.i+" / "+CHIP_N+" · skor "+chip.sc;
     $("chipNext").textContent=chip.i<CHIP_N?"Soal berikutnya":"Main lagi · skor "+chip.sc+" / "+CHIP_N*3;$("chipNext").hidden=false;};
   requestAnimationFrame(step);}
@@ -1745,7 +1745,7 @@ const REFYD={"DRIVER":[301,250,227,215,209,195],"WOOD":[250,224,205,195,185,175]
 let refI=3;try{const t=localStorage.getItem("caddy-ref-v1"),v=+t;if(t!=null&&v>=0&&v<REFCOLS.length)refI=v;}catch(e){}   // default: HCP 15
 const refTxt=nm=>{const r=REFYD[nm];if(!r)return"–";const y=r[refI];return(clubUnit==="yd"?y:Math.round(y*YD))+" "+clubUnit;};
 function renderClubs(){$("refSel").innerHTML=REFCOLS.map((c,i)=>'<button type="button" data-ref="'+i+'" aria-pressed="'+(i===refI)+'">'+(i?"HCP "+c:c)+'</button>').join("");$("unitWord").textContent=clubUnit==="yd"?"yard":"meter";$("adjNote").textContent=C.adj?C.name+" main "+C.adj+" m lebih panjang, itu sudah dihitung otomatis.":"";
-  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><button class="fav'+(FAV.includes(c[0])?" on":"")+'" type="button" data-fav="'+c[0]+'" aria-pressed="'+FAV.includes(c[0])+'" aria-label="Club favorit">'+(FAV.includes(c[0])?"★":"☆")+'</button><span>'+(CLUB_LABEL[c[0]]||c[0])+'<small class="ref">'+(refI?"HCP "+REFCOLS[refI]:"Pro")+': '+refTxt(c[0])+'</small></span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
+  $("clubList").innerHTML=clubs.map((c,i)=>'<label for="club-'+i+'"><button class="fav'+(FAV.includes(c[0])?" on":"")+'" type="button" data-fav="'+c[0]+'" aria-pressed="'+FAV.includes(c[0])+'" aria-label="Club favorit">'+(FAV.includes(c[0])?"★":"☆")+'</button><span>'+(CLUB_LABEL[c[0]]||clubName(c[0]))+'<small class="ref">'+(refI?"HCP "+REFCOLS[refI]:"Pro")+': '+refTxt(c[0])+'</small></span><span class="inp"><input id="club-'+i+'" data-i="'+i+'" type="number" inputmode="numeric" min="0" max="'+showU(350)+'" value="'+showU(c[1])+'"><span class="u">'+clubUnit+'</span></span></label>').join("")+
     '<button class="unitbtn" id="unitBtn" type="button" aria-label="Ganti satuan meter atau yard">⇄ '+(clubUnit==="m"?"yard":"meter")+'</button>';}
 $("clubList").addEventListener("input",ev=>{const i=ev.target.dataset.i;if(i==null)return;const v=parseInt(ev.target.value,10);
   // driver changed while the other clubs still follow the template: they follow the new driver
