@@ -275,6 +275,10 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .sponsor{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
 .sponsor small{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2)}.sponsor b{font-size:17px}.sponsor span{font-size:13px;color:var(--ink2);max-width:320px}
 .mapsbtn{margin-top:6px;padding:9px 16px;border:2px solid var(--ink);border-radius:10px;font-weight:700;color:var(--ink);text-decoration:none;background:#fff}
+.teeopt{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:4px 0}
+.teeopt button{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:4px 6px;font-family:var(--f-num);font-weight:800;font-size:18px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em}
+.teeopt small{display:block;font-family:var(--f-body);font-weight:600;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap}
+.teeopt button[aria-pressed="true"]{background:var(--ink);color:var(--gold)}
 /* done page: score card capped so the top of the QRIS already shows on the first screen; tips block in bright gold-orange */
 #doneSheet .donecard{max-height:36vh;width:auto;max-width:100%;align-self:center;object-fit:contain}
 .tips{border:0;border-radius:18px;padding:16px 14px 18px;background:linear-gradient(165deg,#ffd43b 0%,#ffb000 40%,#ff7a00 100%);box-shadow:0 10px 28px rgba(255,122,0,.35)}
@@ -1515,13 +1519,20 @@ function render(){bubbleHTML="";resHTML="";catTip="";
     const last=h.log[h.log.length-1],recover=!!last&&last.r!=="ok",pat=pattern();
     const prev=[...h.log].reverse().find(e=>carryOf(e.c)>0);
     rec=aimGap(n,b,adviseAfter(n,b,recover,pat.bench,prev&&prev.c,h.log.length===1&&prev===h.log[0],prev&&prev===last&&!recover?prev.b:null));
+    /* v2 (16 Nov 2026): on the tee of a par 4 or 5 the player picks the tee club: Safe (the plan for this break) or Agresif
+       (the longest club that still lands safely, same search as the Break 80 drive). Shown only when Agresif is a longer club. */
+    let teeOpt="";
+    if(!h.log.length&&hd[0]>=4&&rec.c&&rec.kind!=="putt"&&dm(g,b[0],b[1],teeOf(n)[0],teeOf(n)[1])<15){
+      const D0=dm(g,b[0],b[1],g.pin[0],g.pin[1]),dr=driveB80(n,b,pat.bench,(kind,T,d,c,x)=>Object.assign({kind,T,d,c,D:D0},x||{}));
+      if(dr&&carryOf(dr.c.club)>carryOf(rec.c.club)){const agr=aimGap(n,b,playsLike(n,b,onSafeSide(n,b,dr),pat.bench)),sf=rec,on=!!h.agr;if(on)rec=agr;
+        teeOpt='<div class="teeopt" role="group" aria-label="Pilih stik tee off">'+[["Safe",sf,0],["Agresif",agr,1]].map(([t,r,v])=>'<button type="button" data-act="teeopt" data-v="'+v+'" aria-pressed="'+(on===!!v)+'">'+t+'<small>'+clubName(scClub(r))+' · '+m0(r.d)+' m</small></button>').join("")+'</div>';}}
     const putt=rec.kind==="putt",est=putt?2:rec.D<=50?3:3+Math.ceil(Math.max(0,rec.D-150)/150),ht=holeTarget(cur),tg=Math.max(ht,s+est),over=tg-ht;   // over: strokes beyond this hole's planned target
     catTip=putt?"":rec.short&&rec.kind==="green"&&TIPS[rec.chip]?"<b>Tips chipping</b>"+TIPS[rec.chip]:recover&&TIPS[last.r]?"<b>Tips recovery</b>"+TIPS[last.r]:"";
     const fb=putt?null:frontBack(n,b);
     html=html.replace("<!--GD-->",putt?"":'<span class="gdist">green '+m0(rec.D)+(fb&&rec.D<260?' ('+m0(fb.f)+'–'+m0(fb.b)+')':'')+' m</span>');
     html=html.replace("<!--TG-->",' <span class="tbadge'+(over>0?" bad":"")+'">Target <b>'+tg+'</b></span>');
     const distHTML='<div class="dist"><b>'+m0(putt?rec.D:rec.d)+'</b><small>'+(putt?"m ke lubang":"m ke target")+'</small>'+(putt?"":'<span class="dtg">'+tgtText(rec)+'</span>')+'</div>';
-    html+='<div class="call"><!--LEFT-->'+
+    html+=teeOpt+'<div class="call"><!--LEFT-->'+
       '<div class="shot"><div class="sl"><span class="sno">Pukulan ke-'+(s+1)+'</span><div class="club'+(rec.c&&clubName(scClub(rec)).length>10?" long":"")+'">'+(putt?"PUTT":rec.c?clubName(scClub(rec)).replace(/ (\d)/g,"&nbsp;$1").replace(" / ","&nbsp;/ ")+(FAV.includes(rec.c.club)?' <span class="star">★</span>':""):"–")+'</div><div class="tgt">'+(putt?"Putt pertama mati di dekat lubang":SC_LAB[rec.short&&rec.kind==="green"?rec.chip:""]||"")+'</div></div>'+
       '<div class="sr">'+(sim?"":putt?'<div class="puttc" role="group" aria-label="Jumlah putt"><small>Putt</small><div>'+[1,2,3,4].map(p=>'<button data-act="putt" data-v="'+p+'" type="button">'+p+(p===4?"+":"")+'</button>').join("")+'</div></div>'
         :'<button class="recbtn" data-act="record" type="button"'+(picked?"":" disabled")+'><span class="ballname">'+shotName(s)+'</span>'+(picked?'<small>'+pickName()+'</small>':'<small>pilih status</small>')+'</button>')+'</div><!--IN--></div></div>';
@@ -1572,6 +1583,7 @@ function onAct(ev){const bt=ev.target.closest("[data-act]");if(!bt)return;const 
   if(a==="pick"){const v=bt.dataset.v,p=bt.dataset.p||"";picked=isPicked(v,p)?null:{v,p};render();}
   else if(a==="record"){if(picked&&SOUND&&rec.c)clubSound(rec.c.club,rec.short);if(picked)logShot(picked.v,picked.p||undefined);}
   else if(a==="penmenu"){penOpen=!penOpen;render();}
+  else if(a==="teeopt"){h.agr=+bt.dataset.v;save();render();}
   else if(a==="putt"){if(SOUND&&+bt.dataset.v>0)puttSound();h.putts=+bt.dataset.v;note="";save();render();}
   else if(a==="on"){const pk=picked;logShot(pk?pk.v:"ok",pk&&pk.p||undefined);h.ball=G[cur+1].pin.slice();h.on=strokes(h);note="";save();render();}
   else if(a==="plus"){h.adj=(h.adj||0)+1;save();render();}
