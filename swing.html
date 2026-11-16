@@ -237,12 +237,13 @@ function bf0(fs,p){
   if(!dtl()){const a=p[1],b=p[n-1];V=dist(a,b)/ppm/((fs[n-1]-fs[1])*dt);la=Math.atan2(a[1]-b[1],Math.abs(b[0]-a[0]));}
   else{
     const f=.83*Math.max(cv.width,cv.height),Z0=f/ppm,s=p.slice(1).map(q=>dist(q,p[0]));
-    const fit=tau=>{const X=s.map((_,k)=>1/((fs[k+1]-fs[1])*dt+tau)),Y=s.map(q=>1/q),m=X.length;
-      const sx=X.reduce((a,b)=>a+b,0),sy=Y.reduce((a,b)=>a+b,0),sxx=X.reduce((a,b)=>a+b*b,0),sxy=X.reduce((a,b,k)=>a+b*Y[k],0);
-      const B=(m*sxy-sx*sy)/(m*sxx-sx*sx),A=(sy-B*sx)/m;return {A,B,r:Y.reduce((a,y,k)=>a+(y-A-B*X[k])**2,0)};};
+    /* weighted by s^4 so the error is counted in pixels, not in 1/pixels (else the first, shortest streak dominates) */
+    const fit=tau=>{const X=s.map((_,k)=>1/((fs[k+1]-fs[1])*dt+tau)),Y=s.map(q=>1/q),w=s.map(q=>q**4);let sw=0,sx=0,sy=0,sxx=0,sxy=0;
+      X.forEach((x,k)=>{sw+=w[k];sx+=w[k]*x;sy+=w[k]*Y[k];sxx+=w[k]*x*x;sxy+=w[k]*x*Y[k];});
+      const B=(sw*sxy-sx*sy)/(sw*sxx-sx*sx),A=(sy-B*sx)/sw;return {A,B,r:Y.reduce((a,y,k)=>a+w[k]*(y-A-B*X[k])**2,0)};};
     let best=null;
     if(s.length===2){best=fit(dt/2);rough=true;}   /* two flight marks: impact assumed mid-frame */
-    else for(let k=1;k<=20;k++){const q=fit(dt*k/20);if(q.A>0&&q.B>0&&(!best||q.r<best.r))best=q;}
+    else for(let k=1;k<=200;k++){const q=fit(dt*k/200);if(q.A>0&&q.B>0&&(!best||q.r<best.r))best=q;}
     if(!best||!(best.A>0)||!(best.B>0))return {bad:true};
     const S=1/best.A,u=[p[n-1][0]-p[0][0],p[n-1][1]-p[0][1]],ul=Math.hypot(...u)||1,vp=[p[0][0]+S*u[0]/ul,p[0][1]+S*u[1]/ul];
     const tD=(vp[0]-cv.width/2)/f,tL=-(vp[1]-cv.height/2)/f;
@@ -275,7 +276,7 @@ function stats(){
     "<div><div class='note' style='margin:0'>Arah awal</div><div class='big'>"+(b.dir==null?"–":Math.abs(b.dir)<1?"lurus":Math.abs(b.dir).toFixed(0)+"° "+(b.dir>0?"kanan":"kiri"))+"</div></div></div>"+
     "<div class='row' style='margin-top:8px'><div><div class='note' style='margin:0'>Ball speed (kasar)</div><div class='big'>"+Math.round(b.Vlo)+"–"+Math.round(b.Vhi)+" <small style='font-size:13px'>m/s</small></div></div>"+
     "<div><div class='note' style='margin:0'>Carry (kasar)</div><div class='big'>"+Math.round(b.clo/5)*5+"–"+Math.round(b.chi/5)*5+" <small style='font-size:13px'>m</small></div></div></div>";
-  $("bfMsg").textContent=!b?"Pilih Bola, ketuk bola saat masih diam, lalu maju frame demi frame dan ketuk ujung depan bola (atau garis putihnya) di 2–3 frame setelah impact. Sudah ditandai: "+nb+" titik.":
+  $("bfMsg").textContent=!b?"Pilih Bola, ketuk bola saat masih diam, lalu maju frame demi frame dan ketuk ujung depan bola (atau garis putihnya) di 3–4 frame setelah impact. Sudah ditandai: "+nb+" titik.":
     b.bad?"":(dtl()?"Arah dan launch dihitung relatif terhadap arah kamera, jadi kamera harus lurus ke target dan datar. ":"Dari depan arah kiri/kanan tidak bisa dibaca. ")+
     (b.rough?"Baru 2 titik terbang: waktu impact diasumsikan di tengah frame, tambah titik ke-3 supaya lebih akurat. ":"")+
     (dtl()&&slow()<4?"Di video 30 fps dari belakang, ball speed dan carry bisa meleset 30% atau lebih; untuk angka kecepatan pakai slow-mo atau rekam dari depan. ":"")+
