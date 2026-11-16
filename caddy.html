@@ -1729,11 +1729,11 @@ let needT=null,needGen=0;function needLine(){const el=$("stNeed");el.textContent
   const roll=()=>{if(gen!==needGen)return clearInterval(needRoll);k++;if(v!=null&&k>=16){clearInterval(needRoll);nb.textContent=v;nb.classList.add("set");return;}nb.textContent=100+Math.floor(Math.random()*71);};
   const t1=performance.now(),step=()=>{if(gen!==needGen)return;const t=performance.now();
     if(n===ha+1&&t-t1<5000){let wait=false;for(let i=ha;i<hb;i++){loadFW(i);if(FW[i+1]==="loading")wait=true;}if(wait){needT=setTimeout(step,100);return;}}   // fairway maps first, so the numbers match the plan on the course
-    while(n<=hb&&performance.now()-t<40){if(H18[n-1][0]>=4){const d=teeNeed(n);if(d){ds.push(Math.ceil(d/5)*5);hs.push(n);}}n++;}
+    while(n<=hb&&performance.now()-t<40){if(H18[n-1][0]>=4){let d=teeNeed(n);const tb=teeOf(n),r=playsLike(n,tb,advise(n,tb,false,null,0));if(r&&r.d)d=d?Math.min(d,r.d):r.d;if(d){ds.push(Math.round(d));hs.push(n);}}/* never more than the tee shot the plan itself plays (16 Nov 2026, PJ 1: plan 5 iron 152, line said 180) */n++;}
     if(n<=hb){needT=setTimeout(step,0);return;}
     if(!ds.length){el.textContent="";clearInterval(needRoll);return;}
     v=Math.max(...ds);   // name only the (up to) 4 longest holes that need it (16 Nov 2026), other holes may need the same club too
-    const lng=hs.filter((h,i)=>ds[i]>=v-10).map(h=>{const g=G[h],b=teeOf(h);return[h,dm(g,b[0],b[1],g.pin[0],g.pin[1])];}).sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]).sort((a,b)=>a-b);
+    const lng=hs.map((h,i)=>{const g=G[h],b=teeOf(h);return[h,dm(g,b[0],b[1],g.pin[0],g.pin[1]),ds[i]];}).filter(x=>x[2]>=v-10).sort((a,b)=>b[2]-a[2]||b[1]-a[1]).slice(0,4).map(x=>x[0]).sort((a,b)=>a-b);
     $("needHoles").innerHTML=", paling kerasa di hole <b>"+lng.join(", ")+"</b>";};
   needT=setTimeout(()=>{el.innerHTML="Kamu cuma perlu tee off <b id=\"needNum\">"+(100+Math.floor(Math.random()*71))+"</b> <b>m</b> untuk Break "+BRK+"<span id=\"needHoles\"></span>";
     nb=$("needNum");needRoll=setInterval(roll,45);step();},30);}
