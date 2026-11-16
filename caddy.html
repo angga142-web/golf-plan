@@ -279,6 +279,10 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .teeopt button{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:4px 6px;font-family:var(--f-num);font-weight:800;font-size:18px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em}
 .teeopt small{display:block;font-family:var(--f-body);font-weight:600;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap}
 .teeopt button[aria-pressed="true"]{background:var(--ink);color:var(--gold)}
+/* mini game putting */
+#pgSvg{width:100%;border-radius:12px;border:2px solid var(--ink);background:linear-gradient(#cfe9ff,#eef7ff)}
+.pgctl{display:flex;flex-direction:column;gap:8px}.pgctl label{display:flex;flex-wrap:wrap;justify-content:space-between;gap:2px 8px;font-weight:600;font-size:14px}
+.pgctl input{flex:1 0 100%;height:30px;accent-color:var(--ink)}
 /* mini game chipping */
 #chipSvg{width:100%;border-radius:12px;border:2px solid var(--ink);background:linear-gradient(#cfe9ff,#eef7ff)}
 .chipmsg{margin:0;font-weight:600;font-size:15px;min-height:42px}
@@ -440,6 +444,7 @@ tr.go{cursor:pointer}
       <button class="tbtn" id="guideMenu" type="button">Cara pakai</button>
       <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
       <button class="tbtn" id="chipMenu" type="button">Mini game chipping</button>
+      <button class="tbtn" id="pgMenu" type="button">Mini game putting</button>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
     </div>
     </div>
@@ -550,6 +555,19 @@ tr.go{cursor:pointer}
     <div class="chipclubs" id="chipClubs" role="group" aria-label="Pilih stik"></div>
     <div class="chipbars" id="chipBars"></div>
     <button class="stgo" id="chipNext" type="button" hidden>Soal berikutnya</button>
+  </div>
+</div>
+<div class="sheet gut" id="pgSheet" hidden>
+  <div class="sheetin">
+    <div class="sheethead"><h2>Mini game putting<small>Green datar · speed rata-rata · pemain kanan</small></h2><button class="close" id="closePg" type="button">Tutup</button></div>
+    <svg id="pgSvg" viewBox="0 0 360 240" role="img" aria-label="Gambar putt ke lubang"></svg>
+    <div class="pgctl">
+      <label>Jarak putt <b id="pgDv"></b><input type="range" id="pgD" min="1" max="10" step="0.5" value="3"></label>
+      <label>Face putter: closed ◀ ▶ open <b id="pgFv"></b><input type="range" id="pgF" min="-4" max="4" step="0.5" value="1"></label>
+      <label>Kena bola: heel ◀ sweet spot ▶ toe <b id="pgHv"></b><input type="range" id="pgH" min="-2" max="2" step="0.5" value="0"></label>
+    </div>
+    <button class="stgo" id="pgGo" type="button">Putt</button>
+    <p class="chipmsg" id="pgMsg"></p>
   </div>
 </div>
 <div class="sheet gut" id="doneSheet" hidden>
@@ -1446,6 +1464,51 @@ function chipHit(i){const q=chip.q;if(q.pick!=null)return;q.pick=i;chip.end=fals
     $("chipSub").textContent="Soal "+chip.i+" / "+CHIP_N+" · skor "+chip.sc;
     $("chipNext").textContent=chip.i<CHIP_N?"Soal berikutnya":"Main lagi · skor "+chip.sc+" / "+CHIP_N*3;$("chipNext").hidden=false;};
   requestAnimationFrame(step);}
+/* ---------- mini game putting (v2, 16 Nov 2026) ----------
+   Flat green, average speed, right-handed player, pace that would roll 30 cm past the hole. Rules of thumb:
+   the ball starts on about 90% of the face angle; each cm off the sweet spot costs about 5% of the roll and twists the face about 0.25 deg
+   (toe: open, heel: closed). The hole takes a ball whose centre passes within 4.5 cm of the middle. */
+let pg=null;
+function pgCalc(){const D=+$("pgD").value,th=+$("pgF").value,h=+$("pgH").value,ad=.9*th+.25*h,a=ad*Math.PI/180,R=(D+.3)*(1-.05*Math.abs(h)),lat=D*Math.tan(a),reach=R*Math.cos(a)>=D,in_=reach&&Math.abs(lat)<=.045;
+  return{D,th,h,ad,R,lat,reach,in:in_,end:in_?[D,0]:[R*Math.cos(a),R*Math.sin(a)]};}
+function pgDraw(u){const c=pgCalc(),L=c.D+1.2,W=1.3,a=100,P=(x,y,z)=>[(x+y)*a*.87,(y-x)*a*.5-(z||0)*a],pt=v=>P(...v).map(n=>n.toFixed(1)).join(","),   // y: metres right of the line
+    x0=P(-.6,-W)[0]-10,x1=P(L,W)[0]+10,y0=P(L,-W,.9)[1]-10,y1=P(-.6,W,-.15)[1]+10,vw=x1-x0,FS=vw/30,
+    poly=(pts,f)=>'<polygon points="'+pts.map(pt).join(" ")+'" fill="'+f+'"/>',ln=(A,B,st,w,ex)=>{const p1=P(...A),p2=P(...B);return'<line x1="'+p1[0].toFixed(1)+'" y1="'+p1[1].toFixed(1)+'" x2="'+p2[0].toFixed(1)+'" y2="'+p2[1].toFixed(1)+'" stroke="'+st+'" stroke-width="'+w+'" '+(ex||"")+'/>';},
+    T=(x,y,t,ex)=>'<text x="'+x.toFixed(1)+'" y="'+y.toFixed(1)+'" font-size="'+FS.toFixed(1)+'" font-weight="700" font-family="Barlow,Arial" text-anchor="middle" '+(ex||'fill="#0c162d"')+'>'+t+'</text>';
+  let h=poly([[-.6,W,-.15],[L,W,-.15],[L,W,0],[-.6,W,0]],"#2f6b2c")+poly([[-.6,-W,-.15],[-.6,W,-.15],[-.6,W,0],[-.6,-W,0]],"#3f8038")+poly([[-.6,-W],[L,-W],[L,W],[-.6,W]],"#8fd67a");
+  for(let x=1;x<=c.D;x++){h+=ln([x,W],[x,W-.15],"#0c162d",vw/300);const q=P(x,W+.32);h+=T(q[0],q[1],x+" m");}
+  h+=ln([0,0],[c.D,0],"#fff",vw/250,'stroke-dasharray="'+(vw/60).toFixed(1)+'"');
+  const hr=Math.max(.054,vw/55/a),br=Math.max(.021*a,vw/75),hp=P(c.D,0),tp=P(c.D,0,.8);
+  h+='<ellipse cx="'+hp[0].toFixed(1)+'" cy="'+hp[1].toFixed(1)+'" rx="'+(hr*a*.87).toFixed(1)+'" ry="'+(hr*a*.5).toFixed(1)+'" fill="#0c162d"/><line x1="'+hp[0].toFixed(1)+'" y1="'+hp[1].toFixed(1)+'" x2="'+tp[0].toFixed(1)+'" y2="'+tp[1].toFixed(1)+'" stroke="#0c162d" stroke-width="'+(vw/200).toFixed(1)+'"/><polygon points="'+tp[0].toFixed(1)+','+tp[1].toFixed(1)+' '+(tp[0]+FS*1.3).toFixed(1)+','+(tp[1]+FS*.5).toFixed(1)+' '+tp[0].toFixed(1)+','+(tp[1]+FS).toFixed(1)+'" fill="#d2142d"/>';
+  const bx=c.end[0]*u,by=c.end[1]*u,bp=P(bx,by);if(u>0)h+=ln([0,0],[bx,by],"#ffc400",vw/160);
+  if(!(c.in&&u>=1))h+='<circle cx="'+bp[0].toFixed(1)+'" cy="'+(bp[1]-br*.6).toFixed(1)+'" r="'+br.toFixed(1)+'" fill="#fff" stroke="#0c162d" stroke-width="'+(vw/300).toFixed(1)+'"/>';
+  /* inset, top left: the hole seen from above, 80 cm wide, the hole towards the top */
+  const S=vw*.3,ix=x0+vw*.03,iy=y0+vw*.03,k=S/.8,cx=ix+S/2,cy=iy+S/2;
+  h+='<rect x="'+ix.toFixed(1)+'" y="'+iy.toFixed(1)+'" width="'+S.toFixed(1)+'" height="'+S.toFixed(1)+'" rx="'+(S*.08).toFixed(1)+'" fill="#8fd67a" stroke="#0c162d" stroke-width="'+(vw/200).toFixed(1)+'"/><circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+(.054*k).toFixed(1)+'" fill="#0c162d"/>'+T(cx,iy+S+FS*1.1,"zoom lubang · 80 cm");
+  if(u>=1){const ex=c.end[1]*k,ey=-(c.end[0]-c.D)*k,inb=Math.abs(ex)<S/2-2&&Math.abs(ey)<S/2-2,lx=Math.max(-S/2,Math.min(S/2,c.lat*k));
+    h+='<line x1="'+(cx+lx).toFixed(1)+'" y1="'+(iy+S).toFixed(1)+'" x2="'+(cx+(inb?ex:lx)).toFixed(1)+'" y2="'+(inb?cy+ey:c.reach?iy:iy+S*.8).toFixed(1)+'" stroke="#ffc400" stroke-width="'+(vw/160).toFixed(1)+'"/>';
+    if(inb&&!c.in)h+='<circle cx="'+(cx+ex).toFixed(1)+'" cy="'+(cy+ey).toFixed(1)+'" r="'+(.021*k).toFixed(1)+'" fill="#fff" stroke="#0c162d" stroke-width="'+(vw/300).toFixed(1)+'"/>';
+    if(c.in)h+='<circle cx="'+cx.toFixed(1)+'" cy="'+cy.toFixed(1)+'" r="'+(.021*k).toFixed(1)+'" fill="#fff"/>';}
+  /* putter from above, bottom right: face angle drawn 4x so it can be seen, the ball at the point of contact */
+  const Y1=y1+vw*.1,px=x1-vw*.2,py=Y1-vw*.17,pw=vw*.26,ph=vw*.05,bo=c.h/5*pw/2;
+  h+='<g transform="rotate('+(c.th*4)+' '+px.toFixed(1)+' '+py.toFixed(1)+')"><rect x="'+(px-pw/2).toFixed(1)+'" y="'+py.toFixed(1)+'" width="'+pw.toFixed(1)+'" height="'+ph.toFixed(1)+'" rx="'+(ph*.2).toFixed(1)+'" fill="#46506a" stroke="#0c162d" stroke-width="'+(vw/300).toFixed(1)+'"/><line x1="'+px.toFixed(1)+'" y1="'+py.toFixed(1)+'" x2="'+px.toFixed(1)+'" y2="'+(py+ph).toFixed(1)+'" stroke="#ffc400" stroke-width="'+(vw/200).toFixed(1)+'"/>'+
+    '<circle cx="'+(px+bo).toFixed(1)+'" cy="'+(py-ph*.45).toFixed(1)+'" r="'+(ph*.42).toFixed(1)+'" fill="#fff" stroke="#0c162d" stroke-width="'+(vw/300).toFixed(1)+'"/></g>'+T(px-pw/2,py+ph+FS*1.2,"heel")+T(px+pw/2,py+ph+FS*1.2,"toe")+T(px,py+ph+FS*2.4,"face dari atas (sudut ×4)");
+  $("pgSvg").setAttribute("viewBox",[x0,y0,vw,Y1-y0].map(v=>v.toFixed(0)).join(" "));$("pgSvg").innerHTML=h;}
+function pgShow(){const c=pgCalc(),f1=v=>(Math.round(v*10)/10+"").replace(".",",");
+  $("pgDv").textContent=f1(c.D)+" m";$("pgFv").textContent=c.th?f1(Math.abs(c.th))+"° "+(c.th>0?"open":"closed"):"square";$("pgHv").textContent=c.h?f1(Math.abs(c.h))+" cm ke "+(c.h>0?"toe":"heel"):"sweet spot";
+  $("pgMsg").innerHTML="Di "+f1(c.D)+" m, arah awal bola boleh meleset paling banyak <b>±"+f1(Math.atan(.045/c.D)*180/Math.PI)+"°</b> supaya masih masuk. Atur face dan titik kena, lalu tekan Putt.";pgDraw(0);}
+function pgGo(){const gen=++pg.gen,t0=performance.now(),c=pgCalc(),f1=v=>(Math.round(v*10)/10+"").replace(".",","),cm=v=>Math.round(Math.abs(v)*100);
+  const step=()=>{if(!pg||pg.gen!==gen)return;const u=Math.min(1,(performance.now()-t0)/(700+c.D*120)),e=1-(1-u)*(1-u);pgDraw(e);if(u<1){requestAnimationFrame(step);return;}
+    const side=c.lat>0?"kanan":"kiri",along=c.end[0]-c.D,parts=[];
+    if(c.th)parts.push("Face "+f1(Math.abs(c.th))+"° "+(c.th>0?"open":"closed")+" → bola mulai ±"+f1(Math.abs(.9*c.th))+"° ke "+(c.th>0?"kanan":"kiri"));
+    if(c.h)parts.push("kena "+f1(Math.abs(c.h))+" cm ke "+(c.h>0?"toe":"heel")+" → jarak berkurang ±"+Math.round(5*Math.abs(c.h))+"% ("+cm((c.D+.3)*.05*Math.abs(c.h))+" cm) dan face terpuntir ±"+f1(.25*Math.abs(c.h))+"° "+(c.h>0?"open":"closed"));
+    $("pgMsg").innerHTML=(c.in?"<b>MASUK!</b> Bola lewat "+cm(c.lat)+" cm dari tengah lubang (batas 4,5 cm).":"<b>MISS.</b> "+(c.reach?"Bola lewat <b>"+cm(c.lat)+" cm di "+side+"</b> lubang, berhenti "+cm(along)+" cm di belakangnya.":"Bola <b>pendek "+cm(along)+" cm</b>"+(cm(c.end[1])?" dan "+cm(c.end[1])+" cm ke "+(c.end[1]>0?"kanan":"kiri"):"")+"."))+(parts.length?" "+parts.join("; ").replace(/^k/,"K")+".":" Face square dan kena sweet spot.");};
+  requestAnimationFrame(step);}
+function openPg(){pg={gen:0};$("pgSheet").hidden=false;$("pgSheet").scrollTop=0;pgShow();}
+$("pgMenu").addEventListener("click",()=>{menuOpen(false);openPg();});
+$("closePg").addEventListener("click",()=>{$("pgSheet").hidden=true;pg=null;});
+["pgD","pgF","pgH"].forEach(id=>$(id).addEventListener("input",()=>{if(pg){pg.gen++;pgShow();}}));
+$("pgGo").addEventListener("click",()=>{if(pg)pgGo();});
 function openChip(){chip={i:0,sc:0,gen:(chip&&chip.gen||0)+1};$("chipSheet").hidden=false;$("chipSheet").scrollTop=0;chipNew();}
 $("chipMenu").addEventListener("click",()=>{menuOpen(false);openChip();});
 $("closeChip").addEventListener("click",()=>{$("chipSheet").hidden=true;chip=null;});
