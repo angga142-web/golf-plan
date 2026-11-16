@@ -107,7 +107,11 @@ td.now{font-weight:700;background:#fff8dc}
     <button class="ghost" data-v3="1.57,0.1">Dari samping</button>
     <button class="ghost" data-v3="0,1.45">Dari atas</button>
   </div>
-  <p class="note">Geser gambar untuk memutar. Biru = sisi kiri pemain, oranye = sisi kanan, kuning = jejak tangan. Kedalaman ditebak model dari satu kamera, dan stik tidak ikut digambar.</p>
+  <div class="btns b2" style="margin-top:6px">
+    <button class="ghost" id="play3">▶ Putar 3D</button>
+    <button class="ghost on" id="trace3">Jejak kepala stik</button>
+  </div>
+  <p class="note">Geser gambar ke kiri/kanan untuk memutar. Biru = sisi kiri pemain, oranye = sisi kanan, kuning = jejak tangan, merah muda = jejak kepala stik. Stik muncul setelah Head ditandai di gambar; di frame yang tidak ditandai posisinya disambung dari frame bertanda terdekat. Kedalaman badan dan stik adalah tebakan dari satu kamera.</p>
 </section>
 
 <section class="card" id="plane" hidden>
@@ -138,9 +142,9 @@ const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
 const $=id=>document.getElementById(id),v=$("vid"),cv=$("cv"),cx=cv.getContext("2d");
 const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
 const MARK={grip:["G","#7dffb0"],shaft:["S","#fff"],head:["H","#ffc400"],ball:["B","#ff3b6b"]};
-let pl=null,F=[],W=[],t0=0,ry=.6,rx=.12,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
+let pl=null,F=[],W=[],t0=0,ry=.6,rx=.12,p3=0,tr3=1,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
 const M={grip:{},shaft:{},head:{},ball:{}};
-window.SW={get F(){return F},get W(){return W},get K(){return K},get ppm(){return ppm},get t0(){return t0},M,flight:()=>ballFlight(),carry:(a,b)=>carry(a,b)};
+window.SW={club3:()=>club3(),head3:(C,i)=>head3(C,i),get F(){return F},get W(){return W},get K(){return K},get ppm(){return ppm},get t0(){return t0},M,flight:()=>ballFlight(),carry:(a,b)=>carry(a,b)};
 
 const msg=t=>$("msg").innerHTML=t;
 const seek=t=>new Promise(r=>{let done=0;const h=()=>{if(done)return;done=1;v.removeEventListener("seeked",h);r();};
@@ -314,18 +318,54 @@ function draw(){
   stats();draw3();
 }
 
+/* picture point -> 3D x,y on frame i: fit pixels = centre + scale * (x,y) over the body landmarks */
+function map2(i){
+  const L=F[i],w=W[i];if(!L||!w)return null;const ids=[11,12,13,14,15,16,23,24,25,26,27,28],n=ids.length;
+  let px=0,py=0,wx=0,wy=0;for(const k of ids){const q=P(L,k);px+=q[0]/n;py+=q[1]/n;wx+=w[k].x/n;wy+=w[k].y/n;}
+  let num=0,den=0;for(const k of ids){const q=P(L,k),dx=w[k].x-wx,dy=w[k].y-wy;num+=(q[0]-px)*dx+(q[1]-py)*dy;den+=dx*dx+dy*dy;}
+  const sc=num/den;return q=>[(q[0]-px)/sc+wx,(q[1]-py)/sc+wy];
+}
+/* The club in 3D from the Head marks. The picture gives the head's x,y; the club's length
+   gives how far it leans towards or away from the camera. Which of the two is a rule of thumb:
+   down the line: behind the hands until they pass shoulder height, then pointing at the target, mirrored after impact;
+   face on: towards the camera while the hands are low, behind the player while they are high. */
+function club3(){
+  const fs=frames(M.head).filter(f=>F[f]&&W[f]);if(!fs.length)return null;
+  const raw=fs.map(f=>{const m=map2(f),g0=M3(W[f],15,16),g=M.grip[f]?m(xy(M.grip[f])):g0,h=m(xy(M.head[f]));return [h[0]-g[0],h[1]-g[1]];});
+  /* club length: at address the club lies almost flat to a down-the-line camera, so its length in the picture is the real one
+     (face on it leans towards the camera, so add 20%); without an address mark, the longest it ever looks */
+  const fa=near(M.head,K.a,6),ka=fs.indexOf(fa),Lc=ka>=0?Math.hypot(...raw[ka])*(dtl()?1:1.2):Math.max(...raw.map(d=>Math.hypot(...d))),dirs={};
+  fs.forEach((f,k)=>{const w=W[f],high=(w[15].y+w[16].y)/2<(w[11].y+w[12].y)/2,aft=f>K.i,sg=dtl()?(high!==aft?1:-1):(high?1:-1);
+    dirs[f]=[raw[k][0],raw[k][1],sg*Math.sqrt(Math.max(0,Lc*Lc-raw[k][0]**2-raw[k][1]**2))];});
+  return {fs,Lc,dirs};
+}
+function head3(C,i){
+  if(!W[i])return null;let d=C.dirs[i];
+  if(!d){const a=C.fs.filter(f=>f<i).pop(),b=C.fs.find(f=>f>i);if(a==null||b==null)return null;
+    const t=(i-a)/(b-a),v=C.dirs[a].map((x,k)=>x+(C.dirs[b][k]-x)*t),n=len(v)||1;d=v.map(x=>x/n*C.Lc);}
+  return M3(W[i],15,16).map((x,k)=>x+d[k]);
+}
+
 /* rotatable 3D skeleton from the model's world landmarks (metres, origin between the hips) */
-function draw3(){
-  const c=$("c3"),g=c.getContext("2d"),S=270,w=W[cur],w0=W[K.a]||w;g.clearRect(0,0,600,600);if(!w)return;
+function draw3(i=cur){
+  const c=$("c3"),g=c.getContext("2d"),S=210,w=W[i];g.clearRect(0,0,600,600);if(!w)return;
   const cy=Math.cos(ry),sy=Math.sin(ry),cp=Math.cos(rx),sp=Math.sin(rx);
-  const pr=p=>{const x=p[0]*cy+p[2]*sy,z=-p[0]*sy+p[2]*cy;return [300+x*S,270+(p[1]*cp-z*sp)*S];};
+  const pr=p=>{const x=p[0]*cy+p[2]*sy,z=-p[0]*sy+p[2]*cy;return [300+x*S,330+(p[1]*cp-z*sp)*S];};
   const ln=(a,b,col,wd)=>{g.strokeStyle=col;g.lineWidth=wd;g.lineCap="round";g.beginPath();g.moveTo(...pr(a));g.lineTo(...pr(b));g.stroke();};
-  const fl=Math.max(...[27,28,29,30,31,32].map(i=>w0[i].y));
+  /* the floor is where the lowest part of the shoes is on this frame; heel and toe within 4 cm of it are planted flat */
+  const fl=Math.max(...[27,28,29,30,31,32].map(k=>w[k].y)),pt=k=>{const q=V3(w,k);if(k>=29&&q[1]>fl-.04)q[1]=fl;return q;};
   for(let k=-4;k<=4;k++){ln([k/4,fl,-1],[k/4,fl,1],"rgba(255,255,255,.14)",1);ln([-1,fl,k/4],[1,fl,k/4],"rgba(255,255,255,.14)",1);}
-  for(let j=K.a+1;j<=cur;j++)if(W[j]&&W[j-1])ln(M3(W[j-1],15,16),M3(W[j],15,16),"#ffc400",2);
-  for(const [a,b] of BONES)ln(V3(w,a),V3(w,b),a%2===b%2?(a%2?"#3fe0ff":"#ff9a3c"):"#fff",6);
+  /* shoe soles: a flat pad from heel to toe, 9 cm wide */
+  for(const [h,t,col] of [[29,31,"#3fe0ff"],[30,32,"#ff9a3c"]]){const H=pt(h),T=pt(t),d=[T[0]-H[0],T[2]-H[2]],n=Math.hypot(...d)||1,e=[-d[1]/n*.045,d[0]/n*.045];
+    const q=[[H[0]+e[0],H[1],H[2]+e[1]],[T[0]+e[0],T[1],T[2]+e[1]],[T[0]-e[0],T[1],T[2]-e[1]],[H[0]-e[0],H[1],H[2]-e[1]]].map(pr);
+    g.fillStyle=col;g.globalAlpha=.75;g.beginPath();g.moveTo(...q[0]);for(const z of q.slice(1))g.lineTo(...z);g.closePath();g.fill();g.globalAlpha=1;}
+  for(let j=K.a+1;j<=i;j++)if(W[j]&&W[j-1])ln(M3(W[j-1],15,16),M3(W[j],15,16),"#ffc400",2);
+  for(const [a,b] of BONES.concat([[27,29],[28,30]]))ln(pt(a),pt(b),a%2===b%2?(a%2?"#3fe0ff":"#ff9a3c"):"#fff",6);
   const n=pr(V3(w,0));g.fillStyle="#fff";g.beginPath();g.arc(n[0],n[1],.1*S,0,7);g.fill();
-  for(const i of [13,14,15,16,25,26,27,28]){const q=pr(V3(w,i));g.fillStyle="#fff";g.beginPath();g.arc(q[0],q[1],5,0,7);g.fill();}
+  for(const k of [13,14,15,16,25,26,27,28]){const q=pr(V3(w,k));g.fillStyle="#fff";g.beginPath();g.arc(q[0],q[1],5,0,7);g.fill();}
+  const C=club3();if(!C)return;
+  if(tr3){let prev=null;for(let j=C.fs[0];j<=Math.min(i,C.fs[C.fs.length-1]);j++){const h=head3(C,j);if(h&&prev)ln(prev,h,"#ff5fd2",3);prev=h;}}
+  const h=head3(C,i);if(h){ln(M3(w,15,16),h,"#e8ecf2",4);const q=pr(h);g.fillStyle="#ffc400";g.beginPath();g.arc(q[0],q[1],9,0,7);g.fill();}
 }
 
 const tOf=i=>t0+(i+.5)*step;
@@ -381,16 +421,21 @@ $("setA").onclick=()=>{if(F[cur]){keys(cur);draw();}};
 $("play").onclick=async()=>{if(playing){playing=0;return;}playing=1;$("play").textContent="⏸ Stop";
   for(let i=cur>=F.length-1?0:cur;i<F.length&&playing;i++)await go(i);
   playing=0;$("play").textContent="▶ Putar";};
+$("trace3").onclick=()=>{tr3=!tr3;$("trace3").classList.toggle("on",!!tr3);if(!p3)draw3();};
+/* 3D playback needs no video seeking, so it runs smoothly at half speed from address to the finish */
+$("play3").onclick=async()=>{if(p3){p3=0;return;}p3=1;$("play3").textContent="⏸ Stop";
+  for(let i=K.a;i<F.length&&p3;i++){draw3(i);await new Promise(r=>setTimeout(r,66*step*30));}
+  p3=0;$("play3").textContent="▶ Putar 3D";draw3();};
 $("clrF").onclick=()=>{for(const k in M)delete M[k][cur];draw();};
 $("clrAll").onclick=()=>{for(const k in M)for(const f in M[k])delete M[k][f];draw();};
 document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
   if(b.dataset.go)go(cur+ +b.dataset.go);
   else if(b.dataset.key)go(K[b.dataset.key]);
-  else if(b.dataset.v3){[ry,rx]=b.dataset.v3.split(",").map(Number);draw3();}
+  else if(b.dataset.v3){[ry,rx]=b.dataset.v3.split(",").map(Number);if(!p3)draw3();}
   else if(b.dataset.mark){mode=mode===b.dataset.mark?null:b.dataset.mark;document.querySelectorAll("[data-mark]").forEach(x=>x.classList.toggle("on",x.dataset.mark===mode));}});
 {const c=$("c3");let d=null;
   c.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);});
-  c.addEventListener("pointermove",e=>{if(!d)return;ry+=(e.clientX-d[0])*.01;rx=Math.max(-1.5,Math.min(1.5,rx+(e.clientY-d[1])*.01));d=[e.clientX,e.clientY];draw3();});
+  c.addEventListener("pointermove",e=>{if(!d)return;ry+=(e.clientX-d[0])*.01;d=[e.clientX,e.clientY];if(!p3)draw3();});   /* turns about the vertical only */
   c.addEventListener("pointerup",()=>d=null);c.addEventListener("pointercancel",()=>d=null);}
 cv.addEventListener("click",e=>{if(!mode||!F.length)return;const r=cv.getBoundingClientRect();
   M[mode][cur]={x:(e.clientX-r.left)/r.width*cv.width,y:(e.clientY-r.top)/r.height*cv.height};draw();});
