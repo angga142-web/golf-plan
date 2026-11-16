@@ -279,6 +279,17 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .teeopt button{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:4px 6px;font-family:var(--f-num);font-weight:800;font-size:18px;line-height:1.05;text-transform:uppercase;letter-spacing:.03em}
 .teeopt small{display:block;font-family:var(--f-body);font-weight:600;font-size:12px;text-transform:none;letter-spacing:0;white-space:nowrap}
 .teeopt button[aria-pressed="true"]{background:var(--ink);color:var(--gold)}
+/* mini game chipping */
+#chipSvg{width:100%;border-radius:12px;border:2px solid var(--ink);background:linear-gradient(#cfe9ff,#eef7ff)}
+.chipmsg{margin:0;font-weight:600;font-size:15px;min-height:42px}
+.chipclubs{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}
+.chipclubs button{border:2px solid var(--ink);border-radius:10px;background:#fff;padding:8px 0;font-family:var(--f-num);font-weight:800;font-size:20px}
+.chipclubs button:disabled{opacity:.45}.chipclubs button.sel{background:var(--ink);color:var(--gold);opacity:1}.chipclubs button.best{background:var(--good);color:#fff;border-color:var(--good);opacity:1}
+.chipbars{display:grid;grid-template-columns:auto 1fr auto;gap:4px 8px;align-items:center;font-size:13px;font-weight:600}
+.chipbars .bar{display:flex;height:16px;border-radius:5px;overflow:hidden;background:var(--mist)}
+.chipbars .bar i{background:var(--gold)}.chipbars .bar b{background:var(--good)}
+.chipbars .hd{grid-column:1/-1;font-size:12px;color:var(--ink2)}.chipbars .hd i,.chipbars .hd b{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 8px;background:var(--gold)}.chipbars .hd b{background:var(--good)}
+.chipbars .me{color:var(--red)}.chipbars .ok{color:var(--good)}
 /* done page: score card capped so the top of the QRIS already shows on the first screen; tips block in bright gold-orange */
 #doneSheet .donecard{max-height:36vh;width:auto;max-width:100%;align-self:center;object-fit:contain}
 .tips{border:0;border-radius:18px;padding:16px 14px 18px;background:linear-gradient(165deg,#ffd43b 0%,#ffb000 40%,#ff7a00 100%);box-shadow:0 10px 28px rgba(255,122,0,.35)}
@@ -428,6 +439,7 @@ tr.go{cursor:pointer}
       <button class="tbtn" id="soundBtn" type="button"><span class="mlab">Suara</span><span id="soundTxt">Nyala</span></button>
       <button class="tbtn" id="guideMenu" type="button">Cara pakai</button>
       <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
+      <button class="tbtn" id="chipMenu" type="button">Mini game chipping</button>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
     </div>
     </div>
@@ -530,6 +542,16 @@ tr.go{cursor:pointer}
   </div>
 </div>
 
+<div class="sheet gut" id="chipSheet" hidden>
+  <div class="sheetin">
+    <div class="sheethead"><h2>Mini game chipping<small id="chipSub"></small></h2><button class="close" id="closeChip" type="button">Tutup</button></div>
+    <svg id="chipSvg" viewBox="0 0 360 240" role="img" aria-label="Gambar chip dari pinggir green ke bendera"></svg>
+    <p class="chipmsg" id="chipMsg"></p>
+    <div class="chipclubs" id="chipClubs" role="group" aria-label="Pilih stik"></div>
+    <div class="chipbars" id="chipBars"></div>
+    <button class="stgo" id="chipNext" type="button" hidden>Soal berikutnya</button>
+  </div>
+</div>
 <div class="sheet gut" id="doneSheet" hidden>
   <div class="sheetin">
     <div class="sheethead"><h2>Nice round today!<small id="doneSub"></small></h2><button class="close" id="closeDone" type="button">Tutup</button></div>
@@ -1384,6 +1406,51 @@ function openHistory(){const all=readHistory();
     h+='<h3>Semua ronde</h3>'+all.map(r=>'<div class="hround"><div>'+new Date(r.date).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+' · '+esc(r.courseName)+'<small>'+esc(r.golfer||"(tanpa nama)")+(r.caddy?" · caddy "+esc(r.caddy):"")+' · tee '+esc(r.tee)+' · Break '+r.brk+'</small></div><div style="text-align:right"><b>'+r.total+'</b><small>'+(r.n===18||r.holes===9&&r.n===9?(r.holes===9?"9 hole · ":"")+(r.vsPar>=0?"+":"")+r.vsPar:r.n+" hole")+'</small></div></div>').join("");}
   $("histBody").innerHTML=h;$("histSheet").hidden=false;$("histSheet").scrollTop=0;}
 $("histMenu").addEventListener("click",()=>{menuOpen(false);openHistory();});
+/* ---------- mini game chipping (v2, 16 Nov 2026) ----------
+   Teaches which club to chip with from the edge of the green: every chip lands 1 m onto the green, then rolls.
+   Carry : roll on a flat green (rule of thumb): LW 1:0.5, SW 1:1, GW 1:1.5, PW 1:2, 9i 1:3, 8i 1:4, 7i 1:5. Drawn in an isometric view. */
+const CHIP=[["LW",.5,.5],["SW",1,.42],["GW",1.5,.36],["PW",2,.3],["9i",3,.22],["8i",4,.17],["7i",5,.13]],CHIP_N=6;   // name, roll per metre of carry, apex height per metre of carry
+let chip=null;
+function chipNew(){const k=Math.floor(Math.random()*CHIP.length),f=1+Math.floor(Math.random()*4),c=f+1;   // f: ball to green edge, c: carry (lands 1 m on)
+  const p=Math.max(2,Math.round(1+c*CHIP[k][1]+(Math.random()-.5)));   // pin from the green edge
+  chip.q={f,p,c,need:f+p,best:CHIP.reduce((a,x,i)=>Math.abs(c*(1+x[1])-(f+p))<Math.abs(c*(1+CHIP[a][1])-(f+p))?i:a,0),pick:null,x:0,z:0};
+  chip.end=false;chip.i++;$("chipSub").textContent="Soal "+chip.i+" / "+CHIP_N+" · skor "+chip.sc;$("chipNext").hidden=true;$("chipBars").innerHTML="";
+  $("chipMsg").innerHTML="Bola <b>"+f+" m</b> dari pinggir green, bendera <b>"+p+" m</b> dari pinggir. Bola mendarat 1 m di dalam green (carry <b>"+c+" m</b>), sisanya roll <b>"+(p-1)+" m</b>. Pilih stik.";
+  $("chipClubs").innerHTML=CHIP.map((x,i)=>'<button type="button" data-chip="'+i+'">'+x[0]+'</button>').join("");chipDraw();}
+function chipDraw(){const q=chip.q,L=q.need+3,a=20,ox=0,oy=0,FS=((L+8)*a*.87+16)/34,P=(x,y,z)=>[(ox+(x-y)*a*.87).toFixed(1),(oy-(x+y)*a*.5-(z||0)*a).toFixed(1)],
+    poly=(pts,fill)=>'<polygon points="'+pts.map(v=>P(...v).join(",")).join(" ")+'" fill="'+fill+'"/>',ln=(A,B,st,w,ex)=>{const p1=P(...A),p2=P(...B);return'<line x1="'+p1[0]+'" y1="'+p1[1]+'" x2="'+p2[0]+'" y2="'+p2[1]+'" stroke="'+st+'" stroke-width="'+(w||1)+'" '+(ex||"")+'/>';},
+    txt=(A,t,ex)=>{const v=P(...A);return'<text x="'+v[0]+'" y="'+v[1]+'" font-size="'+FS.toFixed(1)+'" font-weight="700" font-family="Barlow,Arial" text-anchor="middle" '+(ex||'fill="#0c162d"')+'>'+t+'</text>';};
+  let h=poly([[-2,-4,-.8],[L,-4,-.8],[L,-4,0],[-2,-4,0]],"#2f6b2c")+poly([[-2,-4,-.8],[-2,4,-.8],[-2,4,0],[-2,-4,0]],"#3f8038")   // block sides
+    +poly([[-2,-4],[q.f,-4],[q.f,4],[-2,4]],"#3f9142")+poly([[q.f,-4],[L,-4],[L,4],[q.f,4]],"#8fd67a")+ln([q.f,-4],[q.f,4],"#fff",2);
+  for(let x=0;x<=L;x++)h+=ln([x,-4],[x,x%5?-3.6:-3],"#0c162d",x%5?.6:1.4)+(x%5||!x?"":txt([x,-5.2],x+" m"));
+  h+=ln([q.c,-1.2],[q.c,1.2],"#ffc400",2,'stroke-dasharray="3 2"')+txt([q.c,-2.2],"mendarat");
+  const pin=P(q.need,0),top=P(q.need,0,3);h+='<ellipse cx="'+pin[0]+'" cy="'+pin[1]+'" rx="'+(a*.3).toFixed(1)+'" ry="'+(a*.15).toFixed(1)+'" fill="#0c162d"/><line x1="'+pin[0]+'" y1="'+pin[1]+'" x2="'+top[0]+'" y2="'+top[1]+'" stroke="#0c162d" stroke-width="2"/><polygon points="'+top[0]+','+top[1]+' '+(+top[0]+FS*1.3)+','+(+top[1]+FS*.5)+' '+top[0]+','+(+top[1]+FS)+'" fill="#d2142d"/>';
+  if(q.pick!=null){const[nm,r,hk]=CHIP[q.pick],hz=hk*q.c,end=q.c*(1+r);let d="";for(let t=0;t<=1.001;t+=.05){const v=P(q.c*t,0,4*hz*t*(1-t));d+=(t?"L":"M")+v[0]+" "+v[1];}
+    if(chip.end)CHIP.forEach((x,i)=>{const e=q.c*(1+x[1]);if(e<=L)h+=ln([e,-.5],[e,.5],i===q.best?"#0b7a3a":"#46506a",2)+txt([e,-1.3],x[0],'fill="'+(i===q.best?"#0b7a3a":"#46506a")+'"');});
+    h+='<path d="'+d+'" fill="none" stroke="#ffc400" stroke-width="2.5" stroke-dasharray="5 3"/>'+(q.x>q.c?ln([q.c,0],[Math.min(q.x,L),0],"#0b7a3a",3):"");
+    if(chip.end)h+=txt([q.c/2,0,hz+.6],"carry "+q.c+" m")+txt([Math.min(L-1,(q.c+end)/2),2],"roll "+(end-q.c).toFixed(1).replace(".0","")+" m",'fill="#0b7a3a"');}
+  const sh=P(Math.min(q.x,L),0),bl=P(Math.min(q.x,L),0,q.z+.25);
+  h+='<ellipse cx="'+sh[0]+'" cy="'+sh[1]+'" rx="'+(a*.3).toFixed(1)+'" ry="'+(a*.14).toFixed(1)+'" fill="rgba(0,0,0,.3)"/><circle cx="'+bl[0]+'" cy="'+bl[1]+'" r="'+Math.max(3.5,a*.28).toFixed(1)+'" fill="#fff" stroke="#0c162d" stroke-width="1.2"/>';
+  const x0=+P(-2,4)[0]-8,x1=+P(L,-4)[0]+8,y0=+P(L,4,3.2)[1]-8,y1=+P(-2,-4,-.8)[1]+8;
+  $("chipSvg").setAttribute("viewBox",[x0,y0,x1-x0,y1-y0].map(v=>v.toFixed(0)).join(" "));$("chipSvg").innerHTML=h;}
+function chipHit(i){const q=chip.q;if(q.pick!=null)return;q.pick=i;chip.end=false;const[nm,r,hk]=CHIP[i],hz=hk*q.c,end=q.c*(1+r),t0=performance.now(),T1=500+hk*1200,T2=600+r*350,gen=chip.gen;
+  document.querySelectorAll("#chipClubs button").forEach((b,k)=>{b.disabled=true;if(k===i)b.classList.add("sel");});
+  const step=()=>{if(!chip||chip.gen!==gen||chip.q!==q)return;const t=performance.now()-t0;
+    if(t<T1){const u=t/T1;q.x=q.c*u;q.z=4*hz*u*(1-u);}else{const u=Math.min(1,(t-T1)/T2);q.x=q.c+(end-q.c)*(1-(1-u)*(1-u));q.z=0;}
+    if(t<T1+T2){chipDraw();requestAnimationFrame(step);return;}
+    q.x=end;chip.end=true;chipDraw();const miss=end-q.need,pt=i===q.best?3:Math.abs(i-q.best)===1?1:0,f1=v=>v.toFixed(1).replace(".0","");chip.sc+=pt;
+    document.querySelectorAll("#chipClubs button")[q.best].classList.add("best");
+    $("chipMsg").innerHTML=(pt===3?"<b>Pas!</b> ":pt?"<b>Lumayan.</b> ":"<b>Belum pas.</b> ")+nm+": carry "+q.c+" m + roll "+f1(end-q.c)+" m, berhenti "+(Math.abs(miss)<.5?"di dekat lubang":f1(Math.abs(miss))+" m "+(miss>0?"lewat":"kurang"))+"."+(pt===3?"":" Paling pas: <b>"+CHIP[q.best][0]+"</b>.")+" +"+pt+" poin";
+    const mx=Math.max(...CHIP.map(x=>q.c*(1+x[1])));
+    $("chipBars").innerHTML='<div class="hd">Ayunan sama, mendarat di titik yang sama:<i></i>carry<b></b>roll · bendera '+q.need+' m</div>'+CHIP.map((x,k)=>{const e=q.c*(1+x[1]),cl=k===q.best?"ok":k===i?"me":"";return'<span class="'+cl+'">'+x[0]+' 1:'+x[1]+'</span><div class="bar"><i style="width:'+(q.c/mx*100)+'%"></i><b style="width:'+((e-q.c)/mx*100)+'%"></b></div><span class="'+cl+'">'+f1(e)+' m'+(k===q.best?" ✓":"")+'</span>';}).join("");
+    $("chipSub").textContent="Soal "+chip.i+" / "+CHIP_N+" · skor "+chip.sc;
+    $("chipNext").textContent=chip.i<CHIP_N?"Soal berikutnya":"Main lagi · skor "+chip.sc+" / "+CHIP_N*3;$("chipNext").hidden=false;};
+  requestAnimationFrame(step);}
+function openChip(){chip={i:0,sc:0,gen:(chip&&chip.gen||0)+1};$("chipSheet").hidden=false;$("chipSheet").scrollTop=0;chipNew();}
+$("chipMenu").addEventListener("click",()=>{menuOpen(false);openChip();});
+$("closeChip").addEventListener("click",()=>{$("chipSheet").hidden=true;chip=null;});
+$("chipClubs").addEventListener("click",ev=>{const b=ev.target.closest("[data-chip]");if(b&&chip)chipHit(+b.dataset.chip);});
+$("chipNext").addEventListener("click",()=>{if(chip.i>=CHIP_N)openChip();else chipNew();});
 $("histBtn").addEventListener("click",openHistory);
 $("closeHist").addEventListener("click",()=>{$("histSheet").hidden=true;});
 
