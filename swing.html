@@ -24,8 +24,8 @@ button.ghost{background:var(--mist);color:var(--ink);border:1px solid var(--line
 button.on{background:var(--gold);border-color:var(--gold)}
 button:disabled{opacity:.4}
 #stage{position:relative;background:#000;border-radius:12px;overflow:hidden}
-#cv{display:block;width:100%;height:auto;touch-action:manipulation}
-#c3{display:block;width:100%;height:auto;background:var(--ink);border-radius:12px;touch-action:none;cursor:grab;margin-bottom:8px}
+#cv{display:block;max-width:100%;max-height:70vh;margin:0 auto;touch-action:manipulation}
+#c3{display:block;width:100%;height:auto;background:#000;border-radius:12px;touch-action:pan-y;cursor:grab;margin-bottom:8px}
 #vid{position:absolute;left:0;top:0;width:2px;height:2px;opacity:0;pointer-events:none}
 #msg{font-size:13px;color:#55607a;min-height:19px;margin:8px 0 0}
 #msg b{color:var(--ink)}
@@ -41,6 +41,14 @@ td.now{font-weight:700;background:#fff8dc}
 .big{font-size:26px;font-weight:800;line-height:1.1}
 .note{font-size:12px;color:#55607a;margin:6px 0 0}
 .sub{font-size:12px;font-weight:700;color:#55607a;margin:12px 0 6px}
+#info{font-size:12px;font-weight:700;color:#55607a;text-align:center;margin:0 0 6px;min-height:17px}
+.adv{display:grid;gap:6px}
+.adv h3{margin:8px 0 0;font-size:11px;color:#55607a;text-transform:uppercase;letter-spacing:.05em}
+.adv div{border-left:4px solid var(--good);background:var(--mist);border-radius:8px;padding:7px 9px;font-size:13px}
+.adv div.w{border-color:#e08a00;background:#fff6e0}
+.adv div.n{border-color:var(--line)}
+.adv b{display:block}
+.adv small{color:#55607a;font-size:12px}
 [hidden]{display:none!important}
 </style>
 </head>
@@ -68,6 +76,7 @@ td.now{font-weight:700;background:#fff8dc}
 <section class="card" id="lab" hidden>
   <div id="stage"><video id="vid" playsinline muted preload="auto"></video><canvas id="cv"></canvas></div>
   <input type="range" id="scrub" min="0" max="0" value="0">
+  <p id="info"></p>
   <div class="btns b5">
     <button class="ghost" data-go="-1">◀</button>
     <button class="ghost" data-key="a">Address</button>
@@ -77,11 +86,12 @@ td.now{font-weight:700;background:#fff8dc}
   </div>
   <div class="btns b2" style="margin-top:6px">
     <button class="ghost" id="play">▶ Putar</button>
-    <button class="ghost" id="setA">Frame ini = address</button>
-  </div>
-  <div class="btns b2" style="margin-top:6px">
-    <button class="ghost" id="setI">Frame ini = impact</button>
     <button class="ghost" id="seq">Lacak Head berurutan</button>
+  </div>
+  <div class="sub">Address / impact meleset? Buka frame yang benar, lalu tekan</div>
+  <div class="btns b2">
+    <button class="ghost" id="setA">Frame ini = address</button>
+    <button class="ghost" id="setI">Frame ini = impact</button>
   </div>
   <div class="sub">Tandai di gambar (pilih, lalu ketuk gambar; berlaku untuk frame ini)</div>
   <div class="btns b4">
@@ -94,37 +104,43 @@ td.now{font-weight:700;background:#fff8dc}
     <button class="ghost" id="clrF">Hapus titik frame ini</button>
     <button class="ghost" id="clrAll">Hapus semua titik</button>
   </div>
-  <p class="note" id="markMsg">Tombol tetap aktif sampai ditekan lagi, jadi bisa pindah frame dan ketuk terus. Lacak Head berurutan: mulai dari address, ketuk kepala stik, frame maju sendiri 2–3 frame, ketuk lagi, sampai finish. Posisi di frame antaranya disambung otomatis di video dan di 3D.</p>
+  <p class="note" id="markMsg"></p>
+</section>
+
+<section class="card" id="tips" hidden>
+  <h2>2 · Saran swing</h2>
+  <div class="adv" id="adv"></div>
+  <p class="note">Ini indikasi dari rangka 3D satu kamera, bukan vonis pelatih. Paling bisa dipercaya kalau Address, Top, dan Impact sudah di frame yang benar. Benahi satu hal per sesi latihan, mulai dari yang paling awal di swing.</p>
 </section>
 
 <section class="card" id="angles" hidden>
-  <h2>2 · Sudut sendi</h2>
+  <h2>3 · Sudut sendi</h2>
   <table id="tbl"></table>
   <p class="note">Kiri/kanan = sisi badan pemain. Sudut dihitung dari rangka 3D hasil perkiraan dari satu kamera, jadi sendi yang tertutup badan bisa meleset.</p>
 </section>
 
 <section class="card" id="d3" hidden>
-  <h2>3 · Estimasi 3D</h2>
-  <canvas id="c3" width="600" height="600"></canvas>
+  <h2>4 · Estimasi 3D</h2>
+  <canvas id="c3" width="900" height="900"></canvas>
   <div class="btns b3">
-    <button class="ghost" data-v3="0,0.1">Dari kamera</button>
-    <button class="ghost" data-v3="1.57,0.1">Dari samping</button>
+    <button class="ghost" data-v3="0,0.22">Dari kamera</button>
+    <button class="ghost" data-v3="1.57,0.22">Dari samping</button>
     <button class="ghost" data-v3="0,1.45">Dari atas</button>
   </div>
   <div class="btns b2" style="margin-top:6px">
     <button class="ghost" id="play3">▶ Putar 3D</button>
     <button class="ghost on" id="trace3">Jejak kepala stik</button>
   </div>
-  <p class="note">Geser gambar ke kiri/kanan untuk memutar. Biru = sisi kiri pemain, oranye = sisi kanan, kuning = jejak tangan, merah muda = jejak kepala stik. Stik muncul setelah Head ditandai di gambar; di frame yang tidak ditandai posisinya disambung dari frame bertanda terdekat. Kedalaman badan dan stik adalah tebakan dari satu kamera.</p>
+  <p class="note">Geser gambar ke kiri/kanan untuk memutar. Hijau = sisi kiri pemain, merah = sisi kanan, oranye = badan dan kepala, biru muda = stik, garis merah = jejak kepala stik (bagian yang belum dilewati tampil redup), kuning = jejak tangan. Stik muncul setelah Head ditandai atau dilacak. Kedalaman badan dan stik adalah tebakan dari satu kamera.</p>
 </section>
 
 <section class="card" id="plane" hidden>
-  <h2>4 · Swing plane</h2>
+  <h2>5 · Swing plane</h2>
   <p class="note" id="planeMsg" style="margin:0"></p>
 </section>
 
 <section class="card" id="speed" hidden>
-  <h2>5 · Kecepatan</h2>
+  <h2>6 · Kecepatan</h2>
   <div class="row">
     <div><div class="note" style="margin:0">Tangan (terukur)</div><div class="big" id="hand">–</div></div>
     <div><div class="note" style="margin:0">Kepala stik (estimasi)</div><div class="big" id="club">–</div></div>
@@ -133,7 +149,7 @@ td.now{font-weight:700;background:#fff8dc}
 </section>
 
 <section class="card" id="flight" hidden>
-  <h2>6 · Ball flight (estimasi)</h2>
+  <h2>7 · Ball flight (estimasi)</h2>
   <div id="bf"></div>
   <p class="note" id="bfMsg"></p>
 </section>
@@ -146,7 +162,7 @@ const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
 const $=id=>document.getElementById(id),v=$("vid"),cv=$("cv"),cx=cv.getContext("2d");
 const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
 const MARK={grip:["G","#7dffb0"],shaft:["S","#fff"],head:["H","#ffc400"],ball:["B","#ff3b6b"]};
-let pl=null,F=[],W=[],t0=0,ry=.6,rx=.12,p3=0,tr3=1,impO=null,seq=0,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
+let pl=null,F=[],W=[],t0=0,ry=.6,rx=.22,advH="",p3=0,tr3=1,impO=null,seq=0,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
 const M={grip:{},shaft:{},head:{},ball:{}};
 window.SW={headAt:i=>headAt(i),club3:()=>club3(),head3:(C,i)=>head3(C,i),get F(){return F},get W(){return W},get K(){return K},get ppm(){return ppm},get t0(){return t0},M,flight:()=>ballFlight(),carry:(a,b)=>carry(a,b)};
 
@@ -273,6 +289,55 @@ function bf0(fs,p){
 const spd=s=>s?s.toFixed(1)+" <small style='font-size:13px'>m/s</small><div class='note' style='margin:0'>"+Math.round(s*2.237)+" mph</div>":"–";
 const near=(o,f,max)=>{let b=null;for(const k of frames(o))if(Math.abs(k-f)<=max&&(b==null||Math.abs(k-f)<Math.abs(b-f)))b=k;return b;};
 
+/* Swing checks from the key frames. Every item: [group, ok (null = cannot tell), what was measured, what to do] */
+function advice(){
+  const A=K.a,T=K.t,I=K.i,a=meas(A),t=meas(T),m=meas(I);if(!a||!t||!m||!ppm||!(A<T&&T<I))return [];
+  const out=[],add=(...x)=>out.push(x),cm=px=>px/ppm*100,r=Math.round,SH="Putaran bahu (dari address)",HP="Putaran pinggul (dari address)",SP="Tulang belakang (dari tegak)";
+  /* right-handed if the hands are nearer the right shoulder at the top */
+  const hd=k=>len(M3(W[T],15,16).map((x,j)=>x-V3(W[T],k)[j])),rh=hd(12)<hd(11),ld=rh?"kiri":"kanan",tr=rh?"kanan":"kiri";
+  const occ=dtl()?" Dari belakang lengan ini sering tertutup badan, jadi cocokkan dulu dengan gambarnya.":"";
+  const hip=i=>mid(P(F[i],23),P(F[i],24)),bs=Math.sign(hands(F[A])[0]-hip(A)[0])||1;   /* which way the ball is in the picture (down the line) */
+  /* takeaway checkpoint: hands reach hip height */
+  let kt=A+1;while(kt<T&&F[kt]&&hands(F[kt])[1]>hip(kt)[1])kt++;
+  const mt=meas(kt);
+  if(mt){const s=mt[SH];add("Takeaway",s>=15,"Bahu sudah berputar "+r(s)+"° saat tangan setinggi pinggul",
+    s>=15?"Takeaway menyatu: bahu, lengan, dan stik bergerak bersama.":"Tangan jalan sendiri. Mulai backswing dengan memutar dada dan bahu, jaga segitiga lengan sampai tangan setinggi pinggul.");}
+  if(dtl()){let jb=null,bd=1e9;for(let j=A+1;j<=T;j++){const h=headAt(j);if(h&&F[j]){const d=Math.abs(h[1]-hands(F[j])[1]);if(d<bd){bd=d;jb=j;}}}
+    if(jb==null||cm(bd)>15)add("Takeaway",null,"Jalur stik saat takeaway belum bisa dicek","Pakai Lacak Head berurutan dari address sampai top, nanti terlihat stik ditarik ke dalam atau ke luar.");
+    else{const e=cm((headAt(jb)[0]-hands(F[jb])[0])*bs),ok=Math.abs(e)<=12;
+      add("Takeaway",ok,"Saat shaft sejajar tanah, kepala stik "+(ok?"menutupi tangan":r(Math.abs(e))+" cm ke "+(e<0?"dalam (inside)":"luar (outside)")+" dari tangan"),
+        ok?"Jalur takeaway netral.":e<0?"Stik ditarik terlalu ke dalam, biasanya berujung over the top. Rasakan kepala stik tetap di luar tangan sampai shaft sejajar tanah.":"Stik terangkat ke luar. Biarkan putaran bahu yang membawa stik, bukan tangan yang mengangkat.");}}
+  {const s=t[SH],h=t[HP];add("Top",s>=75,"Putaran bahu "+r(s)+"°, pinggul "+r(h)+"° (X-factor "+r(s-h)+"°)",
+    s>=75?"Putaran bahu cukup.":"Putaran bahu masih jauh dari ±90°. Putar sampai punggung menghadap target; kalau badan kaku, biarkan tumit "+ld+" sedikit terangkat.");}
+  {const e=t["Siku "+ld];add("Top",e>=150,"Lengan "+ld+" (lead) "+r(e)+"° di top",
+    e>=150?"Lengan lead cukup lurus.":"Lengan lead menekuk, lebar swing hilang. Backswing boleh lebih pendek asal lengan tetap panjang; berhenti saat bahu berhenti berputar."+occ);}
+  {const k="Lutut "+tr,ok=t[k]-a[k]<12;add("Top",ok,"Lutut "+tr+" (trail) "+r(a[k])+"° → "+r(t[k])+"°",
+    ok?"Tekukan lutut trail terjaga.":"Lutut trail melurus, pinggul ikut naik. Pertahankan tekukan lutut dan rasakan beban di sisi dalam kaki "+tr+".");}
+  const hm=i=>[cm(P(F[i],0)[0]-P(F[A],0)[0]),cm(P(F[A],0)[1]-P(F[i],0)[1])],
+    hs=(g,i,bad)=>{const [x,y]=hm(i),ok=Math.abs(x)<=6&&Math.abs(y)<=6;
+      add(g,ok,"Kepala bergeser "+r(Math.abs(x))+" cm mendatar, "+r(Math.abs(y))+" cm "+(y<0?"turun":"naik")+" dari address",ok?"Kepala stabil.":bad);};
+  hs("Top",T,"Kepala banyak bergerak di backswing. Putar badan mengelilingi tulang belakang, jangan bergeser (sway) atau terangkat.");
+  if(dtl()){const xa=(lo,hi,y)=>{for(let j=lo+1;j<=hi;j++){if(!F[j]||!F[j-1])continue;const p=hands(F[j-1]),q=hands(F[j]);
+      if((p[1]-y)*(q[1]-y)<=0&&p[1]!==q[1])return p[0]+(q[0]-p[0])*(y-p[1])/(q[1]-p[1]);}return null;};
+    const yA=hands(F[A])[1],yT=hands(F[T])[1];let s=0,n=0;
+    for(const f of [.3,.5,.7]){const y=yA+(yT-yA)*f,b=xa(A,T,y),d=xa(T,I,y);if(b!=null&&d!=null){s+=(d-b)*bs;n++;}}
+    if(n){const d=cm(s/n);add("Downswing",d<=3,"Tangan turun "+r(Math.abs(d))+" cm lebih "+(d>0?"luar":"dalam")+" dari jalur naik",
+      d<=3?"Tangan turun dari dalam, tidak over the top.":"Over the top: tangan terlempar ke luar di awal downswing, penyebab slice dan pull. Mulai downswing dari pinggul, biarkan siku "+tr+" turun menempel ke rusuk dulu.");}}
+  {const d=a[SP]-m[SP],hx=dtl()?cm((hip(I)[0]-hip(A)[0])*bs):0,ok=d<=8&&hx<=5;
+    add("Downswing",ok,"Sudut tulang belakang "+r(a[SP])+"° → "+r(m[SP])+"° di impact"+(dtl()?", pinggul "+r(Math.abs(hx))+" cm "+(hx>0?"mendekati":"menjauhi")+" bola":""),
+      ok?"Postur terjaga sampai impact.":"Early extension: badan berdiri dan pinggul maju ke arah bola. Rasakan bokong tetap menempel di dinding khayalan di belakang sampai impact.");}
+  {const h=m[HP];add("Impact",h>=20,"Pinggul terbuka "+r(h)+"° saat impact",
+    h>=20?"Pinggul sudah membuka ke target.":"Pinggul masih menghadap bola saat impact, tenaga hanya dari lengan. Mulai downswing dengan memindahkan berat ke kaki "+ld+" lalu memutar pinggul ke target.");}
+  {const e=m["Siku "+ld];add("Impact",e>=150,"Lengan "+ld+" (lead) "+r(e)+"° saat impact",
+    e>=150?"Lengan lead lurus saat impact.":"Lengan lead menekuk saat impact (chicken wing). Latih half swing dengan handuk dijepit di kedua ketiak, lalu rentangkan kedua lengan setelah impact."+occ);}
+  hs("Impact",I,"Kepala berpindah jauh dari posisi address saat impact, kontak jadi tidak konsisten. Jaga mata di belakang bola sampai bola pergi.");
+  {const b=(T-A)*dtReal(),d=(I-T)*dtReal(),q=b/d,ok=q>=2.5&&q<=3.5;
+    add("Tempo",ok,"Tempo "+q.toFixed(1)+" : 1 (backswing "+b.toFixed(2)+" s, downswing "+d.toFixed(2)+" s)",
+      ok?"Dekat tempo 3 : 1 pemain tour.":q<2.5?"Backswing relatif cepat atau downswing lambat. Hitung 'satu-dua-tiga' saat naik, 'satu' saat turun.":"Backswing terlalu lambat dibanding downswing. Naik lebih mengalir, jangan berhenti lama di top.");}
+  return out;
+}
+const phase=i=>i<K.a?"Setup":i===K.a?"Address":i<K.t?(i-K.a<=(K.t-K.a)/3?"Takeaway":"Backswing"):i===K.t?"Top":i<K.i?"Downswing":i===K.i?"Impact":i<=K.i+8?"Follow through":"Finish";
+
 function stats(){
   const cols=[["Address",K.a],["Top",K.t],["Impact",K.i],["Sekarang",cur]].map(c=>[c[0],meas(c[1])]);
   const rows=Object.keys(cols.find(c=>c[1])?.[1]||{});
@@ -281,6 +346,15 @@ function stats(){
   if(F[cur]&&F[K.a]&&ppm){const d=(P(F[cur],0)[0]-P(F[K.a],0)[0])/ppm*100,u=(P(F[K.a],0)[1]-P(F[cur],0)[1])/ppm*100;
     h+="<tr><td>Kepala geser dari address</td><td colspan='4' class='now'>"+Math.abs(Math.round(d))+" cm ke "+(d<0?"kiri":"kanan")+" gambar, "+Math.abs(Math.round(u))+" cm "+(u<0?"turun":"naik")+"</td></tr>";}
   $("tbl").innerHTML=h;
+  {const ad=advice(),bad=ad.filter(x=>x[1]===false).length;let g="";
+    const t=ad.length?"<div class='n'><b>"+(bad?bad+" dari "+ad.length+" poin perlu dicek":"Semua "+ad.length+" poin aman")+"</b></div>"+
+      ad.map(([grp,ok,hd,tip])=>(grp!==g?"<h3>"+(g=grp)+"</h3>":"")+"<div class='"+(ok==null?"n":ok?"":"w")+"'><b>"+(ok==null?"":ok?"✓ ":"! ")+hd+"</b><small>"+tip+"</small></div>").join(""):
+      "<p class='note' style='margin:0'>Address, Top, dan Impact belum terbaca berurutan. Betulkan dengan tombol Frame ini = address / impact.</p>";
+    if(t!==advH)$("adv").innerHTML=advH=t;}
+  $("info").textContent="Frame "+(cur+1)+" / "+F.length+" · "+phase(cur);
+  document.querySelectorAll("[data-key]").forEach(b=>b.classList.toggle("on",K[b.dataset.key]===cur));
+  $("markMsg").textContent=seq?"Lacak Head aktif: ketuk kepala stik, frame maju sendiri. Sudah "+frames(M.head).length+" titik. Tekan tombolnya lagi untuk berhenti.":
+    "Tombol tanda tetap aktif sampai ditekan lagi. Lacak Head berurutan: ketuk kepala stik dari address sampai finish; frame di antaranya disambung otomatis di video dan 3D.";
   $("hand").innerHTML=spd(handSpeed());
   const cs=clubSpeed();$("club").innerHTML=spd(cs);
   $("speedMsg").textContent=cs?"Kepala stik dihitung dari dua titik Head yang berdekatan. Makin dekat ke impact dan makin tajam gambarnya, makin akurat.":
@@ -360,26 +434,44 @@ function club3(){
 }
 function head3(C,i){const d=C.dirs[i];return d&&W[i]?M3(W[i],15,16).map((x,k)=>x+d[k]):null;}
 
-/* rotatable 3D skeleton from the model's world landmarks (metres, origin between the hips) */
+/* 3D mocap-style view: wireframe body on a grid floor, in perspective. The model's 3D is centred on the hips;
+   here every frame is re-anchored on the feet, so the shoes stay put and the body moves over them. Floor = y 0, up = negative y. */
+function anc(j){const w=W[j],fl=Math.max(...[27,28,29,30,31,32].map(k=>w[k].y)),ax=(w[27].x+w[28].x)/2,az=(w[27].z+w[28].z)/2;
+  return p=>[p[0]-ax,p[1]-fl,p[2]-az];}
 function draw3(i=cur){
-  const c=$("c3"),g=c.getContext("2d"),S=210,w=W[i];g.clearRect(0,0,600,600);if(!w)return;
-  const cy=Math.cos(ry),sy=Math.sin(ry),cp=Math.cos(rx),sp=Math.sin(rx);
-  const pr=p=>{const x=p[0]*cy+p[2]*sy,z=-p[0]*sy+p[2]*cy;return [300+x*S,330+(p[1]*cp-z*sp)*S];};
-  const ln=(a,b,col,wd)=>{g.strokeStyle=col;g.lineWidth=wd;g.lineCap="round";g.beginPath();g.moveTo(...pr(a));g.lineTo(...pr(b));g.stroke();};
-  /* the floor is where the lowest part of the shoes is on this frame; heel and toe within 4 cm of it are planted flat */
-  const fl=Math.max(...[27,28,29,30,31,32].map(k=>w[k].y)),pt=k=>{const q=V3(w,k);if(k>=29&&q[1]>fl-.04)q[1]=fl;return q;};
-  for(let k=-4;k<=4;k++){ln([k/4,fl,-1],[k/4,fl,1],"rgba(255,255,255,.14)",1);ln([-1,fl,k/4],[1,fl,k/4],"rgba(255,255,255,.14)",1);}
+  const c=$("c3"),g=c.getContext("2d"),S=205,D=5,w=W[i];g.setTransform(1.5,0,0,1.5,0,0);g.fillStyle="#000";g.fillRect(0,0,600,600);if(!w)return;
+  const cy=Math.cos(ry),sy=Math.sin(ry),cp=Math.cos(rx),sp=Math.sin(rx),LC="#35e06a",RC="#ff4338",MC="#ffa62b";
+  const pr=p=>{const x=p[0]*cy+p[2]*sy,z=-p[0]*sy+p[2]*cy,y=p[1]+.9,k=D/Math.max(.5,D+z*cp+y*sp);return [300+x*S*k,310+(y*cp-z*sp)*S*k];};
+  const path=(ps,close)=>{g.beginPath();g.moveTo(...ps[0]);for(const q of ps.slice(1))g.lineTo(...q);if(close)g.closePath();};
+  const ln=(a,b,col,wd)=>{g.strokeStyle=col;g.lineWidth=wd;path([pr(a),pr(b)]);g.stroke();};
+  g.lineCap=g.lineJoin="round";
+  for(let k=-6;k<=6;k++){ln([k/4,0,-1.5],[k/4,0,1.5],"rgba(255,255,255,.3)",1);ln([-1.5,0,k/4],[1.5,0,k/4],"rgba(255,255,255,.3)",1);}
+  g.fillStyle="rgba(80,130,180,.4)";path([[-.55,0,-.55],[.55,0,-.55],[.55,0,.55],[-.55,0,.55]].map(pr),1);g.fill();
+  /* heel and toe within 4 cm of the floor are planted flat */
+  const A=anc(i),pt=k=>{const q=A(V3(w,k));if(k>=29&&q[1]>-.04)q[1]=0;return q;},col=(a,b)=>a%2===b%2?(a%2?LC:RC):MC;
   /* shoe soles: a flat pad from heel to toe, 9 cm wide */
-  for(const [h,t,col] of [[29,31,"#3fe0ff"],[30,32,"#ff9a3c"]]){const H=pt(h),T=pt(t),d=[T[0]-H[0],T[2]-H[2]],n=Math.hypot(...d)||1,e=[-d[1]/n*.045,d[0]/n*.045];
-    const q=[[H[0]+e[0],H[1],H[2]+e[1]],[T[0]+e[0],T[1],T[2]+e[1]],[T[0]-e[0],T[1],T[2]-e[1]],[H[0]-e[0],H[1],H[2]-e[1]]].map(pr);
-    g.fillStyle=col;g.globalAlpha=.75;g.beginPath();g.moveTo(...q[0]);for(const z of q.slice(1))g.lineTo(...z);g.closePath();g.fill();g.globalAlpha=1;}
-  for(let j=K.a+1;j<=i;j++)if(W[j]&&W[j-1])ln(M3(W[j-1],15,16),M3(W[j],15,16),"#ffc400",2);
-  for(const [a,b] of BONES.concat([[27,29],[28,30]]))ln(pt(a),pt(b),a%2===b%2?(a%2?"#3fe0ff":"#ff9a3c"):"#fff",6);
-  const n=pr(V3(w,0));g.fillStyle="#fff";g.beginPath();g.arc(n[0],n[1],.1*S,0,7);g.fill();
-  for(const k of [13,14,15,16,25,26,27,28]){const q=pr(V3(w,k));g.fillStyle="#fff";g.beginPath();g.arc(q[0],q[1],5,0,7);g.fill();}
-  const C=club3();if(!C)return;
-  if(tr3){let prev=null;for(let j=C.fs[0];j<=Math.min(i,C.fs[C.fs.length-1]);j++){const h=head3(C,j);if(h&&prev)ln(prev,h,"#ff5fd2",3);prev=h;}}
-  const h=head3(C,i);if(h){ln(M3(w,15,16),h,"#e8ecf2",4);const q=pr(h);g.fillStyle="#ffc400";g.beginPath();g.arc(q[0],q[1],9,0,7);g.fill();}
+  for(const [h,t,cl] of [[29,31,LC],[30,32,RC]]){const H=pt(h),T=pt(t),d=[T[0]-H[0],T[2]-H[2]],n=Math.hypot(...d)||1,e=[-d[1]/n*.045,d[0]/n*.045];
+    path([[H[0]+e[0],H[1],H[2]+e[1]],[T[0]+e[0],T[1],T[2]+e[1]],[T[0]-e[0],T[1],T[2]-e[1]],[H[0]-e[0],H[1],H[2]-e[1]]].map(pr),1);g.fillStyle=cl+"99";g.fill();}
+  const HM=j=>anc(j)(M3(W[j],15,16)),C=club3();
+  for(let j=K.a+1;j<=i;j++)if(W[j]&&W[j-1])ln(HM(j-1),HM(j),"rgba(255,196,0,.8)",1.5);
+  /* clubhead path: the whole loop faint, the part already swung bright */
+  if(C&&tr3){let prev=null;for(let j=C.fs[0];j<=C.fs[1];j++){const h=head3(C,j),q=h&&anc(j)(h);if(q&&prev)ln(prev,q,j<=i?"#ff2a2a":"rgba(255,42,42,.35)",j<=i?2.5:1.5);prev=q;}}
+  /* limbs as mocap bones: a thin diamond, widest a quarter of the way along */
+  const bone=(a,b)=>{const p=pr(pt(a)),q=pr(pt(b)),d=[q[0]-p[0],q[1]-p[1]],n=Math.hypot(...d)||1,wd=Math.max(3,n*.09),e=[-d[1]/n*wd,d[0]/n*wd],m=[p[0]+d[0]*.25,p[1]+d[1]*.25];
+    path([p,[m[0]+e[0],m[1]+e[1]],q,[m[0]-e[0],m[1]-e[1]]],1);g.fillStyle=col(a,b)+"40";g.fill();g.strokeStyle=col(a,b);g.lineWidth=1.6;g.stroke();};
+  for(const [a,b] of [[11,12],[23,24],[11,23],[12,24],[11,24],[12,23],[27,29],[29,31],[27,31],[28,30],[30,32],[28,32],[15,17],[17,19],[15,19],[15,21],[16,18],[18,20],[16,20],[16,22]])ln(pt(a),pt(b),col(a,b),1.6);
+  for(const [a,b] of [[11,13],[13,15],[12,14],[14,16],[23,25],[25,27],[24,26],[26,28]])bone(a,b);
+  /* head: a wire octahedron on the ears and nose */
+  {const E=k=>A(V3(w,k)),e7=E(7),e8=E(8),hc=e7.map((x,k)=>(x+e8[k])/2),r=e8.map((x,k)=>(x-e7[k])/2),f=E(0).map((x,k)=>x-hc[k]);
+    const u=[r[1]*f[2]-r[2]*f[1],r[2]*f[0]-r[0]*f[2],r[0]*f[1]-r[1]*f[0]],ul=len(u)||1,up=u.map(x=>x/ul*.12);
+    const hp=[r,f,up].flatMap(d=>[1,-1].map(s=>hc.map((x,k)=>x+s*d[k])));
+    for(let a=0;a<6;a++)for(let b=a+1;b<6;b++)if(a>>1!==b>>1)ln(hp[a],hp[b],MC,1.4);
+    ln(A(M3(w,11,12)),hc,MC,1.6);}
+  for(const k of [11,12,13,14,15,16,23,24,25,26,27,28]){const q=pr(pt(k));g.fillStyle="#fff";g.beginPath();g.arc(q[0],q[1],2.5,0,7);g.fill();}
+  const h=C&&head3(C,i);
+  if(h){const q=A(h),hm=A(M3(w,15,16)),d=q.map((x,k)=>x-hm[k]),L=len(d)||1;ln(hm.map((x,k)=>x-d[k]/L*.1),q,"#3fe0ff",3);
+    const s=pr(q);g.fillStyle="#3fe0ff";g.beginPath();g.arc(s[0],s[1],5,0,7);g.fill();}
+  g.fillStyle="#fff";g.font="bold 15px system-ui";g.textBaseline="alphabetic";g.fillText(phase(i),12,588);
 }
 
 const tOf=i=>t0+(i+.5)*step;
@@ -417,9 +509,9 @@ async function run(){
     }
     F=bk.reverse().concat(fw);W=bkW.reverse().concat(fwW);t0=(fi-bk.length)*step;
     if(!keys()){msg("Badan tidak terbaca di video ini. Coba rekam dengan seluruh badan terlihat dan cahaya cukup.");return;}
-    $("scrub").max=F.length-1;for(const id of ["angles","d3","plane","speed","flight"])$(id).hidden=false;
+    $("scrub").max=F.length-1;for(const id of ["tips","angles","d3","plane","speed","flight"])$(id).hidden=false;
     msg("Selesai: swing ada di detik <b>"+t0.toFixed(1)+"–"+(t0+F.length*step).toFixed(1)+"</b> ("+F.length+" frame dibaca rapat). Geser slider atau pakai tombol Address / Top / Impact.");
-    await go(K.a);
+    await go(K.a);$("lab").scrollIntoView({behavior:"smooth"});
   }catch(e){msg("Gagal menganalisa: "+(e.message||e));}
   finally{$("run").disabled=false;}
 }
@@ -435,7 +527,7 @@ $("setA").onclick=()=>{if(F[cur]){keys(cur);draw();}};
 $("setI").onclick=()=>{if(F[cur]){impO=cur;keys(K.a);draw();}};
 const marksOn=()=>document.querySelectorAll("[data-mark]").forEach(x=>x.classList.toggle("on",x.dataset.mark===mode));
 $("seq").onclick=async()=>{if(!F.length)return;seq=!seq;$("seq").classList.toggle("on",!!seq);mode=seq?"head":null;marksOn();
-  if(seq&&!frames(M.head).length)await go(K.a);};
+  if(seq&&!frames(M.head).length)await go(K.a);else draw();};
 $("play").onclick=async()=>{if(playing){playing=0;return;}playing=1;$("play").textContent="⏸ Stop";
   for(let i=cur>=F.length-1?0:cur;i<F.length&&playing;i++)await go(i);
   playing=0;$("play").textContent="▶ Putar";};
@@ -450,7 +542,7 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
   if(b.dataset.go)go(cur+ +b.dataset.go);
   else if(b.dataset.key)go(K[b.dataset.key]);
   else if(b.dataset.v3){[ry,rx]=b.dataset.v3.split(",").map(Number);if(!p3)draw3();}
-  else if(b.dataset.mark){mode=mode===b.dataset.mark?null:b.dataset.mark;seq=0;$("seq").classList.remove("on");marksOn();}});
+  else if(b.dataset.mark){mode=mode===b.dataset.mark?null:b.dataset.mark;seq=0;$("seq").classList.remove("on");marksOn();if(F.length)draw();}});
 {const c=$("c3");let d=null;
   c.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);});
   c.addEventListener("pointermove",e=>{if(!d)return;ry+=(e.clientX-d[0])*.01;d=[e.clientX,e.clientY];if(!p3)draw3();});   /* turns about the vertical only */
