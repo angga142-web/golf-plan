@@ -79,6 +79,10 @@ td.now{font-weight:700;background:#fff8dc}
     <button class="ghost" id="play">▶ Putar</button>
     <button class="ghost" id="setA">Frame ini = address</button>
   </div>
+  <div class="btns b2" style="margin-top:6px">
+    <button class="ghost" id="setI">Frame ini = impact</button>
+    <button class="ghost" id="seq">Lacak Head berurutan</button>
+  </div>
   <div class="sub">Tandai di gambar (pilih, lalu ketuk gambar; berlaku untuk frame ini)</div>
   <div class="btns b4">
     <button class="ghost" data-mark="grip">Grip</button>
@@ -90,7 +94,7 @@ td.now{font-weight:700;background:#fff8dc}
     <button class="ghost" id="clrF">Hapus titik frame ini</button>
     <button class="ghost" id="clrAll">Hapus semua titik</button>
   </div>
-  <p class="note" id="markMsg">Tombol tetap aktif sampai ditekan lagi, jadi bisa pindah frame dan ketuk terus.</p>
+  <p class="note" id="markMsg">Tombol tetap aktif sampai ditekan lagi, jadi bisa pindah frame dan ketuk terus. Lacak Head berurutan: mulai dari address, ketuk kepala stik, frame maju sendiri 2–3 frame, ketuk lagi, sampai finish. Posisi di frame antaranya disambung otomatis di video dan di 3D.</p>
 </section>
 
 <section class="card" id="angles" hidden>
@@ -142,9 +146,9 @@ const MP="https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm",
 const $=id=>document.getElementById(id),v=$("vid"),cv=$("cv"),cx=cv.getContext("2d");
 const BONES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
 const MARK={grip:["G","#7dffb0"],shaft:["S","#fff"],head:["H","#ffc400"],ball:["B","#ff3b6b"]};
-let pl=null,F=[],W=[],t0=0,ry=.6,rx=.12,p3=0,tr3=1,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
+let pl=null,F=[],W=[],t0=0,ry=.6,rx=.12,p3=0,tr3=1,impO=null,seq=0,step=1/30,cur=0,want=0,busy=0,K={a:0,t:0,i:0},mode=null,ppm=0,ts=0,playing=0;
 const M={grip:{},shaft:{},head:{},ball:{}};
-window.SW={club3:()=>club3(),head3:(C,i)=>head3(C,i),get F(){return F},get W(){return W},get K(){return K},get ppm(){return ppm},get t0(){return t0},M,flight:()=>ballFlight(),carry:(a,b)=>carry(a,b)};
+window.SW={headAt:i=>headAt(i),club3:()=>club3(),head3:(C,i)=>head3(C,i),get F(){return F},get W(){return W},get K(){return K},get ppm(){return ppm},get t0(){return t0},M,flight:()=>ballFlight(),carry:(a,b)=>carry(a,b)};
 
 const msg=t=>$("msg").innerHTML=t;
 const seek=t=>new Promise(r=>{let done=0;const h=()=>{if(done)return;done=1;v.removeEventListener("seeked",h);r();};
@@ -193,6 +197,7 @@ function keys(addr){
     for(let j=K.t-1;j>=2;j--)if(F[j]&&F[j-1]&&F[j-2]&&hands(F[j])[1]>hands(F[K.t])[1]+12*thr&&dist(hands(F[j]),hands(F[j-2]))<thr){K.a=j;break;}}
   const h0=hands(F[K.a]),dn=ok.filter(i=>i>K.t&&i<=K.t+win*.7);
   K.i=dn.length?dn.reduce((b,i)=>dist(hands(F[i]),h0)<dist(hands(F[b]),h0)?i:b,dn[0]):K.t;
+  if(impO!=null&&F[impO])K.i=impO;   /* the user's own impact frame wins */
   /* scale: shin + thigh + trunk is about 78% of standing height */
   const L=F[K.a],seg=(a,b,c,d)=>dist(P(L,a),P(L,b))+dist(P(L,b),P(L,c))+dist(P(L,c),P(L,d));
   ppm=Math.max(seg(27,25,23,11),seg(28,26,24,12))/(.78*(+$("tall").value||170)/100);
@@ -207,6 +212,15 @@ function handSpeed(){
   return best;
 }
 const frames=o=>Object.keys(o).map(Number).sort((a,b)=>a-b);
+/* clubhead on any frame: the mark itself, or between two marks the club's angle and length about the hands
+   carried smoothly from one to the other (shortest way round) */
+function headAt(i){
+  if(M.head[i])return xy(M.head[i]);if(!F[i])return null;
+  const fs=frames(M.head).filter(f=>F[f]),a=fs.filter(f=>f<i).pop(),b=fs.find(f=>f>i);if(a==null||b==null)return null;
+  const pol=f=>{const h=hands(F[f]),q=xy(M.head[f]);return [Math.atan2(q[1]-h[1],q[0]-h[0]),dist(h,q)];},A=pol(a),B=pol(b),t=(i-a)/(b-a);
+  const d=((B[0]-A[0]+3*Math.PI)%(2*Math.PI))-Math.PI,th=A[0]+d*t,r=A[1]+(B[1]-A[1])*t,h=hands(F[i]);
+  return [h[0]+Math.cos(th)*r,h[1]+Math.sin(th)*r];
+}
 /* clubhead speed: fastest stretch between two Head marks that are at most 4 frames apart */
 function clubSpeed(){
   const fs=frames(M.head);let best=0;
@@ -301,7 +315,8 @@ function draw(){
   /* hand path: backswing gold, downswing cyan */
   for(let j=Math.max(1,K.a+1);j<=cur;j++)if(F[j]&&F[j-1])line(hands(F[j-1]),hands(F[j]),j<=K.t?"#ffc400":"#3fe0ff",2.5*u);
   /* marked clubhead path and ball path up to this frame */
-  for(const [k,col] of [["head","#ffc400"],["ball","#ff3b6b"]]){const fs=frames(M[k]).filter(f=>f<=cur);
+  {const fs=frames(M.head);let pv=null;if(fs.length)for(let j=fs[0];j<=Math.min(cur,fs[fs.length-1]);j++){const q=headAt(j);if(q&&pv)line(pv,q,"#ff5fd2",2*u);pv=q;}}
+  for(const [k,col] of [["ball","#ff3b6b"]]){const fs=frames(M[k]).filter(f=>f<=cur);
     for(let j=1;j<fs.length;j++)line(xy(M[k][fs[j-1]]),xy(M[k][fs[j]]),col,1.5*u,[3*u,3*u]);
     for(const f of fs)if(f!==cur)dot(xy(M[k][f]),col,2*u);}
   if(L){
@@ -312,8 +327,9 @@ function draw(){
       tag(P(L,25),Math.round(m["Lutut kiri"])+"°");tag(P(L,26),Math.round(m["Lutut kanan"])+"°");}
   }
   /* the club on this frame: grip (or the hands) - shaft point - head */
-  if(M.head[cur]){const pts=[M.grip[cur]?xy(M.grip[cur]):L?hands(L):null,M.shaft[cur]?xy(M.shaft[cur]):null,xy(M.head[cur])].filter(Boolean);
-    for(let j=1;j<pts.length;j++)line(pts[j-1],pts[j],"#fff",3*u);}
+  const hc=headAt(cur);
+  if(hc){const pts=[M.grip[cur]?xy(M.grip[cur]):L?hands(L):null,M.shaft[cur]?xy(M.shaft[cur]):null,hc].filter(Boolean);
+    for(let j=1;j<pts.length;j++)line(pts[j-1],pts[j],"#fff",3*u);if(!M.head[cur])dot(hc,"#ff5fd2",3.5*u);}
   for(const k in MARK)if(M[k][cur]){dot(xy(M[k][cur]),MARK[k][1],4*u);tag(xy(M[k][cur]),MARK[k][0]);}
   stats();draw3();
 }
@@ -331,20 +347,18 @@ function map2(i){
    face on: towards the camera while the hands are low, behind the player while they are high. */
 function club3(){
   const fs=frames(M.head).filter(f=>F[f]&&W[f]);if(!fs.length)return null;
-  const raw=fs.map(f=>{const m=map2(f),g0=M3(W[f],15,16),g=M.grip[f]?m(xy(M.grip[f])):g0,h=m(xy(M.head[f]));return [h[0]-g[0],h[1]-g[1]];});
+  const a=fs[0],b=fs[fs.length-1],raw={},z={},dirs={};
+  for(let f=a;f<=b;f++){const h=headAt(f);if(!h||!W[f])continue;const m=map2(f),g=M.grip[f]?m(xy(M.grip[f])):M3(W[f],15,16),q=m(h);raw[f]=[q[0]-g[0],q[1]-g[1]];}
   /* club length: at address the club lies almost flat to a down-the-line camera, so its length in the picture is the real one
      (face on it leans towards the camera, so add 20%); without an address mark, the longest it ever looks */
-  const fa=near(M.head,K.a,6),ka=fs.indexOf(fa),Lc=ka>=0?Math.hypot(...raw[ka])*(dtl()?1:1.2):Math.max(...raw.map(d=>Math.hypot(...d))),dirs={};
-  fs.forEach((f,k)=>{const w=W[f],high=(w[15].y+w[16].y)/2<(w[11].y+w[12].y)/2,aft=f>K.i,sg=dtl()?(high!==aft?1:-1):(high?1:-1);
-    dirs[f]=[raw[k][0],raw[k][1],sg*Math.sqrt(Math.max(0,Lc*Lc-raw[k][0]**2-raw[k][1]**2))];});
-  return {fs,Lc,dirs};
+  const fa=near(M.head,K.a,6),Lc=fa!=null&&raw[fa]?Math.hypot(...raw[fa])*(dtl()?1:1.2):Math.max(...Object.values(raw).map(d=>Math.hypot(...d)));
+  for(const f in raw){const w=W[f],high=(w[15].y+w[16].y)/2<(w[11].y+w[12].y)/2,aft=+f>K.i,sg=dtl()?(high!==aft?1:-1):(high?1:-1);
+    z[f]=sg*Math.sqrt(Math.max(0,Lc*Lc-raw[f][0]**2-raw[f][1]**2));}
+  /* the towards/away rule switches abruptly, so average the depth over 5 frames to keep the club from snapping */
+  for(const f in raw){let sm=0,n=0;for(let k=-2;k<=2;k++)if(z[+f+k]!=null){sm+=z[+f+k];n++;}dirs[f]=[raw[f][0],raw[f][1],sm/n];}
+  return {fs:[a,b],Lc,dirs};
 }
-function head3(C,i){
-  if(!W[i])return null;let d=C.dirs[i];
-  if(!d){const a=C.fs.filter(f=>f<i).pop(),b=C.fs.find(f=>f>i);if(a==null||b==null)return null;
-    const t=(i-a)/(b-a),v=C.dirs[a].map((x,k)=>x+(C.dirs[b][k]-x)*t),n=len(v)||1;d=v.map(x=>x/n*C.Lc);}
-  return M3(W[i],15,16).map((x,k)=>x+d[k]);
-}
+function head3(C,i){const d=C.dirs[i];return d&&W[i]?M3(W[i],15,16).map((x,k)=>x+d[k]):null;}
 
 /* rotatable 3D skeleton from the model's world landmarks (metres, origin between the hips) */
 function draw3(i=cur){
@@ -385,7 +399,7 @@ async function run(){
     const dur=v.duration,sl=slow();step=1/30;
     cv.width=Math.min(720,v.videoWidth);cv.height=Math.round(cv.width*v.videoHeight/v.videoWidth);
     for(const k in M)for(const f in M[k])delete M[k][f];
-    F=[];W=[];$("lab").hidden=false;
+    F=[];W=[];impO=null;$("lab").hidden=false;
     const show=()=>cx.drawImage(v,0,0,cv.width,cv.height);
     const cs=Math.max(.25*sl,dur/120),C=[],rel=L=>{const h=hands(L),c=mid(P(L,23),P(L,24));return [h[0]-c[0],h[1]-c[1]];};
     for(let t=cs/2;t<dur;t+=cs){const [L]=await detect(t);C.push(L?[t,rel(L)]:null);show();msg("Mencari swing… <b>"+Math.round(t/dur*100)+"%</b>");}
@@ -418,6 +432,10 @@ $("scrub").oninput=e=>go(+e.target.value);
 $("view").onchange=()=>{if(F.length)draw();};
 $("tall").onchange=$("slow").onchange=()=>{if(F.length){keys(K.a);draw();}};
 $("setA").onclick=()=>{if(F[cur]){keys(cur);draw();}};
+$("setI").onclick=()=>{if(F[cur]){impO=cur;keys(K.a);draw();}};
+const marksOn=()=>document.querySelectorAll("[data-mark]").forEach(x=>x.classList.toggle("on",x.dataset.mark===mode));
+$("seq").onclick=async()=>{if(!F.length)return;seq=!seq;$("seq").classList.toggle("on",!!seq);mode=seq?"head":null;marksOn();
+  if(seq&&!frames(M.head).length)await go(K.a);};
 $("play").onclick=async()=>{if(playing){playing=0;return;}playing=1;$("play").textContent="⏸ Stop";
   for(let i=cur>=F.length-1?0:cur;i<F.length&&playing;i++)await go(i);
   playing=0;$("play").textContent="▶ Putar";};
@@ -432,13 +450,15 @@ document.addEventListener("click",e=>{const b=e.target.closest("button");if(!b)r
   if(b.dataset.go)go(cur+ +b.dataset.go);
   else if(b.dataset.key)go(K[b.dataset.key]);
   else if(b.dataset.v3){[ry,rx]=b.dataset.v3.split(",").map(Number);if(!p3)draw3();}
-  else if(b.dataset.mark){mode=mode===b.dataset.mark?null:b.dataset.mark;document.querySelectorAll("[data-mark]").forEach(x=>x.classList.toggle("on",x.dataset.mark===mode));}});
+  else if(b.dataset.mark){mode=mode===b.dataset.mark?null:b.dataset.mark;seq=0;$("seq").classList.remove("on");marksOn();}});
 {const c=$("c3");let d=null;
   c.addEventListener("pointerdown",e=>{d=[e.clientX,e.clientY];c.setPointerCapture(e.pointerId);});
   c.addEventListener("pointermove",e=>{if(!d)return;ry+=(e.clientX-d[0])*.01;d=[e.clientX,e.clientY];if(!p3)draw3();});   /* turns about the vertical only */
   c.addEventListener("pointerup",()=>d=null);c.addEventListener("pointercancel",()=>d=null);}
 cv.addEventListener("click",e=>{if(!mode||!F.length)return;const r=cv.getBoundingClientRect();
-  M[mode][cur]={x:(e.clientX-r.left)/r.width*cv.width,y:(e.clientY-r.top)/r.height*cv.height};draw();});
+  M[mode][cur]={x:(e.clientX-r.left)/r.width*cv.width,y:(e.clientY-r.top)/r.height*cv.height};draw();
+  /* sequential tracking: jump ahead, 2 frames through the downswing (the club moves fastest there), 3 elsewhere */
+  if(seq&&mode==="head"&&cur<F.length-1)go(cur+(cur>=K.t&&cur<=K.i+3?2:3));});
 </script>
 </body>
 </html>
