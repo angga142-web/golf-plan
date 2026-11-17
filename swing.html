@@ -11,6 +11,7 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--mist);color:var(--ink);font:15px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}
 header{background:var(--ink);color:#fff;padding:14px 16px;display:flex;align-items:baseline;gap:10px}
+header a{margin-left:auto;color:#fff;font-size:13px;font-weight:700;text-decoration:none}
 header b{font-size:19px}header span{background:var(--gold);color:var(--ink);font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px}
 main{max-width:560px;margin:0 auto;padding:12px 12px 40px;display:grid;gap:12px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:12px}
@@ -48,12 +49,14 @@ td.now{font-weight:700;background:#fff8dc}
 .adv div.w{border-color:#e08a00;background:#fff6e0}
 .adv div.n{border-color:var(--line)}
 .adv b{display:block}
+.adv b button{float:right;padding:2px 8px;margin-left:8px;background:none;color:var(--red);border:1px solid var(--line);font-size:12px}
+input[type=text]{width:100%;font:inherit;padding:9px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
 .adv small{color:#55607a;font-size:12px}
 [hidden]{display:none!important}
 </style>
 </head>
 <body>
-<header><b>Parkutut · Swing Lab</b><span>v3 beta</span></header>
+<header><b>Parkutut · Swing Lab</b><span>v3 beta</span><a href="caddy.html">‹ Cat Caddy</a></header>
 <main>
 <section class="card">
   <h2>1 · Pilih rekaman swing</h2>
@@ -110,6 +113,10 @@ td.now{font-weight:700;background:#fff8dc}
 <section class="card" id="tips" hidden>
   <h2>2 · Saran swing</h2>
   <div class="adv" id="adv"></div>
+  <div class="row" style="margin-top:10px">
+    <input type="text" id="note" maxlength="40" placeholder="Catatan, mis. 7 iron di range" aria-label="Catatan swing">
+    <button class="gold" id="save">Simpan ke riwayat</button>
+  </div>
   <p class="note">Ini indikasi dari rangka 3D satu kamera, bukan vonis pelatih. Paling bisa dipercaya kalau Address, Top, dan Impact sudah di frame yang benar. Benahi satu hal per sesi latihan, mulai dari yang paling awal di swing.</p>
 </section>
 
@@ -152,6 +159,11 @@ td.now{font-weight:700;background:#fff8dc}
   <h2>7 · Ball flight (estimasi)</h2>
   <div id="bf"></div>
   <p class="note" id="bfMsg"></p>
+</section>
+<section class="card">
+  <h2>Riwayat swing</h2>
+  <div class="adv" id="hist"></div>
+  <p class="note">Tersimpan di HP ini saja (angka dan catatan, bukan videonya). Paling banyak 50 swing terakhir.</p>
 </section>
 </main>
 
@@ -474,6 +486,25 @@ function draw3(i=cur){
   g.fillStyle="#fff";g.font="bold 15px system-ui";g.textBaseline="alphabetic";g.fillText(phase(i),12,588);
 }
 
+/* history: the numbers of a saved swing, kept in this browser only */
+const HK="swinglab-history-v1",hist=()=>{try{return JSON.parse(localStorage.getItem(HK))||[];}catch(e){return [];}},
+  esc=t=>String(t).replace(/[&<>"']/g,c=>"&#"+c.charCodeAt(0)+";"),put=h=>{try{localStorage.setItem(HK,JSON.stringify(h.slice(0,50)));return true;}catch(e){return false;}};
+function histDraw(){
+  const h=hist(),ar=(a,b,u)=>b==null||a==null?"":" ("+(a-b>=0?"+":"−")+Math.abs(a-b).toFixed(u)+")";
+  $("hist").innerHTML=h.length?h.map((e,k)=>{const p=h[k+1];   /* p = the swing saved before this one */
+    return "<div class='"+(e.bad.length?"w":"")+"'><b><button data-del='"+k+"' aria-label='Hapus'>Hapus</button>"+
+      new Date(e.d).toLocaleString("id-ID",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"})+(e.note?" · "+esc(e.note):"")+"</b>"+
+      "<small>"+e.bad.length+" dari "+e.n+" poin perlu dicek"+ar(e.bad.length,p&&p.bad.length,0)+" · bahu "+Math.round(e.sh)+"°"+ar(e.sh,p&&p.sh,0)+
+      " · tempo "+e.tempo.toFixed(1)+" : 1 · tangan "+e.hand.toFixed(1)+" m/s"+ar(e.hand,p&&p.hand,1)+(e.club?" · kepala stik "+e.club.toFixed(1)+" m/s":"")+
+      (e.bad.length?"<br>"+e.bad.map(esc).join("<br>"):"")+"</small></div>";}).join(""):
+    "<p class='note' style='margin:0'>Belum ada swing tersimpan. Setelah Analisa, tekan Simpan ke riwayat di kartu Saran swing.</p>";
+}
+$("save").onclick=()=>{const ad=advice(),t=meas(K.t);if(!ad.length||!t){$("save").textContent="Belum ada hasil";return;}
+  const h=hist();h.unshift({d:Date.now(),note:$("note").value.trim(),view:$("view").value,n:ad.length,bad:ad.filter(x=>x[1]===false).map(x=>x[2]),
+    tempo:(K.t-K.a)/(K.i-K.t),sh:t["Putaran bahu (dari address)"],hand:handSpeed(),club:clubSpeed()});
+  $("save").textContent=put(h)?"Tersimpan ✓":"Gagal menyimpan";histDraw();};
+$("hist").onclick=e=>{const b=e.target.closest("[data-del]");if(!b||!confirm("Hapus swing ini dari riwayat?"))return;const h=hist();h.splice(+b.dataset.del,1);put(h);histDraw();};
+histDraw();
 const tOf=i=>t0+(i+.5)*step;
 async function go(i){
   want=Math.max(0,Math.min(F.length-1,i));if(busy)return;busy=1;
@@ -491,7 +522,7 @@ async function run(){
     const dur=v.duration,sl=slow();step=1/30;
     cv.width=Math.min(720,v.videoWidth);cv.height=Math.round(cv.width*v.videoHeight/v.videoWidth);
     for(const k in M)for(const f in M[k])delete M[k][f];
-    F=[];W=[];impO=null;$("lab").hidden=false;
+    F=[];W=[];impO=null;$("lab").hidden=false;$("save").textContent="Simpan ke riwayat";
     const show=()=>cx.drawImage(v,0,0,cv.width,cv.height);
     const cs=Math.max(.25*sl,dur/120),C=[],rel=L=>{const h=hands(L),c=mid(P(L,23),P(L,24));return [h[0]-c[0],h[1]-c[1]];};
     for(let t=cs/2;t<dur;t+=cs){const [L]=await detect(t);C.push(L?[t,rel(L)]:null);show();msg("Mencari swing… <b>"+Math.round(t/dur*100)+"%</b>");}

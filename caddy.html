@@ -325,6 +325,9 @@ button.proj{border:0;font:inherit;letter-spacing:inherit;text-transform:inherit;
 .start .stcopy{font-size:11px;white-space:nowrap}
 .stnote{margin:-6px 0 0;text-align:center;font-size:10.5px;line-height:1.3;color:#9aa6bf}
 .menupop a.tbtn{display:block;text-decoration:none}
+.swcat{width:22px;height:22px;border-radius:50%;background:#0047af;vertical-align:-5px;margin-right:8px}
+.stswing{display:flex;align-items:center;justify-content:center;height:42px;flex:none;border:2px solid var(--gold);border-radius:12px;color:#fff;text-decoration:none;font-family:var(--f-num);font-weight:800;font-size:19px;letter-spacing:.05em;text-transform:uppercase}
+.stswing .swcat{width:30px;height:30px;vertical-align:0}
 .share{background:#25d366;color:#fff;border-color:#25d366}
 .stcopy{margin:0;text-align:center;font-size:12px;color:#7f8aa6}.stcopy b{color:var(--gold);font-weight:700}
 .stgo{display:flex;align-items:center;justify-content:center;gap:10px}.stgo .teeic{width:26px;height:34px}
@@ -445,6 +448,7 @@ tr.go{cursor:pointer}
       <button class="tbtn" id="histMenu" type="button">Riwayat ronde</button>
       <button class="tbtn" id="chipMenu" type="button">Mini game chipping</button>
       <button class="tbtn" id="pgMenu" type="button">Mini game putting</button>
+      <a class="tbtn" href="swing.html"><img class="swcat" alt="">Analisa swing</a>
       <a class="tbtn" id="feedback" target="_blank" rel="noopener">Kirim masukan</a>
     </div>
     </div>
@@ -518,6 +522,7 @@ tr.go{cursor:pointer}
     <section><h3>3 · Tee off dari</h3><div class="opts three" id="stTee"></div><p class="stneed" id="stNeed"></p></section>
     <section><h3>4 · Jarak pukulan</h3><button class="stclubs" id="stClubs" type="button"></button></section>
     <button class="stgo" id="stGo" type="button">Mulai tee off <svg class="teeic" viewBox="0 0 24 32" aria-hidden="true"><circle cx="12" cy="8" r="7" fill="#fff" stroke="currentColor" stroke-width="2"/><circle cx="9.5" cy="6" r="1" fill="currentColor" opacity=".35"/><circle cx="13" cy="5" r="1" fill="currentColor" opacity=".35"/><circle cx="14.5" cy="9" r="1" fill="currentColor" opacity=".35"/><circle cx="10.5" cy="10" r="1" fill="currentColor" opacity=".35"/><path d="M5 15.5h14l-5 4.5v9.5l-2 2-2-2V20z" fill="currentColor"/></svg></button>
+    <a class="stswing" href="swing.html"><img class="swcat" alt="">Analisa swing</a>
     <p class="stcopy">© 2026 Angga Prasetya · <b>Beta version</b> · <a id="feedback2" target="_blank" rel="noopener">Masukan</a> · <a href="#" id="creditsLink">Sumber data</a></p>
     <p class="stnote">Jarak estimasi dari data satelit. Konfirmasi lagi dengan caddy kamu sesuai kondisi di lapangan.</p>
   </div>
@@ -1578,6 +1583,7 @@ function guideShow(i){gI=i;const [sel,title,text]=GUIDE[i],el=document.querySele
 function guideStart(){$("guide").hidden=false;guideShow(0);}
 function guideEnd(){$("guide").hidden=true;try{localStorage.setItem("caddy-guide-v1","1");}catch(e){}}
 $("gCard").querySelector(".gcat").src=$("cat").querySelector("img").src;
+document.querySelectorAll(".swcat").forEach(i=>i.src=$("cat").querySelector("img").src);
 $("gNext").addEventListener("click",()=>{if(gI+1<GUIDE.length)guideShow(gI+1);else guideEnd();});
 $("gSkip").addEventListener("click",guideEnd);
 $("guideMenu").addEventListener("click",()=>{menuOpen(false);guideStart();});
