@@ -1,4 +1,4 @@
-/* Parkutut Cat Caddy offline cache.
+/* Parkutut Caddy offline cache.
    The app page: network first (always the newest when there is signal), cached copy when offline.
    Course files, elevation, icons and fonts: served from the cache at once and refreshed in the background. */
 const CACHE = "parkutut-v2";

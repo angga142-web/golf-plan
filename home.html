@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c162d">
-<title>Parkutut · Golf bareng Cat Caddy</title>
+<title>Parkutut · Golf bareng Parkutut Caddy</title>
 <meta name="description" content="Parkutut: caddy golf di HP, quiz short game, dan analisa swing dari video.">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="parkutut-icon.png">
@@ -37,7 +37,12 @@ main{max-width:560px;margin:-36px auto 0;padding:0 16px 32px;display:grid;gap:14
 .who button{font:inherit;font-weight:700;color:#fff;background:transparent;border:2px solid #56627f;border-radius:99px;padding:5px 12px;cursor:pointer}
 .c4 .ico{background:#0b7a3a}
 footer{max-width:560px;margin:0 auto;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink2);font-size:13px;text-align:center}
-footer a{color:var(--ink);font-weight:700}
+.credit{font:inherit;color:var(--ink2);background:none;border:0;padding:10px;cursor:pointer;line-height:1.5}.credit b{color:var(--ink)}
+dialog{border:0;border-radius:20px;padding:20px 16px;width:min(360px,calc(100vw - 32px));text-align:center;color:var(--ink)}dialog::backdrop{background:rgba(12,22,45,.72)}
+dialog h2{margin:0 0 6px;font:800 24px var(--f-num);text-transform:uppercase}dialog p{margin:0 0 12px;color:var(--ink2);font-size:14px}
+dialog img{display:block;width:100%;height:auto;border-radius:12px;border:3px solid var(--ink);box-shadow:0 0 0 6px var(--gold)}
+.dbtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.dbtn a,.dbtn button{display:block;padding:12px;border-radius:12px;font:800 18px var(--f-num);text-transform:uppercase;text-decoration:none;border:0;cursor:pointer}
+.dbtn a{background:var(--gold);color:var(--ink)}.dbtn button{background:var(--ink);color:#fff}
 </style>
 </head>
 <body>
@@ -69,7 +74,8 @@ footer a{color:var(--ink);font-weight:700}
     <span class="go" aria-hidden="true">›</span>
   </a>
 </main>
-<footer>Plan per hole: <a href="index.html">Imperial Karawaci</a> · <a href="pangkalan-jati/">Pangkalan Jati</a></footer>
+<footer><button type="button" class="credit" id="credit">Created by <b>Angga Prasetya</b> for supporting Indo golfer<br>Versi beta</button></footer>
+<dialog id="tips" aria-labelledby="tipsT"><h2 id="tipsT">Tips untuk Parkutut</h2><p>Suka dibantu Parkutut? Simpan QRIS ini ke galeri, lalu bayar dari aplikasi bank atau e-wallet kamu.</p><img src="qris.png" alt="QRIS tips Parkutut" width="900" height="1165"><div class="dbtn"><a href="qris.png" download="qris-parkutut.png">Simpan QRIS</a><button type="button" id="tipsClose">Tutup</button></div></dialog>
 <script>
 /* who is signed in, top right; the sign in sheet shows once when nobody is signed in */
 function who(){const u=PK.user(),el=document.getElementById("who");
@@ -77,6 +83,7 @@ function who(){const u=PK.user(),el=document.getElementById("who");
   const o=document.getElementById("out"),i=document.getElementById("in");
   if(o)o.addEventListener("click",async()=>{await PK.signOut();who();PK.prompt({closable:false,onDone:who});});
   if(i)i.addEventListener("click",()=>PK.prompt({onDone:who}));}
+const tips=document.getElementById("tips");document.getElementById("credit").addEventListener("click",()=>tips.showModal());document.getElementById("tipsClose").addEventListener("click",()=>tips.close());
 who();if(!PK.user())PK.prompt({closable:false,onDone:who});
 </script>
 </body>

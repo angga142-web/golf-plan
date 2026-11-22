@@ -102,7 +102,7 @@ function render(){header();
 function tips(d){const t=[];
   if(d.ph>=9){const avg=d.pt/d.ph,r3=d.three/d.ph;
     if(avg>2||r3>=.15)t.push([9,"Lag putting",'Rata-rata '+f1(avg)+' putt per hole dan '+d.three+'× 3-putt. Latihan tangga jarak: putt dari 6, 9, dan 12 m, targetnya berhenti dalam lingkaran 1 m dari lubang. 10 bola tiap jarak.']);}
-  const roundsN=d.rounds.length||1;if(d.pens/roundsN>=2)t.push([8,"Main aman dari tee",'Rata-rata '+f1(d.pens/roundsN)+' penalti per ronde. Di hole sempit, tee off pakai stik yang paling sering lurus di tabel, bidik sisi yang aman sesuai saran Cat Caddy.']);
+  const roundsN=d.rounds.length||1;if(d.pens/roundsN>=2)t.push([8,"Main aman dari tee",'Rata-rata '+f1(d.pens/roundsN)+' penalti per ronde. Di hole sempit, tee off pakai stik yang paling sering lurus di tabel, bidik sisi yang aman sesuai saran Parkutut Caddy.']);
   Object.entries(d.by).filter(([c,x])=>x.n>=4&&pct(x.ok||0,x.n)<50).sort((a,b)=>pct(a[1].ok||0,a[1].n)-pct(b[1].ok||0,b[1].n)).slice(0,2).forEach(([c,x])=>{
     const dir=(x.L||0)+(x.R||0),con=(x.duff||0)+(x.top||0),side=(x.R||0)>=(x.L||0)?"kanan":"kiri";
     t.push([7,"Latihan "+c,dir>=con?'Baru '+pct(x.ok||0,x.n)+'% lurus, paling sering ke '+side+'. Di driving range taruh dua stik di tanah sebagai garis arah (kaki dan target), pukul 20 bola dengan '+c+' fokus pada face square saat impact.':
