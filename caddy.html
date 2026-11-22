@@ -1973,7 +1973,7 @@ const FEEDBACK_URL=()=>"https://wa.me/6285714949997?text="+encodeURIComponent("M
 function scoreText(){const t=totals(),d=new Date(),par=H18.reduce((a,h)=>a+h[0],0);let lines=[];
   for(const [a,b,lab] of [[0,9,"OUT"],[9,18,"IN"]].filter(([a])=>inSpan(a))){let sum=0,n=0;const xs=[];for(let i=a;i<b;i++){const v=holeScore(peek(i+1));xs.push(v==null?"-":v);if(v!=null){sum+=v;n++;}}lines.push(lab+": "+xs.join(" ")+(n?" = "+sum:""));}
   return "Parkutut · Cat Caddy\n"+(GOLFER?GOLFER+" · ":"")+(CADDY?"Caddy "+CADDY+" · ":"")+C.name+" · "+d.toLocaleDateString("id-ID")+"\nTee "+TEES[teeI].name+" · target Break "+BRK+"\n"+lines.join("\n")+"\nTotal "+(t.n?t.tot+" ("+t.n+" hole)":"belum ada")+(t.n===ROUND?" · "+(t.tot-parR()>=0?"+":"")+(t.tot-parR())+" dari par":"")+"\n\nYuk main bareng Parkutut · Cat Caddy: "+APP_URL;}
-const APP_URL="https://angga142-web.github.io/golf-plan/caddy.html";
+const APP_URL="https://parkutut.com/caddy.html";
 const parR=()=>{const [a,b]=span();return H18.slice(a,b).reduce((p,h)=>p+h[0],0);};
 $("shareCard").addEventListener("click",async()=>{const txt=scoreText();
   if(navigator.share){try{await navigator.share({text:txt});return;}catch(e){if(e&&e.name==="AbortError")return;}}
