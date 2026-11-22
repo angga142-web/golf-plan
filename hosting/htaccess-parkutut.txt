@@ -2,7 +2,7 @@
 # To restore: save this content as .htaccess in public_html (without these first 3 comment lines is fine).
 
 # BEGIN Parkutut home page
-DirectoryIndex caddy.html index.html
+DirectoryIndex home.html caddy.html index.html
 # END Parkutut home page
 
 # BEGIN Parkutut force HTTPS

@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c162d">
+<title>Parkutut · Golf bareng Cat Caddy</title>
+<meta name="description" content="Parkutut: caddy golf di HP, quiz short game, dan analisa swing dari video.">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="parkutut-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&family=Fredoka:wght@600;700&display=swap">
+<style>
+:root{--ink:#0c162d;--ink2:#46506a;--gold:#ffc400;--paper:#fff;--mist:#eef1f5;--line:#d3d9e2;--blue:#0047af;--good:#0b7a3a;
+  --f-brand:"Fredoka","Arial Rounded MT Bold",system-ui,sans-serif;--f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font:16px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent}
+.hero{background:var(--ink);color:#fff;padding:calc(28px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) 64px max(16px,env(safe-area-inset-left,0px));text-align:center;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;left:-10%;right:-10%;bottom:-40px;height:80px;background:#3f9142;border-radius:50% 50% 0 0}
+.hero img{width:112px;height:112px;border-radius:50%;box-shadow:0 0 0 4px var(--gold)}
+.hero h1{font:700 40px/1 var(--f-brand);margin:14px 0 6px;letter-spacing:.5px}
+.hero p{margin:0 auto;max-width:30ch;color:#c9d2e3;font-weight:600}
+main{max-width:560px;margin:-36px auto 0;padding:0 16px 32px;display:grid;gap:14px;position:relative;z-index:1}
+.cat{display:grid;grid-template-columns:64px 1fr auto;align-items:center;gap:14px;background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:16px;text-decoration:none;color:inherit;box-shadow:0 6px 18px rgba(12,22,45,.08);transition:transform .12s}
+.cat:active{transform:scale(.98)}
+.cat:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.ico{width:64px;height:64px;border-radius:16px;display:grid;place-items:center;font:800 26px var(--f-num)}
+.ico img{width:56px;height:56px;border-radius:50%}
+.c1 .ico{background:var(--blue)}.c2 .ico{background:var(--gold)}.c3 .ico{background:var(--ink)}
+.cat h2{margin:0;font:800 23px/1.05 var(--f-num);letter-spacing:.3px;text-transform:uppercase}
+.cat p{margin:4px 0 0;color:var(--ink2);font-size:14px;font-weight:500}
+.go{font:800 24px var(--f-num);color:var(--ink2)}
+.beta{display:inline-block;vertical-align:3px;margin-left:6px;background:var(--gold);color:var(--ink);font:700 11px var(--f-body);text-transform:uppercase;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
+footer{max-width:560px;margin:0 auto;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink2);font-size:13px;text-align:center}
+footer a{color:var(--ink);font-weight:700}
+</style>
+</head>
+<body>
+<header class="hero">
+  <img src="parkutut-icon.png" alt="Logo Parkutut">
+  <h1>Parkutut</h1>
+  <p>Teman golf di HP: caddy, latihan short game, dan analisa swing.</p>
+</header>
+<main>
+  <a class="cat c1" href="caddy.html">
+    <span class="ico"><img src="cat-caddy.webp" alt=""></span>
+    <span><h2>Parkutut Caddy</h2><p>Rencana pukulan per hole, jarak, elevasi, dan kartu skor saat main.</p></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
+  <a class="cat c2" href="shortgame.html">
+    <span class="ico" aria-hidden="true">?</span>
+    <span><h2>Quiz Short Game</h2><p>10 soal chipping, putting, bunker, dan aturan di sekitar green.</p></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
+  <a class="cat c3" href="swing.html">
+    <span class="ico" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#ffc400" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="13" height="12" rx="2"/><path d="M16 10l5-3v10l-5-3"/></svg></span>
+    <span><h2>Analisa Swing<span class="beta">Beta</span></h2><p>Upload video swing, lihat posisi badan, bidang swing, dan kecepatan.</p></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
+</main>
+<footer>Plan per hole: <a href="index.html">Imperial Karawaci</a> · <a href="pangkalan-jati/">Pangkalan Jati</a></footer>
+</body>
+</html>

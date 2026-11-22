@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c162d">
+<title>Parkutut · Quiz Short Game</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="parkutut-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&display=swap">
+<style>
+:root{--ink:#0c162d;--ink2:#46506a;--gold:#ffc400;--paper:#fff;--mist:#eef1f5;--line:#d3d9e2;--good:#0b7a3a;--goodbg:#e6f4ec;--red:#d2142d;--redbg:#fdecee;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font:16px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent}
+header{background:var(--ink);color:#fff;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 12px;display:flex;align-items:center;gap:10px}
+header a{color:#fff;font-weight:700;text-decoration:none;font-size:14px}
+header b{font:800 22px var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+header .sc{margin-left:auto;background:var(--gold);color:var(--ink);font:800 16px var(--f-num);padding:3px 10px;border-radius:99px}
+.prog{height:6px;background:#1e2a47}.prog i{display:block;height:100%;background:var(--gold);width:0;transition:width .3s}
+main{max-width:560px;margin:0 auto;padding:14px 16px calc(32px + env(safe-area-inset-bottom,0px))}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px}
+.tag{display:inline-block;font:700 12px var(--f-body);text-transform:uppercase;letter-spacing:.5px;padding:2px 9px;border-radius:99px;background:var(--mist);color:var(--ink2)}
+.tag.chip{background:#e3ecfa;color:#0047af}.tag.putt{background:var(--goodbg);color:var(--good)}.tag.bunker{background:#fbf0d6;color:#8a5a00}.tag.aturan{background:var(--redbg);color:var(--red)}.tag.teknik{background:#ece6f7;color:#5b3a99}
+.num{float:right;color:var(--ink2);font:700 14px var(--f-num)}
+h2{margin:10px 0 12px;font-size:19px;line-height:1.3}
+svg{display:block;width:100%;height:auto;margin:0 0 12px;border-radius:12px;background:#dff0d8}
+.opts{display:grid;gap:8px}
+.opts button{font:inherit;font-weight:600;text-align:left;padding:13px 14px;border:2px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);cursor:pointer;touch-action:manipulation}
+.opts button:disabled{cursor:default}
+.opts button.ok{border-color:var(--good);background:var(--goodbg)}
+.opts button.no{border-color:var(--red);background:var(--redbg)}
+.opts button.ok::after{content:" ✓";color:var(--good);font-weight:800}
+.opts button.no::after{content:" ✗";color:var(--red);font-weight:800}
+.exp{margin-top:12px;padding:12px;border-radius:12px;background:var(--mist);font-size:15px}
+.exp b.r{color:var(--good)}.exp b.w{color:var(--red)}
+.next{display:block;width:100%;margin-top:12px;font:800 20px var(--f-num);text-transform:uppercase;letter-spacing:.5px;padding:13px;border:0;border-radius:12px;background:var(--gold);color:var(--ink);cursor:pointer}
+.big{font:800 64px/1 var(--f-num);text-align:center;margin:8px 0 4px}
+.sub{text-align:center;color:var(--ink2);margin:0 0 14px;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:15px}td{padding:7px 4px;border-top:1px solid var(--line)}td:last-child{text-align:right;font-weight:700}
+.links{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.links a{display:block;text-align:center;padding:12px;border-radius:12px;background:var(--ink);color:#fff;font-weight:700;text-decoration:none}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+</style>
+</head>
+<body>
+<header><a href="home.html">‹ Beranda</a><b>Quiz Short Game</b><span class="sc" id="sc">0</span></header>
+<div class="prog"><i id="prog"></i></div>
+<main id="app"></main>
+<script>
+/* Short game quiz: 10 questions per round, 3 chipping (club choice), 3 putting (where does the ball go), 4 knowledge.
+   Chipping and putting use the same rules of thumb as the mini games in caddy.html:
+   chip carry:roll on a flat green  LW 1:0.5, SW 1:1, AW 1:1.5, PW 1:2, 9i 1:3, 8i 1:4, 7i 1:5;
+   putt start line ~90% of face angle, each cm off the sweet spot costs ~5% of the roll and twists the face ~0.25 deg (toe open, heel closed),
+   pace rolls 30 cm past, the hole accepts a ball whose centre passes within 4.5 cm. Right-handed player. */
+const $=id=>document.getElementById(id),rnd=n=>Math.floor(Math.random()*n),f1=v=>(Math.round(v*10)/10+"").replace(".",",");
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]];}return a;};
+const CHIP=[["LW",.5,60],["SW",1,56],["AW",1.5,52],["PW",2,46],["9i",3,41],["8i",4,37],["7i",5,33]];
+const LAB={chip:"Chipping",putt:"Putting",bunker:"Bunker",aturan:"Aturan",teknik:"Teknik"};
+
+/* knowledge pool: [category, question, correct answer, wrong answers..., explanation] */
+const KNOW=[
+ ["bunker","Bunker dekat green, bola duduk normal di pasir. Stik sebaiknya masuk ke pasir di mana?","Sekitar 5 cm di belakang bola",["Tepat di bola, pukul bersih","Sekitar 20 cm di belakang bola","Di depan bola"],"Bola keluar terbawa pasir. Stik masuk ±5 cm di belakang bola dan terus melewati bawahnya."],
+ ["bunker","Bola di bunker. Bolehkah stik menyentuh pasir saat address, sebelum memukul?","Tidak, penalti 2 pukulan (stroke play)",["Boleh, asal tidak menekan","Boleh, hanya saat latihan swing","Tidak, tapi tanpa penalti"],"Rules of Golf 12.2b: stik tidak boleh menyentuh pasir tepat di depan atau belakang bola, dan tidak boleh latihan swing menyentuh pasir. Penalti umum: 2 pukulan."],
+ ["bunker","Di bunker ada daun dan ranting di dekat bola. Bolehkah disingkirkan?","Boleh, tanpa penalti, asal bola tidak bergerak",["Tidak boleh sama sekali","Boleh, dengan penalti 1 pukulan","Hanya boleh kalau di luar bunker"],"Sejak 2019 (Rule 12.2a) loose impediment seperti daun, ranting, dan batu boleh disingkirkan di bunker. Kalau bola ikut bergerak, kena penalti 1 pukulan dan bola dikembalikan."],
+ ["bunker","Bola terbenam di pasir (\"telur goreng\"). Teknik yang biasa dipakai?","Face sedikit ditutup, ayunan curam, siap bola roll lebih jauh",["Face dibuka lebar, ayunan landai","Pukul bersih tanpa pasir","Pakai putter"],"Face yang square/sedikit tertutup dan ayunan curam membuat stik bisa menggali ke bawah bola. Bola keluar rendah dan roll lebih jauh, jadi sisakan ruang."],
+ ["bunker","Kenapa sand wedge cocok untuk bunker?","Bounce-nya membuat stik meluncur di pasir, tidak menancap",["Paling ringan di tas","Loft paling kecil","Shaft paling panjang"],"Bounce adalah sudut di sol sand wedge. Bagian ini memantul di pasir sehingga stik tidak menggali terlalu dalam."],
+ ["bunker","Bola di bunker tidak bisa dimainkan. Salah satu pilihan resmi (Rule 19.3b)?","Drop di luar bunker, di garis lurus ke belakang dari bendera, penalti 2 pukulan",["Lempar bola ke green, penalti 1","Pindahkan ke fairway tanpa penalti","Ulang dari tee tanpa penalti"],"Ada pilihan penalti 1 pukulan (drop tetap di dalam bunker), atau penalti 2 pukulan untuk drop di luar bunker di garis lurus dari bendera melewati posisi bola."],
+ ["teknik","Posisi bola untuk chip standar (pemain kanan)?","Sedikit di kanan tengah stance, berat badan lebih ke kaki kiri",["Di depan kaki kiri, berat di kaki kanan","Persis di tengah, berat 50:50","Di depan kaki kanan, tangan di belakang bola"],"Bola agak ke kanan dan berat ±60% di kaki kiri membuat stik turun dulu ke bola, baru menyentuh rumput."],
+ ["teknik","Apa beda chip dan pitch?","Chip rendah dan banyak roll, pitch lebih tinggi dan sedikit roll",["Chip pakai putter, pitch pakai driver","Chip hanya dari bunker","Tidak ada beda"],"Chip: bola lebih lama di tanah. Pitch: bola lebih lama di udara, berhenti lebih cepat. Kalau bisa, pilih chip karena lebih mudah dikontrol."],
+ ["teknik","Chip ke green yang menanjak. Apa yang berubah?","Roll lebih pendek, jadi daratkan lebih jauh atau pakai stik loft lebih kecil",["Roll lebih jauh, pakai loft lebih besar","Tidak ada beda","Bola pasti melambung lebih tinggi"],"Tanjakan memperlambat bola. Kompensasi dengan titik mendarat lebih jauh atau stik yang roll-nya lebih banyak."],
+ ["teknik","Chip ke green yang menurun cepat. Pilihan paling aman?","Daratkan dekat pinggir green dengan stik loft lebih besar",["Pakai 7 iron supaya roll jauh","Pukul lebih keras","Daratkan dekat lubang"],"Turunan menambah roll. Loft besar (SW/LW) mendarat lebih lembut dan roll lebih sedikit."],
+ ["teknik","\"Bump and run\" artinya?","Chip rendah dengan stik loft kecil (8i–7i) yang lebih banyak roll",["Pukulan tinggi dengan lob wedge","Pukulan bunker","Putt dari jarak jauh"],"Bump and run cocok kalau ada banyak green di antara bola dan bendera, tanpa rintangan di depan."],
+ ["teknik","Bola di fringe pendek, rumputnya rapi. Kenapa sering lebih aman pakai putter (\"Texas wedge\")?","Kesalahan putter biasanya lebih kecil daripada chip yang meleset",["Putter wajib dipakai di fringe","Putter membuat bola melambung","Chip dilarang di fringe"],"Pukulan putt jelek biasanya tetap dekat. Chip yang kena tipis atau tebal bisa meleset jauh."],
+ ["teknik","Lob shot dengan lob wedge dipakai saat…","Harus melewati rintangan dan bola harus cepat berhenti",["Ada banyak green kosong di depan","Angin kencang dari depan","Bola di fairway 150 m"],"Lob shot paling berisiko. Pakai hanya kalau tidak ada pilihan yang lebih rendah."],
+ ["putt","Menurut riset putting Dave Pelz, kecepatan putt terbaik membuat bola yang meleset berhenti…","Sekitar 40 cm lewat lubang",["Tepat di bibir lubang","2 m lewat lubang","Pendek 30 cm"],"Kecepatan ini cukup untuk mengatasi jejak kaki di sekitar lubang, tapi sisa putt-nya masih pendek. Bola yang pendek tidak pernah masuk."],
+ ["putt","Bola belok paling banyak di bagian mana dari putt?","Dekat lubang, saat bola melambat",["Di awal, saat bola baru dipukul","Merata dari awal sampai akhir","Tidak belok kalau dipukul keras"],"Makin pelan bola, makin besar pengaruh kemiringan. Karena itu bacaan dekat lubang paling penting."],
+ ["aturan","Putt dengan flagstick tetap di lubang, lalu bola mengenai tiang. Penalti?","Tidak ada penalti (sejak 2019)",["Penalti 2 pukulan","Penalti 1 pukulan","Pukulan diulang"],"Rule 13.2a: sejak 2019 boleh putt dengan flagstick tetap di lubang. Kalau bola berhenti bersandar di tiang dan sebagian di bawah permukaan, dihitung masuk."],
+ ["aturan","Di green ada bekas paku sepatu di garis putt. Bolehkah diperbaiki?","Boleh, tanpa penalti",["Tidak boleh","Hanya ball mark yang boleh","Boleh, penalti 1 pukulan"],"Rule 13.1c (sejak 2019): kerusakan di green, termasuk bekas paku sepatu dan ball mark, boleh diperbaiki."],
+ ["aturan","Bola di green. Sebelum mengangkat bola untuk dibersihkan, kamu harus…","Menandai posisi bola dulu (ball marker)",["Minta izin lawan","Tidak perlu apa-apa","Lapor ke marshal"],"Rule 13.1b: bola di green boleh diangkat dan dibersihkan, tapi posisinya harus ditandai dulu."],
+ ["aturan","Di green, kamu tidak sengaja menyenggol bolamu dan bola bergeser. Hasilnya?","Tanpa penalti, kembalikan ke posisi semula",["Penalti 1 pukulan","Mainkan dari posisi baru","Penalti 2 pukulan"],"Rule 13.1d: bola atau ball marker yang tidak sengaja bergerak di green tidak kena penalti. Kembalikan ke tempatnya."],
+ ["aturan","Bola berhenti di bibir lubang. Berapa lama boleh ditunggu supaya jatuh?","10 detik setelah sampai di lubang",["1 menit","Tidak boleh menunggu","Sampai giliran berikutnya"],"Rule 13.3a: kamu punya waktu wajar untuk berjalan ke lubang, lalu 10 detik. Kalau jatuh setelah itu, dihitung masuk dengan tambahan 1 pukulan."]
+];
+
+/* ---------- generated questions ---------- */
+function chipQ(){const f=1+rnd(4),c=f+1,k=rnd(CHIP.length),p=Math.max(2,Math.round(1+c*CHIP[k][1]+(Math.random()-.5))),need=f+p;
+  const best=CHIP.reduce((a,x,i)=>Math.abs(c*(1+x[1])-need)<Math.abs(c*(1+CHIP[a][1])-need)?i:a,0);
+  const near=shuffle(CHIP.map((x,i)=>i).filter(i=>i!==best)).sort((a,b)=>Math.abs(a-best)-Math.abs(b-best)).slice(0,3),pick=near.concat(best).sort((a,b)=>a-b);
+  return{cat:"chip",q:"Bola <b>"+f+" m</b> dari pinggir green, bendera <b>"+p+" m</b> dari pinggir. Bola mendarat 1 m di dalam green (carry "+c+" m). Stik mana yang berhenti paling dekat lubang?",
+    opts:pick.map(i=>CHIP[i][0]+" ("+CHIP[i][2]+"°)"),ans:pick.indexOf(best),data:{f,p,c,need,pick,best},
+    exp:"Green datar, ayunan sama, mendarat di titik yang sama: "+pick.map(i=>CHIP[i][0]+" berhenti "+f1(c*(1+CHIP[i][1]))+" m").join(", ")+". Bendera di "+need+" m, jadi paling pas <b class=r>"+CHIP[best][0]+"</b> (carry:roll 1:"+CHIP[best][1]+")."};}
+function chipSvg(d,chosen){const L=Math.max(d.need,...d.pick.map(i=>d.c*(1+CHIP[i][1])))+1.5,W=320,H=142,gx=12,s=(W-2*gx)/L,X=m=>gx+(m+1)*s,gy=96;
+  let h='<rect x="0" y="'+gy+'" width="'+X(d.f)+'" height="'+(H-gy)+'" fill="#3f9142"/><rect x="'+X(d.f)+'" y="'+gy+'" width="'+(W-X(d.f))+'" height="'+(H-gy)+'" fill="#8fd67a"/>';
+  h+='<text x="'+(X(d.f)/2)+'" y="'+(gy+20)+'" font-size="12" font-weight="700" text-anchor="middle" fill="#fff">fringe '+d.f+' m</text><text x="'+((X(d.f)+W)/2)+'" y="'+(gy+20)+'" font-size="12" font-weight="700" text-anchor="middle" fill="#0c162d">green</text>';
+  h+='<line x1="'+X(d.c)+'" y1="'+(gy-6)+'" x2="'+X(d.c)+'" y2="'+(gy+6)+'" stroke="#ffc400" stroke-width="3"/><text x="'+X(d.c)+'" y="'+(gy+38)+'" font-size="11" font-weight="700" text-anchor="middle" fill="#0c162d">mendarat</text>';
+  h+='<line x1="'+X(d.need)+'" y1="'+gy+'" x2="'+X(d.need)+'" y2="'+(gy-58)+'" stroke="#0c162d" stroke-width="2"/><polygon points="'+X(d.need)+','+(gy-58)+' '+(X(d.need)+18)+','+(gy-51)+' '+X(d.need)+','+(gy-44)+'" fill="#d2142d"/><ellipse cx="'+X(d.need)+'" cy="'+gy+'" rx="6" ry="2.5" fill="#0c162d"/>';
+  const arc=(i,col,dash)=>{const e=d.c*(1+CHIP[i][1]),ap=Math.min(70,(CHIP[i][2]-25)*1.6+d.c*3);let p="M"+X(0)+" "+gy;for(let t=.05;t<=1.001;t+=.05)p+=" L"+X(d.c*t).toFixed(1)+" "+(gy-4*ap*t*(1-t)).toFixed(1);
+    return'<path d="'+p+'" fill="none" stroke="'+col+'" stroke-width="2.5" '+(dash?'stroke-dasharray="5 3"':'')+'/><line x1="'+X(d.c)+'" y1="'+(gy-1)+'" x2="'+X(e).toFixed(1)+'" y2="'+(gy-1)+'" stroke="'+col+'" stroke-width="4"/><circle cx="'+X(e).toFixed(1)+'" cy="'+(gy-5)+'" r="5" fill="#fff" stroke="'+col+'" stroke-width="2"/>';};
+  if(chosen!=null){if(chosen!==d.best)h+=arc(chosen,"#d2142d",1);h+=arc(d.best,"#0b7a3a");}
+  h+='<circle cx="'+X(0)+'" cy="'+(gy-5)+'" r="5" fill="#fff" stroke="#0c162d" stroke-width="1.5"/>';
+  return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Gambar samping: bola di fringe, titik mendarat, dan bendera">'+h+'</svg>';}
+
+function puttCalc(D,th,h){const ad=.9*th+.25*h,a=ad*Math.PI/180,R=(D+.3)*(1-.05*Math.abs(h)),lat=D*Math.tan(a),reach=R*Math.cos(a)>=D;
+  return{ad,R,lat,reach,in:reach&&Math.abs(lat)<=.045};}
+function puttQ(){let D,th,h,c,res,tries=0;const want=["in","kanan","kiri","pendek"][rnd(4)];
+  do{D=[1.5,2,2.5,3,4,5][rnd(6)];th=[-2,-1.5,-1,-.5,0,0,.5,1,1.5,2][rnd(10)];h=[-2,-1,0,0,0,1,2][rnd(7)];c=puttCalc(D,th,h);
+    res=!c.reach?"pendek":c.in?"in":c.lat>0?"kanan":"kiri";}while(res!==want&&++tries<200);
+  const opts=["Masuk","Meleset ke kanan","Meleset ke kiri","Pendek"],ans={in:0,kanan:1,kiri:2,pendek:3}[res];
+  const face=th?f1(Math.abs(th))+"° "+(th>0?"open":"closed"):"square",hit=h?f1(Math.abs(h))+" cm ke arah "+(h>0?"toe":"heel"):"di sweet spot";
+  const parts=[];if(th)parts.push("face "+face+" → bola mulai ±"+f1(Math.abs(.9*th))+"° ke "+(th>0?"kanan":"kiri"));
+  if(h)parts.push("kena "+(h>0?"toe":"heel")+" → jarak berkurang "+Math.round(5*Math.abs(h))+"% dan face terpuntir "+f1(.25*Math.abs(h))+"° "+(h>0?"open":"closed"));
+  const cm=v=>Math.round(Math.abs(v)*100);
+  const out=res==="pendek"?"bola hanya sampai ±"+f1(c.R)+" m, pendek dari lubang "+D+" m":"di lubang bola lewat "+cm(c.lat)+" cm dari tengah (batas masuk 4,5 cm)";
+  return{cat:"putt",q:"Putt <b>"+f1(D)+" m</b>, green datar, kecepatan pas (kalau meleset berhenti 30 cm lewat lubang). Face <b>"+face+"</b>, bola kena <b>"+hit+"</b>. Hasilnya?",
+    opts,ans,data:{D,c},exp:(parts.length?parts.join("; ").replace(/^f/,"F").replace(/^k/,"K")+". ":"Face square dan kena sweet spot. ")+"Hasilnya "+out+": <b class=r>"+opts[ans]+"</b>. Pemain kanan."};}
+function puttSvg(d,shown){const W=320,H=120,x0=20,x1=W-36,cy=60,k=(x1-x0)/d.D,ly=Math.max(-50,Math.min(50,d.c.lat*k*8));
+  let h='<rect width="'+W+'" height="'+H+'" fill="#8fd67a"/><line x1="'+x0+'" y1="'+cy+'" x2="'+x1+'" y2="'+cy+'" stroke="#fff" stroke-width="1.5" stroke-dasharray="6 4"/><circle cx="'+x1+'" cy="'+cy+'" r="7" fill="#0c162d"/>';
+  for(let m=1;m<d.D;m++)h+='<text x="'+(x0+m*k)+'" y="'+(H-8)+'" font-size="11" font-weight="700" text-anchor="middle" fill="#0c162d">'+m+' m</text>';
+  if(shown){const ex=d.c.reach?x1+0.3*k*.6:x0+d.c.R*k,ey=cy+(d.c.reach?ly*(1+.3/d.D):ly*d.c.R/d.D);
+    h+='<line x1="'+x0+'" y1="'+cy+'" x2="'+(d.c.in?x1:ex).toFixed(1)+'" y2="'+(d.c.in?cy:ey).toFixed(1)+'" stroke="#ffc400" stroke-width="3"/>'+(d.c.in?'':'<circle cx="'+ex.toFixed(1)+'" cy="'+ey.toFixed(1)+'" r="5" fill="#fff" stroke="#0c162d" stroke-width="1.5"/>');
+    h+='<text x="'+(W/2)+'" y="16" font-size="11" font-weight="700" text-anchor="middle" fill="#0c162d">dilihat dari atas · belokan diperbesar 8×</text>';}
+  h+='<circle cx="'+x0+'" cy="'+cy+'" r="5" fill="#fff" stroke="#0c162d" stroke-width="1.5"/>';
+  return'<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Green dilihat dari atas: bola, garis putt, dan lubang">'+h+'</svg>';}
+
+function knowQ(row){const[cat,q,right,wrong,exp]=row,opts=shuffle([right,...wrong]);return{cat,q,opts,ans:opts.indexOf(right),exp:"<b class=r>"+right+".</b> "+exp};}
+
+/* ---------- round ---------- */
+const N=10;let R;
+function newRound(){const qs=[chipQ(),chipQ(),chipQ(),puttQ(),puttQ(),puttQ(),...shuffle(KNOW).slice(0,4).map(knowQ)];
+  R={qs:shuffle(qs),i:0,sc:0,by:{}};show();}
+function show(){const q=R.qs[R.i];$("sc").textContent=R.sc;$("prog").style.width=(R.i/N*100)+"%";
+  $("app").innerHTML='<div class="card"><span class="tag '+q.cat+'">'+LAB[q.cat]+'</span><span class="num">Soal '+(R.i+1)+' / '+N+'</span><h2>'+q.q+'</h2>'
+    +'<div id="pic">'+(!q.data?"":q.cat==="chip"?chipSvg(q.data):puttSvg(q.data,false))+'</div>'
+    +'<div class="opts">'+q.opts.map((o,i)=>'<button type="button" data-i="'+i+'">'+o+'</button>').join("")+'</div><div id="after"></div></div>';
+  $("app").querySelector(".opts").addEventListener("click",ev=>{const b=ev.target.closest("[data-i]");if(b)answer(+b.dataset.i);});
+  window.scrollTo(0,0);}
+function answer(i){const q=R.qs[R.i];if(q.done)return;q.done=true;const ok=i===q.ans;if(ok)R.sc++;
+  const by=R.by[q.cat]=R.by[q.cat]||[0,0];by[1]++;if(ok)by[0]++;
+  document.querySelectorAll(".opts button").forEach((b,k)=>{b.disabled=true;if(k===q.ans)b.classList.add("ok");else if(k===i)b.classList.add("no");});
+  if(q.data)$("pic").innerHTML=q.cat==="chip"?chipSvg(q.data,q.data.pick[i]):puttSvg(q.data,true);
+  $("sc").textContent=R.sc;$("prog").style.width=((R.i+1)/N*100)+"%";
+  $("after").innerHTML='<div class="exp">'+(ok?"<b class=r>Benar!</b> ":"<b class=w>Belum tepat.</b> ")+q.exp+'</div><button class="next" id="next" type="button">'+(R.i<N-1?"Soal berikutnya":"Lihat hasil")+'</button>';
+  $("next").addEventListener("click",()=>{if(++R.i<N)show();else end();});$("next").focus({preventScroll:true});}
+function end(){let best=0;try{best=+localStorage.getItem("parkutut-sg-best")||0;if(R.sc>best)localStorage.setItem("parkutut-sg-best",R.sc);}catch(e){}
+  const msg=R.sc>=9?"Short game kelas caddy senior!":R.sc>=7?"Mantap, tinggal sedikit lagi.":R.sc>=5?"Lumayan. Coba lagi, soalnya berganti tiap ronde.":"Pelan-pelan, baca penjelasannya lalu coba lagi.";
+  $("app").innerHTML='<div class="card"><div class="big">'+R.sc+' / '+N+'</div><p class="sub">'+msg+(R.sc>best&&best?" Rekor baru!":best?" Rekor kamu: "+Math.max(best,R.sc)+" / "+N:"")+'</p>'
+    +'<table>'+Object.keys(LAB).filter(k=>R.by[k]).map(k=>'<tr><td>'+LAB[k]+'</td><td>'+R.by[k][0]+' / '+R.by[k][1]+'</td></tr>').join("")+'</table>'
+    +'<button class="next" id="again" type="button">Main lagi</button><div class="links"><a href="caddy.html">Parkutut Caddy</a><a href="home.html">Beranda</a></div></div>';
+  $("again").addEventListener("click",newRound);window.scrollTo(0,0);}
+newRound();
+</script>
+</body>
+</html>
