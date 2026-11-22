@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c162d">
+<title>Parkutut · Statistik &amp; Latihan</title>
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="parkutut-icon.png">
+<script src="auth.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&display=swap">
+<style>
+:root{--ink:#0c162d;--ink2:#46506a;--gold:#ffc400;--paper:#fff;--mist:#eef1f5;--line:#d3d9e2;--good:#0b7a3a;--goodbg:#e6f4ec;--red:#d2142d;--redbg:#fdecee;--blue:#0047af;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font:16px/1.45 var(--f-body)}
+header{background:var(--ink);color:#fff;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 14px}
+header .nav{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
+header a,header button{color:#fff;text-decoration:none;font:inherit;background:none;border:0;padding:0;cursor:pointer}
+header h1{margin:8px 0 0;font:800 28px/1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+header p{margin:4px 0 0;color:#c9d2e3;font-size:14px;font-weight:600}
+main{max-width:560px;margin:0 auto;padding:14px 16px calc(32px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px}
+.card h2{margin:0 0 10px;font:800 20px/1.1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kpi{background:var(--mist);border-radius:12px;padding:10px 8px;text-align:center}
+.kpi b{display:block;font:800 28px/1 var(--f-num)}
+.kpi span{font-size:12px;color:var(--ink2);font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{font-size:12px;color:var(--ink2);text-align:right;font-weight:700;padding:4px}th:first-child{text-align:left}
+td{padding:7px 4px;border-top:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums}td:first-child{text-align:left;font-weight:700}
+td.ok{color:var(--good);font-weight:700}td.bad{color:var(--red);font-weight:700}
+.tips{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+.tips li{border-left:4px solid var(--gold);background:#fffbea;border-radius:0 12px 12px 0;padding:10px 12px}
+.tips li b{display:block;margin-bottom:2px}
+.tips li a{color:var(--blue);font-weight:700}
+.muted{color:var(--ink2);font-size:14px;margin:0}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-top:1px solid var(--line);font-size:14px}
+.row:first-of-type{border-top:0}
+.row small{display:block;color:var(--ink2)}
+.go{display:block;text-align:center;padding:13px;border-radius:12px;background:var(--gold);color:var(--ink);font:800 20px var(--f-num);text-transform:uppercase;text-decoration:none;border:0;width:100%;cursor:pointer}
+.sync{font-size:12px;color:var(--ink2);text-align:center;margin:0}
+</style>
+</head>
+<body>
+<header><div class="nav"><a href="home.html">‹ Beranda</a><button type="button" id="who"></button></div><h1>Statistik &amp; Latihan</h1><p id="sub"></p></header>
+<main id="app"></main>
+<script>
+const $=id=>document.getElementById(id),esc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const get=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v;}catch(e){return d;}};
+const pct=(a,b)=>b?Math.round(a/b*100):0,f1=v=>(Math.round(v*10)/10+"").replace(".",",");
+const RES=[["ok","Lurus"],["L","Kiri"],["R","Kanan"],["duff","Grounded"],["top","Topping"],["pen","Penalti"]];
+const QLAB={chip:"Chipping",putt:"Putting",bunker:"Bunker",aturan:"Aturan",teknik:"Teknik"};
+
+function header(){const u=PK.user();$("who").textContent=u&&u.type!=="guest"?u.label+" · Keluar":u?"Guest · Masuk":"Masuk";
+  $("who").onclick=async()=>{if(PK.isAccount()){await PK.signOut();location.href="home.html";}else PK.prompt({onDone:render});};}
+
+function render(){header();
+  if(!PK.isAccount()){$("sub").textContent="Masuk untuk melihat riwayat dan statistik.";
+    $("app").innerHTML='<div class="card"><h2>Masuk dulu</h2><p class="muted">Statistik pukulan, riwayat ronde, analisa swing, dan saran latihan disimpan untuk akun nomor HP atau Gmail. Mode guest tidak menyimpan data.</p><br><button class="go" id="signin" type="button">Masuk</button></div>';
+    $("signin").onclick=()=>PK.prompt({onDone:render});return;}
+  const rounds=get("caddy-history-v1",[]).filter(r=>r&&r.n>0),swings=get("swinglab-history-v1",[]),quiz=get("parkutut-quiz-v1",[]);
+  $("sub").textContent=rounds.length+" ronde · "+swings.length+" swing · "+quiz.length+" quiz";
+  let h="";
+  /* ---- summary ---- */
+  const full=rounds.filter(r=>r.n===18),nine=rounds.filter(r=>r.holes===9&&r.n===9);
+  const avg=a=>a.length?a.reduce((s,r)=>s+r.total,0)/a.length:null;
+  let ph=0,pt=0,three=0,one=0;rounds.forEach(r=>(r.putts||[]).forEach(p=>{if(p==null)return;ph++;pt+=p;if(p>=3)three++;if(p<=1)one++;}));
+  h+='<div class="card"><h2>Ringkasan</h2><div class="kpis"><div class="kpi"><b>'+(full.length?f1(avg(full)):"–")+'</b><span>rata-rata 18 hole</span></div><div class="kpi"><b>'+(full.length?Math.min(...full.map(r=>r.total)):nine.length?Math.min(...nine.map(r=>r.total)):"–")+'</b><span>skor terbaik'+(full.length?"":nine.length?" (9 hole)":"")+'</span></div><div class="kpi"><b>'+(ph?f1(pt/ph):"–")+'</b><span>putt per hole</span></div></div></div>';
+  /* ---- shots by club ---- */
+  const by={},sg={};let pens=0;rounds.forEach(r=>{Object.entries(r.shots||{}).forEach(([c,o])=>{const t=by[c]=by[c]||{n:0};Object.entries(o).forEach(([k,v])=>{t[k]=(t[k]||0)+v;t.n+=v;if(k==="pen")pens+=v;});});
+    Object.entries(r.short||{}).forEach(([k,v])=>{sg[k]=(sg[k]||0)+v;});});
+  const clubs=Object.entries(by).sort((a,b)=>b[1].n-a[1].n);
+  h+='<div class="card"><h2>Statistik pukulan</h2>'+(clubs.length?'<table><thead><tr><th>Stik</th><th>Pukulan</th><th>Lurus</th><th>Kiri</th><th>Kanan</th><th>Gr/Top</th><th>Pen</th></tr></thead><tbody>'
+    +clubs.map(([c,t])=>{const ok=pct(t.ok||0,t.n);return'<tr><td>'+esc(c)+'</td><td>'+t.n+'</td><td class="'+(t.n>=4?ok>=60?"ok":ok<45?"bad":"":"")+'">'+ok+'%</td><td>'+(t.L||0)+'</td><td>'+(t.R||0)+'</td><td>'+((t.duff||0)+(t.top||0))+'</td><td>'+(t.pen||0)+'</td></tr>';}).join("")+'</tbody></table>'
+    :'<p class="muted">Belum ada pukulan tercatat. Di Parkutut Caddy, tekan hasil tiap pukulan (Straight, Kiri, Kanan, Grounded, Topping, Penalti) supaya tabel ini terisi.</p>');
+  const sgn=Object.values(sg).reduce((a,b)=>a+b,0);if(sgn)h+='<p class="muted" style="margin-top:10px">Short game: '+sgn+' pukulan, '+pct(sg.ok||0,sgn)+'% bagus. Putting: '+ph+' hole, '+three+'× 3-putt atau lebih, '+one+'× 1-putt.</p>';
+  h+='</div>';
+  /* ---- score by par ---- */
+  const par={3:[0,0],4:[0,0],5:[0,0]};rounds.forEach(r=>(r.scores||[]).forEach((s,i)=>{const p=r.pars&&r.pars[i];if(s!=null&&par[p]){par[p][0]+=s;par[p][1]++;}}));
+  if(par[3][1]+par[4][1]+par[5][1])h+='<div class="card"><h2>Skor per tipe hole</h2><div class="kpis">'+[3,4,5].map(p=>'<div class="kpi"><b>'+(par[p][1]?f1(par[p][0]/par[p][1]):"–")+'</b><span>rata-rata par '+p+'</span></div>').join("")+'</div></div>';
+  /* ---- tips ---- */
+  h+='<div class="card"><h2>Saran latihan berikutnya</h2><ul class="tips">'+tips({rounds,by,sg,sgn,ph,pt,three,pens,par,swings,quiz}).map(t=>'<li><b>'+t[0]+'</b>'+t[1]+'</li>').join("")+'</ul></div>';
+  /* ---- round history ---- */
+  h+='<div class="card"><h2>Riwayat ronde</h2>'+(rounds.length?rounds.slice(0,20).map(r=>'<div class="row"><div>'+new Date(r.date).toLocaleDateString("id-ID",{day:"numeric",month:"short",year:"numeric"})+' · '+esc(r.courseName||"")+'<small>'+(r.holes===9?"9 hole":"18 hole")+' · tee '+esc(r.tee||"")+' · target Break '+r.brk+(r.caddy?" · caddy "+esc(r.caddy):"")+'</small></div><div style="text-align:right"><b>'+r.total+'</b><small>'+(r.n>=(r.holes||18)?(r.vsPar>=0?"+":"")+r.vsPar:r.n+" hole")+'</small></div></div>').join(""):'<p class="muted">Belum ada ronde. <a href="caddy.html">Mulai main dengan Parkutut Caddy</a>.</p>')+'</div>';
+  /* ---- swing ---- */
+  const bad={};swings.forEach(s=>(s.bad||[]).forEach(b=>bad[b]=(bad[b]||0)+1));const topBad=Object.entries(bad).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  const tempos=swings.map(s=>s.tempo).filter(v=>isFinite(v)&&v>0),turns=swings.map(s=>s.sh).filter(v=>isFinite(v));
+  h+='<div class="card"><h2>Analisa swing</h2>'+(swings.length?'<div class="kpis"><div class="kpi"><b>'+swings.length+'</b><span>swing tersimpan</span></div><div class="kpi"><b>'+(tempos.length?f1(tempos.reduce((a,b)=>a+b,0)/tempos.length)+':1':"–")+'</b><span>tempo (ideal ±3:1)</span></div><div class="kpi"><b>'+(turns.length?Math.round(turns.reduce((a,b)=>a+b,0)/turns.length)+"°":"–")+'</b><span>putaran bahu</span></div></div>'
+    +(topBad.length?'<p class="muted" style="margin-top:10px">Paling sering perlu dicek: '+topBad.map(([b,n])=>esc(b)+' ('+n+'×)').join(", ")+'.</p>':'')
+    :'<p class="muted">Belum ada swing tersimpan. <a href="swing.html">Analisa swing</a> lalu tekan "Simpan ke riwayat".</p>')+'</div>';
+  /* ---- quiz ---- */
+  const qb={};quiz.forEach(q=>Object.entries(q.by||{}).forEach(([k,v])=>{const t=qb[k]=qb[k]||[0,0];t[0]+=v[0];t[1]+=v[1];}));
+  h+='<div class="card"><h2>Quiz short game</h2>'+(quiz.length?'<div class="kpis"><div class="kpi"><b>'+quiz.length+'</b><span>kali main</span></div><div class="kpi"><b>'+Math.max(...quiz.map(q=>q.sc))+'/10</b><span>terbaik</span></div><div class="kpi"><b>'+quiz[0].sc+'/10</b><span>terakhir</span></div></div>'
+    +'<table style="margin-top:8px"><tbody>'+Object.entries(qb).map(([k,v])=>'<tr><td>'+(QLAB[k]||k)+'</td><td>'+v[0]+' / '+v[1]+'</td><td class="'+(pct(v[0],v[1])>=70?"ok":pct(v[0],v[1])<50?"bad":"")+'">'+pct(v[0],v[1])+'%</td></tr>').join("")+'</tbody></table>'
+    :'<p class="muted">Belum pernah main. <a href="shortgame.html">Coba Quiz Short Game</a>.</p>')+'</div>';
+  h+='<p class="sync">Data akun disimpan di server Parkutut dan sinkron antar-HP.</p>';
+  $("app").innerHTML=h;}
+
+/* training suggestions, most useful first, at most 4 */
+function tips(d){const t=[];
+  if(d.ph>=9){const avg=d.pt/d.ph,r3=d.three/d.ph;
+    if(avg>2||r3>=.15)t.push([9,"Lag putting",'Rata-rata '+f1(avg)+' putt per hole dan '+d.three+'× 3-putt. Latihan tangga jarak: putt dari 6, 9, dan 12 m, targetnya berhenti dalam lingkaran 1 m dari lubang. 10 bola tiap jarak.']);}
+  const roundsN=d.rounds.length||1;if(d.pens/roundsN>=2)t.push([8,"Main aman dari tee",'Rata-rata '+f1(d.pens/roundsN)+' penalti per ronde. Di hole sempit, tee off pakai stik yang paling sering lurus di tabel, bidik sisi yang aman sesuai saran Cat Caddy.']);
+  Object.entries(d.by).filter(([c,x])=>x.n>=4&&pct(x.ok||0,x.n)<50).sort((a,b)=>pct(a[1].ok||0,a[1].n)-pct(b[1].ok||0,b[1].n)).slice(0,2).forEach(([c,x])=>{
+    const dir=(x.L||0)+(x.R||0),con=(x.duff||0)+(x.top||0),side=(x.R||0)>=(x.L||0)?"kanan":"kiri";
+    t.push([7,"Latihan "+c,dir>=con?'Baru '+pct(x.ok||0,x.n)+'% lurus, paling sering ke '+side+'. Di driving range taruh dua stik di tanah sebagai garis arah (kaki dan target), pukul 20 bola dengan '+c+' fokus pada face square saat impact.':
+      'Baru '+pct(x.ok||0,x.n)+'% lurus, banyak grounded/topping. Latihan kontak: taruh handuk 10 cm di belakang bola, pukul 20 bola tanpa menyentuh handuk. Tangan di depan bola saat impact.']);});
+  if(d.sgn>=5&&pct(d.sg.ok||0,d.sgn)<60)t.push([6,"Chipping",'Short game baru '+pct(d.sg.ok||0,d.sgn)+'% bagus. Latihan 30 bola dari pinggir green dengan SW, PW, dan 8i, lalu cek pilihan stik di <a href="shortgame.html">Quiz Short Game</a>.']);
+  const p3=d.par[3],p4=d.par[4];if(p3[1]>=4&&p4[1]>=4&&(p3[0]/p3[1]-3)-(p4[0]/p4[1]-4)>=.5)t.push([5,"Iron ke green",'Par 3 kamu lebih berat dari par 4. Latihan jarak iron 120–160 m: pilih target bendera di range dan catat carry tiap stik di Jarak pukulan.']);
+  const tem=d.swings.map(s=>s.tempo).filter(v=>isFinite(v)&&v>0);if(tem.length){const a=tem.reduce((x,y)=>x+y,0)/tem.length;if(a<2.5||a>3.5)t.push([5,"Tempo swing",'Tempo rata-rata '+f1(a)+':1 (ideal sekitar 3:1). Latihan dengan hitungan "satu-dua-tiga" saat backswing dan "empat" saat impact, 15 swing pelan.']);}
+  const bad={};d.swings.forEach(s=>(s.bad||[]).forEach(b=>bad[b]=(bad[b]||0)+1));const tb=Object.entries(bad).sort((a,b)=>b[1]-a[1])[0];
+  if(tb&&tb[1]>=2)t.push([4,"Cek swing",'Swing Lab sering menandai "'+esc(tb[0])+'" ('+tb[1]+'×). Latih bagian ini, lalu <a href="swing.html">rekam lagi</a> dan bandingkan di riwayat.']);
+  const qb={};d.quiz.forEach(q=>Object.entries(q.by||{}).forEach(([k,v])=>{const x=qb[k]=qb[k]||[0,0];x[0]+=v[0];x[1]+=v[1];}));
+  const wq=Object.entries(qb).filter(([k,v])=>v[1]>=3&&pct(v[0],v[1])<60).sort((a,b)=>pct(a[1][0],a[1][1])-pct(b[1][0],b[1][1]))[0];
+  if(wq)t.push([3,"Pengetahuan "+(QLAB[wq[0]]||wq[0]),'Jawaban benar baru '+pct(wq[1][0],wq[1][1])+'%. Main <a href="shortgame.html">Quiz Short Game</a> lagi dan baca penjelasan tiap soal.']);
+  if(!t.length)t.push([0,d.rounds.length?"Pertahankan":"Mulai dari satu ronde",d.rounds.length?'Belum ada kelemahan yang menonjol dari data kamu. Lanjutkan main dan catat setiap pukulan supaya saran makin tepat.':'Main satu ronde dengan <a href="caddy.html">Parkutut Caddy</a> dan tekan hasil setiap pukulan. Setelah itu saran latihan muncul di sini.']);
+  return t.sort((a,b)=>b[0]-a[0]).slice(0,4).map(x=>[x[1],x[2]]);}
+render();window.addEventListener("parkutut-synced",render);
+</script>
+</body>
+</html>

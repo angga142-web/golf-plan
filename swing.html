@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c162d">
 <title>Parkutut · Swing Lab</title>
+<script src="auth.js"></script>
 <link rel="icon" href="icon-192.png">
 <style>
 :root{--ink:#0c162d;--gold:#ffc400;--paper:#fff;--mist:#eef1f5;--line:#d3d9e2;--good:#0b7a3a;--red:#d2142d}
@@ -503,7 +504,7 @@ function histDraw(){
 $("save").onclick=()=>{const ad=advice(),t=meas(K.t);if(!ad.length||!t){$("save").textContent="Belum ada hasil";return;}
   const h=hist();h.unshift({d:Date.now(),note:$("note").value.trim(),view:$("view").value,n:ad.length,bad:ad.filter(x=>x[1]===false).map(x=>x[2]),
     tempo:(K.t-K.a)/(K.i-K.t),sh:t["Putaran bahu (dari address)"],hand:handSpeed(),club:clubSpeed()});
-  $("save").textContent=put(h)?"Tersimpan ✓":"Gagal menyimpan";histDraw();};
+  $("save").textContent=put(h)?"Tersimpan ✓":"Gagal menyimpan";histDraw();if(window.PK)PK.syncSoon();};
 $("hist").onclick=e=>{const b=e.target.closest("[data-del]");if(!b||!confirm("Hapus swing ini dari riwayat?"))return;const h=hist();h.splice(+b.dataset.del,1);put(h);histDraw();};
 histDraw();
 const tOf=i=>t0+(i+.5)*step;

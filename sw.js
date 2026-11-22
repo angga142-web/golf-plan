@@ -1,8 +1,8 @@
 /* Parkutut Cat Caddy offline cache.
    The app page: network first (always the newest when there is signal), cached copy when offline.
    Course files, elevation, icons and fonts: served from the cache at once and refreshed in the background. */
-const CACHE = "parkutut-v1";
-const SHELL = ["caddy.html", "manifest.webmanifest", "icon-192.png", "icon-512.png", "parkutut-icon.png"];
+const CACHE = "parkutut-v2";
+const SHELL = ["caddy.html", "auth.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "parkutut-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 const COURSES = ["imperial-karawaci", "pangkalan-jati", "pondok-cabe", "cilangkap"];
 const WARM = COURSES.flatMap(c => [`data/${c}.js`, `data/${c}-elevation.json`]);
@@ -14,7 +14,7 @@ self.addEventListener("fetch", e => {
   const req = e.request; if (req.method !== "GET") return;
   const url = new URL(req.url);
   const page = req.mode === "navigate" || url.pathname.endsWith("/caddy.html");
-  const asset = url.pathname.includes("/data/") || /\.(png|webmanifest)$/.test(url.pathname) || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
+  const asset = url.pathname.endsWith("/auth.js") || url.pathname.includes("/data/") || /\.(png|webmanifest)$/.test(url.pathname) || /fonts\.(googleapis|gstatic)\.com$/.test(url.hostname);
   if (page) {
     e.respondWith(fetch(req).then(r => { const c = r.clone(); caches.open(CACHE).then(k => k.put(url.origin + url.pathname, c)); return r; })
       .catch(() => caches.match(url.origin + url.pathname).then(r => r || caches.match("caddy.html"))));

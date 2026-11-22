@@ -9,6 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="parkutut-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="auth.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&family=Fredoka:wght@600;700&display=swap">
 <style>
@@ -32,12 +33,16 @@ main{max-width:560px;margin:-36px auto 0;padding:0 16px 32px;display:grid;gap:14
 .cat p{margin:4px 0 0;color:var(--ink2);font-size:14px;font-weight:500}
 .go{font:800 24px var(--f-num);color:var(--ink2)}
 .beta{display:inline-block;vertical-align:3px;margin-left:6px;background:var(--gold);color:var(--ink);font:700 11px var(--f-body);text-transform:uppercase;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
+.who{position:absolute;z-index:2;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#c9d2e3}
+.who button{font:inherit;font-weight:700;color:#fff;background:transparent;border:2px solid #56627f;border-radius:99px;padding:5px 12px;cursor:pointer}
+.c4 .ico{background:#0b7a3a}
 footer{max-width:560px;margin:0 auto;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink2);font-size:13px;text-align:center}
 footer a{color:var(--ink);font-weight:700}
 </style>
 </head>
 <body>
 <header class="hero">
+  <div class="who" id="who"></div>
   <img src="parkutut-icon.png" alt="Logo Parkutut">
   <h1>Parkutut</h1>
   <p>Course Management untuk kamu yang mau turunin skor dengan aman di lapangan</p>
@@ -58,7 +63,21 @@ footer a{color:var(--ink);font-weight:700}
     <span><h2>Analisa Swing<span class="beta">Beta</span></h2><p>Upload video swing, lihat posisi badan, bidang swing, dan kecepatan.</p></span>
     <span class="go" aria-hidden="true">›</span>
   </a>
+  <a class="cat c4" href="stats.html">
+    <span class="ico" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
+    <span><h2>Statistik &amp; Latihan</h2><p>Riwayat ronde, statistik pukulan, dan saran latihan berikutnya.</p></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
 </main>
 <footer>Plan per hole: <a href="index.html">Imperial Karawaci</a> · <a href="pangkalan-jati/">Pangkalan Jati</a></footer>
+<script>
+/* who is signed in, top right; the sign in sheet shows once when nobody is signed in */
+function who(){const u=PK.user(),el=document.getElementById("who");
+  el.innerHTML=u?'<span>'+(u.type==="guest"?"Guest":u.label)+'</span><button type="button" id="out">Keluar</button>':'<button type="button" id="in">Masuk</button>';
+  const o=document.getElementById("out"),i=document.getElementById("in");
+  if(o)o.addEventListener("click",async()=>{await PK.signOut();who();PK.prompt({closable:false,onDone:who});});
+  if(i)i.addEventListener("click",()=>PK.prompt({onDone:who}));}
+who();if(!PK.user())PK.prompt({closable:false,onDone:who});
+</script>
 </body>
 </html>

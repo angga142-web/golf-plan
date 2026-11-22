@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0c162d">
 <title>Parkutut · Quiz Short Game</title>
+<script src="auth.js"></script>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="parkutut-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -142,7 +143,9 @@ function answer(i){const q=R.qs[R.i];if(q.done)return;q.done=true;const ok=i===q
   $("sc").textContent=R.sc;$("prog").style.width=((R.i+1)/N*100)+"%";
   $("after").innerHTML='<div class="exp">'+(ok?"<b class=r>Benar!</b> ":"<b class=w>Belum tepat.</b> ")+q.exp+'</div><button class="next" id="next" type="button">'+(R.i<N-1?"Soal berikutnya":"Lihat hasil")+'</button>';
   $("next").addEventListener("click",()=>{if(++R.i<N)show();else end();});$("next").focus({preventScroll:true});}
-function end(){let best=0;try{best=+localStorage.getItem("parkutut-sg-best")||0;if(R.sc>best)localStorage.setItem("parkutut-sg-best",R.sc);}catch(e){}
+function end(){let best=0;try{best=+localStorage.getItem("parkutut-sg-best")||0;if(R.sc>best)localStorage.setItem("parkutut-sg-best",R.sc);
+    const qh=JSON.parse(localStorage.getItem("parkutut-quiz-v1")||"[]");qh.unshift({id:Date.now(),sc:R.sc,n:N,by:R.by});localStorage.setItem("parkutut-quiz-v1",JSON.stringify(qh.slice(0,100)));}catch(e){}
+  if(window.PK)PK.syncSoon();
   const msg=R.sc>=9?"Short game kelas caddy senior!":R.sc>=7?"Mantap, tinggal sedikit lagi.":R.sc>=5?"Lumayan. Coba lagi, soalnya berganti tiap ronde.":"Pelan-pelan, baca penjelasannya lalu coba lagi.";
   $("app").innerHTML='<div class="card"><div class="big">'+R.sc+' / '+N+'</div><p class="sub">'+msg+(R.sc>best&&best?" Rekor baru!":best?" Rekor kamu: "+Math.max(best,R.sc)+" / "+N:"")+'</p>'
     +'<table>'+Object.keys(LAB).filter(k=>R.by[k]).map(k=>'<tr><td>'+LAB[k]+'</td><td>'+R.by[k][0]+' / '+R.by[k][1]+'</td></tr>').join("")+'</table>'
