@@ -1,8 +1,8 @@
 /* Parkutut Caddy offline cache.
    The app page: network first (always the newest when there is signal), cached copy when offline.
    Course files, elevation, icons and fonts: served from the cache at once and refreshed in the background. */
-const CACHE = "parkutut-v2";
-const SHELL = ["caddy.html", "auth.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "parkutut-icon.png"];
+const CACHE = "parkutut-v4";   // the host caches .js for 30 days: raise auth.js?v= in every page and here when auth.js changes
+const SHELL = ["caddy.html", "auth.js?v=3", "manifest.webmanifest", "icon-192.png", "icon-512.png", "parkutut-icon.png"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(SHELL)).then(() => self.skipWaiting())); });
 const COURSES = ["imperial-karawaci", "pangkalan-jati", "pondok-cabe", "cilangkap"];
 const WARM = COURSES.flatMap(c => [`data/${c}.js`, `data/${c}-elevation.json`]);

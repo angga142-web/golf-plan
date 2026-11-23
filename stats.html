@@ -7,7 +7,7 @@
 <title>Parkutut · Statistik &amp; Latihan</title>
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="parkutut-icon.png">
-<script src="auth.js"></script>
+<script src="auth.js?v=3"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&display=swap">
 <style>
@@ -15,10 +15,10 @@
   --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
 *{box-sizing:border-box}
 body{margin:0;background:var(--mist);color:var(--ink);font:16px/1.45 var(--f-body)}
-header{background:var(--ink);color:#fff;padding:calc(12px + env(safe-area-inset-top,0px)) 16px 14px}
-header .nav{display:flex;justify-content:space-between;font-size:14px;font-weight:700}
-header a,header button{color:#fff;text-decoration:none;font:inherit;background:none;border:0;padding:0;cursor:pointer}
-header h1{margin:8px 0 0;font:800 28px/1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+header{background:var(--ink);color:#fff;padding:calc(4px + env(safe-area-inset-top,0px)) 16px 14px}
+header .nav{display:flex;justify-content:space-between;align-items:center;font-size:15px;font-weight:700}
+header a,header button{color:#fff;text-decoration:none;font:inherit;background:none;border:0;padding:0;cursor:pointer;display:inline-flex;align-items:center;min-height:44px}
+header h1{margin:2px 0 0;font:800 28px/1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
 header p{margin:4px 0 0;color:#c9d2e3;font-size:14px;font-weight:600}
 main{max-width:560px;margin:0 auto;padding:14px 16px calc(32px + env(safe-area-inset-bottom,0px));display:grid;gap:12px}
 .card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:16px}
