@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c162d">
+<title>Bag Saya · Parkutut</title>
+<meta name="description" content="Atur jarak carry dan sebaran tiap stick golf kamu, lalu lihat celah jarak di bag.">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="parkutut-icon.png">
+<link rel="manifest" href="manifest.webmanifest">
+<script src="auth.js?v=4"></script>
+<script src="bag-config.js?v=1"></script>
+<script src="bag-engine.js?v=1"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&display=swap">
+<style>
+:root{--ink:#0c162d;--ink2:#46506a;--gold:#ffc400;--paper:#fff;--mist:#eef1f5;--line:#d3d9e2;--blue:#0047af;--good:#0b7a3a;--warn:#b45309;--bad:#b42318;
+  --f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--mist);color:var(--ink);font:16px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent}
+header{background:var(--ink);color:#fff;display:flex;align-items:center;gap:10px;padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 8px max(12px,env(safe-area-inset-left,0px))}
+header a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;color:#fff;font-weight:700;text-decoration:none}
+header h1{margin:0;font:800 24px/1 var(--f-num);text-transform:uppercase;letter-spacing:.3px;flex:1}
+header small{color:#c9d2e3;font-weight:600;font-size:13px;text-align:right}
+main{max-width:560px;margin:0 auto;padding:14px 16px 32px;display:grid;gap:14px}
+main>*{min-width:0}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:14px}
+h2{margin:0 0 8px;font:800 21px/1.1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+.muted{color:var(--ink2);font-size:14px;margin:0}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{font:700 15px var(--f-body);min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:var(--paper);color:var(--ink);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);color:#fff}
+.link{font:600 14px var(--f-body);color:var(--blue);background:none;border:0;min-height:44px;padding:8px 0 0;text-align:left;cursor:pointer;text-decoration:underline}
+.strip{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 8px;margin:0 -2px;scrollbar-width:thin}
+.club{flex:0 0 auto;min-width:58px;min-height:52px;border-radius:12px;border:2px solid var(--line);background:var(--paper);cursor:pointer;display:grid;place-content:center;gap:0;padding:4px 10px;color:var(--ink)}
+.club b{font:800 19px/1 var(--f-num)}.club span{font-size:12px;color:var(--ink2);font-weight:600}
+.club[aria-pressed="true"]{border-color:var(--ink);background:var(--gold)}.club[aria-pressed="true"] span{color:var(--ink)}
+.club.add{border-style:dashed;font:800 17px var(--f-num);text-transform:uppercase}
+.ehead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.ehead h2{margin:0;font-size:30px}
+.del{font:700 14px var(--f-body);min-height:40px;padding:0 14px;border-radius:99px;border:2px solid var(--line);background:none;color:var(--bad);cursor:pointer}
+canvas{display:block;width:100%;height:340px;border-radius:12px;background:#3f9142;touch-action:pan-y}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink2);margin:8px 0 2px;font-weight:600}
+.legend i{display:inline-block;width:22px;height:12px;border-radius:99px;vertical-align:-1px;margin-right:6px}
+.lg{background:rgba(255,196,0,.6);border:2px solid var(--ink)}.lm{border:2px dashed var(--ink2)}
+.help{background:#fff8db;border-radius:10px;padding:8px 10px;font-size:14px;font-weight:600;margin:10px 0 4px}
+.sl{display:grid;grid-template-columns:1fr auto;align-items:center;margin-top:10px}
+.sl label{font-weight:700;font-size:15px}.sl output{font:800 20px var(--f-num);min-width:84px;text-align:right}
+.sl input{grid-column:1/-1;width:100%;height:44px;margin:0;accent-color:var(--blue)}
+.sl small{grid-column:1/-1;color:var(--ink2);font-size:12px;display:flex;justify-content:space-between;margin-top:-6px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:12px}
+.row label{font-weight:700;font-size:15px}
+.loft{width:92px;min-height:44px;border:2px solid var(--line);border-radius:12px;font:700 17px var(--f-body);padding:0 10px;text-align:right}
+.sw{position:relative;width:56px;height:32px;flex:0 0 auto}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;width:100%;height:100%}
+.sw span{position:absolute;inset:0;border-radius:99px;background:#c3cad6;transition:background .15s;pointer-events:none}
+.sw span::after{content:"";position:absolute;left:4px;top:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .15s}
+.sw input:checked+span{background:var(--good)}.sw input:checked+span::after{transform:translateX(24px)}
+.sw input:focus-visible+span{outline:3px solid var(--gold);outline-offset:2px}
+.status{font-size:13px;color:var(--ink2);margin:12px 0 0;min-height:19px}
+.gap{list-style:none;margin:0;padding:0}
+.gap li{display:grid;grid-template-columns:52px 1fr auto;align-items:center;gap:10px;border-bottom:1px solid var(--mist);min-height:44px;cursor:pointer}
+.gap li:last-child{border-bottom:0}
+.gap b{font:800 19px var(--f-num)}.gap .c{font-weight:700}
+.gap .d{font-size:13px;color:var(--ink2);text-align:right}
+.gap .flag-gap{color:var(--bad);font-weight:700}.gap .flag-overlap{color:var(--warn);font-weight:700}
+.bar{height:8px;border-radius:99px;background:var(--blue)}
+dialog{border:0;border-radius:20px;padding:18px 16px;width:min(380px,calc(100vw - 32px));color:var(--ink)}dialog::backdrop{background:rgba(12,22,45,.72)}
+.pick{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}
+.pick button{min-height:48px;border-radius:12px;border:2px solid var(--line);background:var(--paper);font:800 19px var(--f-num);cursor:pointer;color:var(--ink)}
+.dbtn{width:100%;min-height:48px;border:0;border-radius:12px;background:var(--ink);color:#fff;font:800 18px var(--f-num);text-transform:uppercase;cursor:pointer}
+</style>
+</head>
+<body>
+<header><a href="home.html" aria-label="Kembali ke beranda">‹ Beranda</a><h1>Bag Saya</h1><small id="who"></small></header>
+<main>
+  <section class="card" aria-labelledby="lvT">
+    <h2 id="lvT">Level kamu</h2>
+    <div class="chips" id="levels"></div>
+    <button type="button" class="link" id="reset">Isi ulang semua stick dengan angka awal level ini</button>
+  </section>
+
+  <section class="card" aria-labelledby="edT">
+    <h2 id="edT" class="sr" style="position:absolute;left:-9999px">Atur stick</h2>
+    <div class="strip" id="strip" role="group" aria-label="Pilih stick"></div>
+    <div class="ehead"><h2 id="cname"></h2><button type="button" class="del" id="del">Hapus stick</button></div>
+    <canvas id="cv" role="img" aria-label=""></canvas>
+    <div class="legend"><span><i class="lg"></i>90% pukulan bagus</span><span><i class="lm"></i>Pukulan meleset (mishit)</span></div>
+    <p class="help">Gambar area tempat ~90% pukulan lo mendarat.</p>
+    <div class="sl"><label for="carry">Carry (jarak terbang)</label><output id="carryO" for="carry"></output><input type="range" id="carry" min="20" max="300" step="1"></div>
+    <div class="sl"><label for="depth">Pendek–panjang</label><output id="depthO" for="depth"></output><input type="range" id="depth" min="4" max="80" step="1"><small><span>Rapat</span><span>Lebar</span></small></div>
+    <div class="sl"><label for="width">Kiri–kanan</label><output id="widthO" for="width"></output><input type="range" id="width" min="4" max="100" step="1"><small><span>Rapat</span><span>Lebar</span></small></div>
+    <div class="sl"><label for="bias">Cenderung ke</label><output id="biasO" for="bias"></output><input type="range" id="bias" min="-40" max="40" step="1"><small><span>Kiri</span><span>Kanan</span></small></div>
+    <div class="sl"><label for="miss">Pukulan meleset</label><output id="missO" for="miss"></output><input type="range" id="miss" min="0" max="40" step="1"><small><span>Jarang</span><span>4 dari 10</span></small></div>
+    <div class="row"><label for="loft">Loft (opsional, derajat)</label><input class="loft" id="loft" type="number" inputmode="decimal" min="0" max="70" step="0.5" placeholder="–"></div>
+    <div class="row"><label for="cons">Mode konservatif<br><span class="muted" id="consHint"></span></label><span class="sw"><input type="checkbox" id="cons" role="switch"><span></span></span></div>
+    <p class="status" id="status" aria-live="polite"></p>
+  </section>
+
+  <section class="card" aria-labelledby="gpT">
+    <h2 id="gpT">Celah jarak (gapping)</h2>
+    <p class="muted" id="gpHint"></p>
+    <ul class="gap" id="gap"></ul>
+  </section>
+</main>
+<dialog id="addD" aria-labelledby="addT"><h2 id="addT">Tambah stick</h2><p class="muted" id="addHint"></p><div class="pick" id="pick"></div><button type="button" class="dbtn" id="addClose">Tutup</button></dialog>
+<script>
+(function(){
+const B=PKBag,C=PKBagConfig,BKEY="parkutut-bag-v1",$=id=>document.getElementById(id);
+const read=k=>{try{return localStorage.getItem(k);}catch(e){return null;}};
+const parse=s=>{try{return JSON.parse(s);}catch(e){return null;}};
+let bag=null,cur=null,saveT=null,edited=false;
+
+/* the stored bag, or a new one from Parkutut Caddy's carries (or the level defaults). A new bag is stored on the first change. */
+function load(){const s=B.cleanBag(parse(read(BKEY)));
+  if(s&&s.clubs.length){bag=s;return true;}
+  bag=B.defaultBag(C.DEFAULT_LEVEL,parse(read("caddy-clubs-v1")));return false;}
+const order=n=>C.CLUB_NAMES.indexOf(n)<0?99:C.CLUB_NAMES.indexOf(n);
+const sortBag=()=>bag.clubs.sort((a,b)=>order(a.name)-order(b.name));
+const club=()=>bag.clubs.find(k=>k.name===cur)||bag.clubs[0];
+
+function save(){clearTimeout(saveT);saveT=setTimeout(()=>{bag.updated_at=new Date().toISOString();
+  try{localStorage.setItem(BKEY,JSON.stringify(bag));}catch(e){$("status").textContent="Gagal menyimpan: memori browser penuh atau diblokir.";return;}
+  const acc=window.PK&&PK.isAccount();$("status").textContent=acc?"Tersimpan di HP ini dan di akun kamu.":"Tersimpan di HP ini. Masuk dari Beranda supaya bag ikut tersimpan di akun.";
+  if(acc)PK.syncSoon();},250);}
+function changed(){edited=true;const k=club();if(k){k.source="manual";k.updated_at=new Date().toISOString();}save();}
+
+/* --- level --- */
+function renderLevels(){$("levels").innerHTML=C.LEVEL_ORDER.map(id=>[id,C.LEVELS[id]]).map(([id,L])=>'<button type="button" class="chip" data-lv="'+id+'" aria-pressed="'+(bag.level===id)+'">'+L.label+'</button>').join("");}
+$("levels").addEventListener("click",e=>{const b=e.target.closest("[data-lv]");if(!b)return;bag.level=b.dataset.lv;renderLevels();changed();});
+$("reset").addEventListener("click",()=>{if(!confirm("Semua jarak dan sebaran diganti angka awal "+C.LEVELS[bag.level].label+". Lanjut?"))return;
+  bag.clubs=bag.clubs.map(k=>B.defaultClub(k.name,bag.level));changed();renderAll();});
+
+/* --- club strip --- */
+function renderStrip(){const full=bag.clubs.length>=C.BAG_MAX;
+  $("strip").innerHTML=bag.clubs.map(k=>'<button type="button" class="club" data-c="'+k.name+'" aria-pressed="'+(k.name===cur)+'"><b>'+k.name+'</b><span>'+(k.carry_m?Math.round(k.carry_m)+' m':'–')+'</span></button>').join("")
+    +(full?'':'<button type="button" class="club add" id="add">+ Stick</button>');}
+$("strip").addEventListener("click",e=>{if(e.target.closest("#add")){openAdd();return;}const b=e.target.closest("[data-c]");if(b)select(b.dataset.c);});
+function select(n){cur=n;renderStrip();renderEditor();const b=$("strip").querySelector('[aria-pressed="true"]');if(b&&b.scrollIntoView)b.scrollIntoView({block:"nearest",inline:"nearest"});}
+
+function openAdd(){const have=new Set(bag.clubs.map(k=>k.name)),left=C.CLUB_NAMES.filter(n=>!have.has(n));
+  $("addHint").textContent="Bag kamu "+bag.clubs.length+" stick, maksimal "+C.BAG_MAX+" (putter tidak dihitung di sini).";
+  $("pick").innerHTML=left.map(n=>'<button type="button" data-n="'+n+'">'+n+'</button>').join("")||'<p class="muted">Semua stick sudah ada.</p>';$("addD").showModal();}
+$("pick").addEventListener("click",e=>{const b=e.target.closest("[data-n]");if(!b||bag.clubs.length>=C.BAG_MAX)return;
+  bag.clubs.push(B.defaultClub(b.dataset.n,bag.level));sortBag();$("addD").close();changed();cur=b.dataset.n;renderAll();});
+$("addClose").addEventListener("click",()=>$("addD").close());
+$("del").addEventListener("click",()=>{if(bag.clubs.length<=1)return;if(!confirm("Hapus "+cur+" dari bag?"))return;
+  const i=bag.clubs.findIndex(k=>k.name===cur);bag.clubs.splice(i,1);cur=(bag.clubs[i]||bag.clubs[i-1]).name;changed();renderAll();});
+
+/* --- editor --- */
+const S={carry:["carry_m",1],depth:["depth_90_m",1],width:["width_90_m",1],bias:["bias_lat_m",1],miss:["miss_rate",100]};
+const side=v=>v===0?"Lurus":Math.abs(v)+" m "+(v>0?"kanan":"kiri");
+function outputs(k){$("carryO").textContent=Math.round(k.carry_m)+" m";$("depthO").textContent="± "+Math.round(k.depth_90_m/2)+" m";
+  $("widthO").textContent="± "+Math.round(k.width_90_m/2)+" m";$("biasO").textContent=side(Math.round(k.bias_lat_m));
+  $("missO").textContent=Math.round(k.miss_rate*100)+"%";}
+function renderEditor(){const k=club();if(!k)return;cur=k.name;$("cname").textContent=k.name;
+  Object.entries(S).forEach(([id,[f,m]])=>{$(id).value=Math.round(k[f]*m);});
+  $("loft").value=k.loft==null?"":k.loft;$("cons").checked=bag.conservative;$("del").hidden=bag.clubs.length<=1;
+  $("consHint").textContent="Area dibesarkan "+C.CONSERVATIVE_FACTOR+"× supaya lebih aman";outputs(k);draw();}
+Object.entries(S).forEach(([id,[f,m]])=>$(id).addEventListener("input",()=>{const k=club();k[f]=+$(id).value/m;outputs(k);draw();
+  if(id==="carry"){const b=$("strip").querySelector('[data-c="'+k.name+'"] span');if(b)b.textContent=Math.round(k.carry_m)+" m";renderGap();}changed();}));
+$("loft").addEventListener("change",()=>{const v=$("loft").value.trim(),k=club();k.loft=v===""?null:Math.min(70,Math.max(0,+v||0));changed();});
+$("cons").addEventListener("change",()=>{bag.conservative=$("cons").checked;draw();changed();});
+
+/* top-down view: ball at the bottom, a ring every 10 m, centre line, the two ellipses */
+const cv=$("cv"),ctx=cv.getContext("2d");
+function draw(){const k=club();if(!k)return;const r=cv.getBoundingClientRect(),dpr=window.devicePixelRatio||1,W=r.width||340,H=r.height||340;
+  if(cv.width!==Math.round(W*dpr)||cv.height!==Math.round(H*dpr)){cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);}
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  const E=B.ellipses(k,{conservative:bag.conservative}),g=E.good,m=E.miss,top=28,bot=26;
+  const far=Math.max(g.dist+g.ry,m.dist+m.ry,40)*1.06,wide=Math.max(Math.abs(g.lat)+g.rx,Math.abs(m.lat)+m.rx,20);
+  const s=Math.min((H-top-bot)/far,(W/2-10)/wide),ox=W/2,oy=H-bot,X=lat=>ox+lat*s,Y=d=>oy-d*s;
+  for(let d=10;d*s<oy+4;d+=10){const big=d%50===0;ctx.beginPath();ctx.arc(ox,oy,d*s,Math.PI,2*Math.PI);
+    ctx.strokeStyle=big?"rgba(255,255,255,.55)":"rgba(255,255,255,.22)";ctx.lineWidth=big?1.5:1;ctx.stroke();
+    const lx=ox-d*s*.77,ly=oy-d*s*.64;   // ring label up and to the left, away from the ellipses on the centre line
+    if(big&&ly>12){ctx.font="600 12px Barlow,system-ui,sans-serif";if(lx-3-ctx.measureText(d+" m").width>4){ctx.fillStyle="rgba(255,255,255,.9)";ctx.textAlign="right";ctx.fillText(d+" m",lx-3,ly);}}}
+  ctx.setLineDash([6,6]);ctx.strokeStyle="rgba(255,255,255,.7)";ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(ox,4);ctx.stroke();
+  const ell=(e,fill,stroke,dash,lw)=>{ctx.setLineDash(dash);ctx.beginPath();ctx.ellipse(X(e.lat),Y(e.dist),Math.max(1,e.rx*s),Math.max(1,e.ry*s),0,0,2*Math.PI);
+    if(fill){ctx.fillStyle=fill;ctx.fill();}ctx.strokeStyle=stroke;ctx.lineWidth=lw;ctx.stroke();};
+  if(k.miss_rate>0)ell(m,"rgba(12,22,45,.12)","rgba(12,22,45,.75)",[7,6],2);
+  ell(g,"rgba(255,196,0,.62)","#0c162d",[],2.5);ctx.setLineDash([]);
+  ctx.fillStyle="#0c162d";ctx.beginPath();ctx.arc(X(g.lat),Y(g.dist),4,0,2*Math.PI);ctx.fill();
+  ctx.fillStyle="#fff";ctx.strokeStyle="#0c162d";ctx.lineWidth=2;ctx.beginPath();ctx.arc(ox,oy,7,0,2*Math.PI);ctx.fill();ctx.stroke();   // ball
+  ctx.font="800 18px 'Barlow Condensed',system-ui,sans-serif";ctx.textAlign="center";const ly=Y(g.dist+g.ry)-8;
+  ctx.lineWidth=4;ctx.strokeStyle="rgba(12,22,45,.8)";ctx.strokeText(Math.round(k.carry_m)+" m",X(g.lat),Math.max(18,ly));ctx.fillStyle="#fff";ctx.fillText(Math.round(k.carry_m)+" m",X(g.lat),Math.max(18,ly));
+  cv.setAttribute("aria-label",k.name+": carry "+Math.round(k.carry_m)+" m, 90% pukulan dalam ± "+Math.round(g.ry)+" m pendek-panjang dan ± "+Math.round(g.rx)+" m kiri-kanan, "+side(Math.round(k.bias_lat_m))+", meleset "+Math.round(k.miss_rate*100)+"%.");}
+addEventListener("resize",draw);
+
+/* --- gapping --- */
+function renderGap(){const rows=B.gapping(bag.clubs),max=Math.max(1,...rows.map(r=>r.carry_m));
+  $("gpHint").textContent="Diurutkan dari carry terjauh. Celah di atas "+C.GAP_MAX_M+" m atau di bawah "+C.OVERLAP_MIN_M+" m ditandai.";
+  $("gap").innerHTML=rows.map(r=>{const t=r.flag==="gap"?'<span class="flag-gap">Celah '+Math.round(r.gap_m)+' m ke '+r.next+'</span>':r.flag==="overlap"?'<span class="flag-overlap">Mirip '+r.next+' ('+Math.round(r.gap_m)+' m)</span>':r.gap_m!=null?Math.round(r.gap_m)+' m ke '+r.next:'';
+    return '<li data-c="'+r.name+'"><b>'+r.name+'</b><span><span class="c">'+Math.round(r.carry_m)+' m</span><div class="bar" style="width:'+Math.round(r.carry_m/max*100)+'%"></div></span><span class="d">'+t+'</span></li>';}).join("")
+    ||'<li><span class="muted">Belum ada stick dengan jarak.</span></li>';}
+$("gap").addEventListener("click",e=>{const li=e.target.closest("[data-c]");if(li){select(li.dataset.c);$("cname").scrollIntoView({behavior:"smooth",block:"start"});}});
+
+function renderWho(){const u=window.PK&&PK.user();$("who").textContent=u?(u.type==="guest"?"Guest · "+u.label:u.label):"";}
+function renderAll(){if(!bag.clubs.some(k=>k.name===cur))cur=bag.clubs[0]&&bag.clubs[0].name;renderLevels();renderStrip();renderEditor();renderGap();renderWho();}
+
+const stored=load();sortBag();cur=bag.clubs[0].name;renderAll();
+$("status").textContent=stored?"Bag tersimpan dimuat.":"Angka awal dari "+(read("caddy-clubs-v1")?"jarak di Parkutut Caddy":"level "+C.LEVELS[bag.level].label)+". Geser slider, perubahan langsung disimpan.";
+/* the server may fill in a bag saved on another phone; take it only if nothing was changed here yet */
+addEventListener("parkutut-synced",()=>{if(!edited&&load()){sortBag();renderAll();}});
+if("serviceWorker" in navigator&&/^(https:|http:\/\/localhost)/.test(location.href))navigator.serviceWorker.register("sw.js").catch(()=>{});
+})();
+</script>
+</body>
+</html>

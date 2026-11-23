@@ -9,7 +9,7 @@
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="parkutut-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-<script src="auth.js?v=3"></script>
+<script src="auth.js?v=4"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&family=Fredoka:wght@600;700&display=swap">
 <style>
@@ -35,7 +35,7 @@ main{max-width:560px;margin:-36px auto 0;padding:0 16px 32px;display:grid;gap:14
 .beta{display:inline-block;vertical-align:3px;margin-left:6px;background:var(--gold);color:var(--ink);font:700 11px var(--f-body);text-transform:uppercase;padding:2px 8px;border-radius:99px;letter-spacing:.5px}
 .who{position:absolute;z-index:2;top:calc(12px + env(safe-area-inset-top,0px));right:max(12px,env(safe-area-inset-right,0px));display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:#c9d2e3}
 .who button{font:inherit;font-weight:700;color:#fff;background:transparent;border:2px solid #56627f;border-radius:99px;min-height:40px;padding:0 16px;cursor:pointer}
-.c4 .ico{background:#0b7a3a}
+.c4 .ico{background:#0b7a3a}.c5 .ico{background:#9fd3a3}
 footer{max-width:560px;margin:0 auto;padding:4px 16px calc(28px + env(safe-area-inset-bottom,0px));color:var(--ink2);font-size:13px;text-align:center}
 .credit{font:inherit;color:var(--ink2);background:none;border:0;padding:10px;cursor:pointer;line-height:1.5}.credit b{color:var(--ink)}
 dialog{border:0;border-radius:20px;padding:20px 16px;width:min(360px,calc(100vw - 32px));text-align:center;color:var(--ink)}dialog::backdrop{background:rgba(12,22,45,.72)}
@@ -81,6 +81,11 @@ dialog img{display:block;width:100%;height:auto;border-radius:12px;border:3px so
   <a class="cat c4" href="stats.html">
     <span class="ico" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span>
     <span><h2>Statistik &amp; Latihan</h2><p>Riwayat ronde, statistik pukulan, dan saran latihan berikutnya.</p></span>
+    <span class="go" aria-hidden="true">›</span>
+  </a>
+  <a class="cat c5" href="bag.html">
+    <span class="ico" aria-hidden="true"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="#0c162d" stroke-width="2.2" stroke-linecap="round"><ellipse cx="12" cy="8" rx="6" ry="4"/><path d="M12 22V12"/><circle cx="12" cy="8" r="1" fill="#0c162d"/></svg></span>
+    <span><h2>Bag Saya</h2><p>Jarak carry dan sebaran tiap stick, plus celah jarak di bag kamu.</p></span>
     <span class="go" aria-hidden="true">›</span>
   </a>
 </main>

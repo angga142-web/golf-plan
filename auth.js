@@ -1,7 +1,7 @@
 /* Parkutut sign in (23 Nov 2026), shared by every page.
    Three ways in, no password yet: phone number, Gmail, or guest.
    - Phone/Gmail: the number or address is turned into a SHA-256 code in the browser; only that code, a masked label and the golf data
-     (round history, swing history, quiz results, club distances) go to api/data.php on parkutut.com. Synced on page load, after a save
+     (round history, swing history, quiz results, club distances, club bag) go to api/data.php on parkutut.com. Synced on page load, after a save
      and when the page is hidden.
    - Guest: nothing goes to the server. The guest gets a temporary name (fruit + number, e.g. "mangga-4821") and the data stays on this
      phone until the guest finishes playing: Keluar, or a finished round in Parkutut Caddy (endGuest). Reopening the app keeps it.
@@ -9,7 +9,7 @@
 (function(){
 const UKEY="parkutut-user-v1",API="api/data.php";
 const ARR={"caddy-history-v1":"id","swinglab-history-v1":"d","parkutut-quiz-v1":"id"};   // arrays merged by their id field
-const KEEP=["caddy-clubs-v1","caddy-name-v1"];                                            // single values: this phone wins, the server fills in
+const KEEP=["caddy-clubs-v1","caddy-name-v1","parkutut-bag-v1"];                                            // single values: this phone wins, the server fills in
 const ls={get:k=>{try{return localStorage.getItem(k);}catch(e){return null;}},set:(k,v)=>{try{localStorage.setItem(k,v);}catch(e){}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
 const j=(s,d)=>{try{const v=JSON.parse(s);return v==null?d:v;}catch(e){return d;}};
 let remote=null,timer=null,busy=false;
