@@ -1,8 +1,8 @@
 {
-  "name": "Parkutut Caddy",
+  "name": "Parkutut",
   "short_name": "Parkutut",
-  "description": "Caddy golf di HP: rencana pukulan per hole, jarak, elevasi dan kartu skor.",
-  "start_url": "caddy.html",
+  "description": "Caddy golf di HP, quiz short game, analisa swing, dan statistik pukulan.",
+  "start_url": "home.html",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",

@@ -43,6 +43,16 @@ dialog h2{margin:0 0 6px;font:800 24px var(--f-num);text-transform:uppercase}dia
 dialog img{display:block;width:100%;height:auto;border-radius:12px;border:3px solid var(--ink);box-shadow:0 0 0 6px var(--gold)}
 .dbtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}.dbtn a,.dbtn button{display:block;padding:12px;border-radius:12px;font:800 18px var(--f-num);text-transform:uppercase;text-decoration:none;border:0;cursor:pointer}
 .dbtn a{background:var(--gold);color:var(--ink)}.dbtn button{background:var(--ink);color:#fff}
+.load{position:fixed;inset:0;z-index:50;background:var(--ink);color:#fff;display:grid;place-content:center;justify-items:center;gap:14px;text-align:center;padding:24px}
+.load[hidden]{display:none}
+.ring{position:relative;width:132px;height:132px}
+.ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:8}.ring .bgc{stroke:#26324f}.ring .fg{stroke:var(--gold);stroke-linecap:round;stroke-dasharray:364.4;stroke-dashoffset:364.4}
+.ring.go .fg{transition:stroke-dashoffset 3s linear;stroke-dashoffset:0}
+.ring b{position:absolute;inset:0;display:grid;place-items:center;font:800 64px var(--f-num);color:#fff}
+.load h2{margin:0;font:800 28px/1.1 var(--f-num);text-transform:uppercase;letter-spacing:.3px}
+.load p{margin:0;color:#c9d2e3;font-weight:600;max-width:28ch}
+@media (prefers-reduced-motion:reduce){.ring.go .fg{transition:none}}
 </style>
 </head>
 <body>
@@ -74,6 +84,7 @@ dialog img{display:block;width:100%;height:auto;border-radius:12px;border:3px so
     <span class="go" aria-hidden="true">›</span>
   </a>
 </main>
+<div class="load" id="load" role="status" aria-live="polite" hidden><div class="ring" id="ring"><svg viewBox="0 0 132 132" aria-hidden="true"><circle class="bgc" cx="66" cy="66" r="58"/><circle class="fg" cx="66" cy="66" r="58"/></svg><b id="cnt">3</b></div><h2 id="loadT"></h2><p>Siap-siap, sebentar lagi mulai…</p></div>
 <footer><button type="button" class="credit" id="credit">Created by <b>Angga Prasetya</b> for supporting Indo golfer<br>Versi beta</button></footer>
 <dialog id="tips" aria-labelledby="tipsT"><h2 id="tipsT">Tips untuk Parkutut</h2><p>Suka dibantu Parkutut? Simpan QRIS ini ke galeri, lalu bayar dari aplikasi bank atau e-wallet kamu.</p><img src="qris.png" alt="QRIS tips Parkutut" width="900" height="1165"><div class="dbtn"><a href="qris.png" download="qris-parkutut.png">Simpan QRIS</a><button type="button" id="tipsClose">Tutup</button></div></dialog>
 <script>
@@ -88,6 +99,14 @@ const tips=document.getElementById("tips");document.getElementById("credit").add
 function ask(){PK.prompt({later:"Lihat dulu",onDone:who});try{sessionStorage.setItem("pk-ask-home","1");}catch(e){}}
 let asked=false;try{asked=!!sessionStorage.getItem("pk-ask-home");}catch(e){}
 who();if(!PK.user()&&!asked)ask();
+/* opening a page from the landing: a 3 second countdown first */
+const load=document.getElementById("load"),cnt=document.getElementById("cnt"),ring=document.getElementById("ring");let tick=null;
+document.querySelectorAll("a.cat").forEach(a=>a.addEventListener("click",ev=>{if(ev.metaKey||ev.ctrlKey||ev.shiftKey)return;ev.preventDefault();
+  document.getElementById("loadT").textContent=a.querySelector("h2").firstChild.textContent;let n=3;cnt.textContent=n;load.hidden=false;
+  ring.classList.remove("go");void ring.offsetWidth;ring.classList.add("go");clearInterval(tick);
+  tick=setInterval(()=>{n--;if(n>0)cnt.textContent=n;else{clearInterval(tick);location.href=a.href;}},1000);}));
+addEventListener("pageshow",()=>{clearInterval(tick);load.hidden=true;ring.classList.remove("go");});   // back button: landing again, not the loader
+if("serviceWorker" in navigator&&/^(https:|http:\/\/localhost)/.test(location.href))navigator.serviceWorker.register("sw.js").catch(()=>{});
 </script>
 </body>
 </html>
