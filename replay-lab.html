@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0c162d">
+<title>Replay Lab · Parkutut</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800&family=Barlow:wght@500;600;700&display=swap">
+<style>
+:root{--ink:#0c162d;--ink2:#46506a;--gold:#ffc400;--mist:#eef1f5;--line:#d3d9e2;--f-num:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;--f-body:"Barlow",system-ui,sans-serif;color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ink);color:#fff;font:16px/1.45 var(--f-body);-webkit-tap-highlight-color:transparent}
+header{display:flex;align-items:center;gap:10px;padding:calc(6px + env(safe-area-inset-top,0px)) 12px 6px}
+header a{display:inline-flex;align-items:center;min-height:44px;padding:0 6px;color:#fff;font-weight:700;text-decoration:none}
+header h1{margin:0;font:800 22px/1 var(--f-num);text-transform:uppercase;letter-spacing:.3px;flex:1}
+.wrap{max-width:560px;margin:0 auto;padding:0 12px 24px}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;background:#1b2642;border-radius:14px;padding:4px;margin-bottom:10px}
+.tabs button{min-height:44px;border:0;border-radius:10px;background:none;color:#c9d2e3;font:800 18px var(--f-num);text-transform:uppercase;letter-spacing:.3px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:var(--gold);color:var(--ink)}
+.stage{position:relative;height:min(68vh,600px);min-height:380px;border-radius:16px;overflow:hidden;background:#19462a}
+.stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hud{position:absolute;left:10px;top:10px;background:rgba(12,22,45,.82);border-radius:99px;padding:5px 12px;font:800 15px var(--f-num);text-transform:uppercase;letter-spacing:.4px;pointer-events:none}
+.hud b{color:var(--gold)}
+.shot{position:absolute;left:0;right:0;bottom:0;padding:28px 14px 12px;background:linear-gradient(transparent,rgba(12,22,45,.85));font:800 26px/1.05 var(--f-num);text-transform:uppercase;letter-spacing:.4px;pointer-events:none;transition:opacity .25s}
+.shot small{display:block;font:600 14px var(--f-body);text-transform:none;letter-spacing:0;color:#c9d2e3;margin-top:3px}
+.end{position:absolute;inset:auto 16px 16px 16px;background:rgba(12,22,45,.9);border:2px solid var(--gold);border-radius:18px;padding:16px;text-align:center;pointer-events:none;opacity:0;transition:opacity .4s}
+.end.on{opacity:1}
+.end b{display:block;font:800 54px/1 var(--f-num);color:var(--gold);letter-spacing:1px}
+.end p{margin:6px 0 0;color:#e2e8f2;font-weight:600;font-size:14px}
+.loading{position:absolute;inset:0;display:grid;place-items:center;font-weight:700;color:#c9d2e3;background:#19462a}
+.loading[hidden]{display:none}
+.ctrl{display:flex;align-items:center;gap:10px;margin-top:10px}
+.ctrl button{min-height:48px;min-width:132px;border:0;border-radius:12px;background:var(--gold);color:var(--ink);font:800 19px var(--f-num);text-transform:uppercase;cursor:pointer}
+.ctrl input{flex:1;height:44px;accent-color:var(--gold)}
+.note{color:#c9d2e3;font-size:13px;margin:12px 2px 0}
+</style>
+</head>
+<body>
+<header><a href="home.html">‹ Beranda</a><h1>Replay Lab</h1></header>
+<div class="wrap">
+  <div class="tabs" role="group" aria-label="Pilih tampilan replay"><button type="button" data-v="2d" aria-pressed="true">2D miring</button><button type="button" data-v="3d" aria-pressed="false">3D</button></div>
+  <div class="stage" id="stage">
+    <canvas id="c2" aria-label="Replay 2D hole 10 Pangkalan Jati"></canvas>
+    <canvas id="c3" aria-label="Replay 3D hole 10 Pangkalan Jati" hidden></canvas>
+    <div class="hud">Pangkalan Jati · Hole <b>10</b> · Par 4 · 315 m</div>
+    <div class="shot" id="shot"></div>
+    <div class="end" id="end"><b>PAR</b><p id="endP"></p></div>
+    <div class="loading" id="loading">Memuat hole 10…</div>
+  </div>
+  <div class="ctrl"><button type="button" id="play">Putar ulang</button><input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Geser waktu replay"></div>
+  <p class="note">Prototype untuk membandingkan 2D dan 3D. Pukulan di sini disimulasikan, bukan data ronde asli. Tinggi bola digambar dari jenis stick; kontur 3D dari DEMNAS BIG, dibesarkan 2×.</p>
+</div>
+<script src="data/pangkalan-jati.js"></script>
+<script type="module">
+/* ---------- hole 10 and the simulated shots (map pixel space of the Caddy hole image, 1080 wide) ---------- */
+const EXT=window.COURSE_EXT,N="10",G=EXT.geo[N],S=G.scale,TEE=G.tee,PIN=G.pin,IMG_TOP=G.top,IMG_H=G.bot-G.top;
+const SHOTS=[
+  {club:"Driver",kind:"full",from:TEE,land:[531,590],to:[528,560],apex:30,curve:-4},
+  {club:"PW",kind:"full",from:[528,560],land:[575,381],to:[577,375],apex:22,curve:1.5},
+  {club:"Putter",kind:"putt",from:[577,375],to:[566,359.5]},
+  {club:"Putter",kind:"putt",from:[566,359.5],to:PIN,holed:true}
+];
+const pxd=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1])/S,lerp=(a,b,k)=>a+(b-a)*k,lerp2=(a,b,k)=>[lerp(a[0],b[0],k),lerp(a[1],b[1],k)];
+const ease=f=>f<.5?2*f*f:1-Math.pow(-2*f+2,2)/2,clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+SHOTS.forEach(sh=>{const A=sh.from,L=sh.land||sh.to,T=sh.to,d=[L[0]-A[0],L[1]-A[1]],len=Math.hypot(d[0],d[1])||1,n=[d[0]/len,d[1]/len],perp=[-n[1],n[0]];
+  const C=[(A[0]+L[0])/2+perp[0]*(sh.curve||0)*S*2,(A[1]+L[1])/2+perp[1]*(sh.curve||0)*S*2];
+  sh.fly=u=>{const a=(1-u)*(1-u),b=2*u*(1-u),c=u*u;return{px:a*A[0]+b*C[0]+c*L[0],py:a*A[1]+b*C[1]+c*L[1],h:sh.kind==="putt"?0:sh.apex*Math.sin(Math.PI*Math.pow(u,1.3))};};
+  sh.roll=u=>{const p=lerp2(L,T,u);return{px:p[0],py:p[1],h:0};};
+  sh.dist=pxd(A,T);sh.carry=pxd(A,L);
+  const aimTo=sh.dist<1?PIN:T;sh.dir=Math.atan2(aimTo[1]-A[1],aimTo[0]-A[0]);
+  sh.tPre=900;sh.tFly=sh.kind==="putt"?900+sh.dist*170:1100+sh.carry*9;sh.tRoll=sh.kind==="putt"?0:(pxd(L,T)>.5?800:0);sh.tPost=sh.holed?1100:650;
+  sh.trail=[];for(let i=0;i<=60;i++)sh.trail.push(sh.fly(i/60));if(sh.tRoll)for(let i=1;i<=12;i++)sh.trail.push(sh.roll(i/12));});
+const T_END=3200,TOTAL=SHOTS.reduce((a,s)=>a+s.tPre+s.tFly+s.tRoll+s.tPost,0)+T_END;
+
+/* where everything is at time t (ms) */
+function stateAt(t){let acc=0;
+  for(let i=0;i<SHOTS.length;i++){const s=SHOTS[i],seg=[["pre",s.tPre],["fly",s.tFly],["roll",s.tRoll],["post",s.tPost]];
+    for(const [ph,d] of seg){if(!d)continue;if(t<acc+d){const f=(t-acc)/d;return mk(i,ph,f);}acc+=d;}}
+  return{i:SHOTS.length-1,ph:"end",f:clamp((t-acc)/T_END,0,1),ball:{px:PIN[0],py:PIN[1],h:0},trail:SHOTS.at(-1).trail,holed:true};}
+function mk(i,ph,f){const s=SHOTS[i];let ball,trail=[];
+  if(ph==="pre"){ball={px:s.from[0],py:s.from[1],h:0};}
+  else if(ph==="fly"){const u=s.kind==="putt"?1-Math.pow(1-f,2):1-Math.pow(1-f,1.35);ball=s.fly(u);const k=Math.floor(u*60);trail=s.trail.slice(0,k+1).concat([ball]);}
+  else if(ph==="roll"){const u=1-Math.pow(1-f,2.2);ball=s.roll(u);trail=s.trail.slice(0,61).concat([ball]);}
+  else{ball={px:s.to[0],py:s.to[1],h:0};trail=s.trail;}
+  return{i,ph,f,ball,trail,holed:!!s.holed&&ph==="post"};}
+
+/* ---------- HUD ---------- */
+const $=id=>document.getElementById(id),shotEl=$("shot"),endEl=$("end");
+$("endP").textContent="4 pukulan · Driver "+Math.round(SHOTS[0].dist)+" m · PW "+Math.round(SHOTS[1].dist)+" m · 2 putt";
+let lastHud="";
+function hud(st){let h;
+  if(st.ph==="end")h="";
+  else{const s=SHOTS[st.i];h="Pukulan "+(st.i+1)+" · "+s.club+" · "+(s.kind==="putt"?(s.dist<10?s.dist.toFixed(1):Math.round(s.dist)):Math.round(s.dist))+" m"
+    +"<small>"+(st.holed?"Masuk! Par di hole 10.":s.kind==="putt"?(s.holed?"Putt kedua, 1 m":"Putt pertama dari tepi green"):i0(st.i))+"</small>";}
+  if(h!==lastHud){shotEl.innerHTML=h;shotEl.style.opacity=h?1:0;lastHud=h;}
+  endEl.classList.toggle("on",st.ph==="end"&&st.f>.25);}
+const i0=i=>i===0?"Carry "+Math.round(SHOTS[0].carry)+" m, sedikit draw, berhenti di fairway":"Approach ke green, berhenti "+pxd(SHOTS[1].to,PIN).toFixed(0)+" m dari pin";
+
+/* ---------- texture: the Caddy hole image, grey outside the course turned into forest ---------- */
+const img=new Image();img.src=EXT.maps[+N-1].src;await img.decode();
+const tex=document.createElement("canvas");tex.width=2048;tex.height=Math.round(2048*img.height/img.width);
+{const x=tex.getContext("2d");x.fillStyle="#ecf0f4";x.fillRect(0,0,tex.width,tex.height);x.drawImage(img,6,6,img.width-12,img.height-12,3,3,tex.width-6,tex.height-6);   /* the image has a thin coloured border: leave it out */const d=x.getImageData(0,0,tex.width,tex.height),a=d.data;
+  for(let i=0;i<a.length;i+=4){if(a[i]>195&&a[i+1]>195&&a[i+2]>195&&Math.abs(a[i]-a[i+2])<24){const n=((i*2654435761)>>>0)%23;a[i]=22+n*.4;a[i+1]=66+n;a[i+2]=36+n*.4;}}
+  x.putImageData(d,0,0);}
+const texScale=tex.width/1080;   // texture px per map px
+
+/* ---------- 2D tilted view (plain canvas) ---------- */
+const c2=$("c2"),x2=c2.getContext("2d"),TILT=.58;let W=0,H=0,DPR=1;
+function size(){const r=$("stage").getBoundingClientRect();W=r.width;H=r.height;DPR=Math.min(devicePixelRatio||1,2);
+  c2.width=W*DPR;c2.height=H*DPR;if(r3)r3.resize();}
+function cam2For(i){const s=SHOTS[i],ang=-Math.PI/2-s.dir,len=Math.max(pxd(s.from,s.to),s.kind==="putt"?6:30)*S;
+  const z=clamp(H*.62/(len*TILT+(s.kind==="putt"?30:70)),.3,7.5);return{c:lerp2(s.from,s.to,.5),a:ang,z};}
+const cam2End=()=>({c:lerp2(TEE,PIN,.5),a:0,z:clamp(H*.86/((TEE[1]-PIN[1])*TILT+60),.2,5)});
+const mixCam=(p,q,k)=>({c:lerp2(p.c,q.c,k),a:lerp(p.a,q.a,k),z:Math.exp(lerp(Math.log(p.z),Math.log(q.z),k))});
+function cam2(st){
+  if(st.ph==="end")return mixCam(cam2For(SHOTS.length-1),cam2End(),ease(clamp(st.f/.45,0,1)));
+  const cur=cam2For(st.i);
+  if(st.ph==="pre"){const prev=st.i?cam2For(st.i-1):{c:TEE.slice(),a:0,z:cur.z*.55};return mixCam(prev,cur,ease(st.f));}
+  if(st.ph==="fly"||st.ph==="roll")return{c:lerp2(cur.c,[st.ball.px,st.ball.py],.25),a:cur.a,z:cur.z};
+  return cur;}
+let cam;
+function proj(px,py,h){const dx=px-cam.c[0],dy=py-cam.c[1],ca=Math.cos(cam.a),sa=Math.sin(cam.a);
+  const rx=dx*ca-dy*sa,ry=dx*sa+dy*ca;return[W/2+cam.z*rx,H*.56+cam.z*TILT*ry-(h||0)*S*cam.z*.8];}
+function draw2(st){cam=cam2(st);const x=x2;x.setTransform(DPR,0,0,DPR,0,0);x.fillStyle="#19462a";x.fillRect(0,0,W,H);
+  x.save();x.translate(W/2,H*.56);x.scale(cam.z,cam.z*TILT);x.rotate(cam.a);x.translate(-cam.c[0],-cam.c[1]);
+  x.imageSmoothingQuality="high";x.drawImage(tex,0,IMG_TOP,1080,IMG_H);x.restore();
+  const path=(pts,ground)=>{x.beginPath();pts.forEach((p,k)=>{const q=proj(p.px,p.py,ground?0:p.h);k?x.lineTo(q[0],q[1]):x.moveTo(q[0],q[1]);});};
+  const stroke=(w,c)=>{x.lineWidth=w;x.strokeStyle=c;x.stroke();};
+  x.lineCap=x.lineJoin="round";
+  const trails=SHOTS.slice(0,st.ph==="end"?SHOTS.length:st.i).map(s=>s.trail).concat(st.ph==="end"?[]:[st.trail]);
+  trails.forEach((t,k)=>{if(t.length<2)return;const old=k<trails.length-1&&st.ph!=="end";
+    path(t,true);stroke(3,"rgba(0,0,0,.25)");
+    path(t);stroke(10,old?"rgba(255,196,0,.12)":"rgba(255,196,0,.3)");stroke(4.5,old?"rgba(255,196,0,.55)":"#ffc400");stroke(1.6,"rgba(255,255,255,.9)");});
+  // tee marker and pin
+  const tq=proj(TEE[0],TEE[1],0);x.fillStyle="#fff";x.fillRect(tq[0]-5,tq[1]-2,10,4);
+  const p0=proj(PIN[0],PIN[1],0),p1=proj(PIN[0],PIN[1],5);x.fillStyle="rgba(0,0,0,.45)";x.beginPath();x.ellipse(p0[0],p0[1],4,2.4,0,0,7);x.fill();
+  x.lineWidth=2;x.strokeStyle="#fff";x.beginPath();x.moveTo(p0[0],p0[1]);x.lineTo(p1[0],p1[1]);x.stroke();
+  x.fillStyle="#e0242c";x.beginPath();x.moveTo(p1[0],p1[1]);x.lineTo(p1[0]+16,p1[1]+6);x.lineTo(p1[0],p1[1]+12);x.fill();
+  // ball and its shadow
+  if(!(st.holed&&st.f>.25)&&st.ph!=="end"){const b=st.ball,g=proj(b.px,b.py,0),q=proj(b.px,b.py,b.h),r=clamp(3.2+cam.z*.35+b.h*.05,3.5,8);
+    x.fillStyle="rgba(0,0,0,.35)";x.beginPath();x.ellipse(g[0],g[1],r*1.1,r*.55,0,0,7);x.fill();
+    x.fillStyle="#fff";x.strokeStyle="rgba(12,22,45,.6)";x.lineWidth=1.2;x.beginPath();x.arc(q[0],q[1],r,0,7);x.fill();x.stroke();}}
+
+/* ---------- 3D view (three.js, loaded the first time it is opened) ---------- */
+let r3=null;const EXAG=2;
+const dem=await fetch("data/pangkalan-jati-elevation.json").then(r=>r.json());
+const PM=EXT.pxmap[N],det=PM.m[0][0]*PM.m[1][1]-PM.m[0][1]*PM.m[1][0];
+function elevAt(px,py){const X=px-PM.o[0],Y=py-PM.o[1],u=(PM.m[1][1]*X-PM.m[0][1]*Y)/det,v=(-PM.m[1][0]*X+PM.m[0][0]*Y)/det;
+  const lat=PM.ref[0]+u/1e5,lng=PM.ref[1]+v/1e5,c=clamp((lng-dem.west)/dem.pixelWidth-.5,0,dem.width-1.001),r=clamp((dem.north-lat)/dem.pixelHeight-.5,0,dem.height-1.001);
+  const c0=Math.floor(c),r0=Math.floor(r),fc=c-c0,fr=r-r0,E=dem.elevations;
+  return lerp(lerp(E[r0][c0],E[r0][c0+1],fc),lerp(E[r0+1][c0],E[r0+1][c0+1],fc),fr);}
+const E0=elevAt(TEE[0],TEE[1]),Y=(px,py)=>(elevAt(px,py)-E0)*EXAG;
+
+async function make3(){
+  const THREE=await import("https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js");
+  const c3=$("c3"),R=new THREE.WebGLRenderer({canvas:c3,antialias:true});R.setPixelRatio(DPR);R.setSize(W,H,false);R.outputColorSpace=THREE.SRGBColorSpace;
+  const scene=new THREE.Scene(),sky=0xa9cdee;scene.background=new THREE.Color(sky);scene.fog=new THREE.Fog(sky,160,560);
+  const camera=new THREE.PerspectiveCamera(52,W/H,.3,3000);
+  scene.add(new THREE.HemisphereLight(0xdfefff,0x2b4a22,1.1));const sun=new THREE.DirectionalLight(0xffffff,1.6);sun.position.set(-120,200,80);scene.add(sun);
+  const V=(px,py,h)=>new THREE.Vector3((px-TEE[0])/S,Y(px,py)+(h||0),(py-TEE[1])/S);
+  // terrain: the hole image draped over DEM heights, plus a wide forest skirt
+  const NX=180,NY=134,pos=[],uv=[],idx=[];
+  for(let j=0;j<=NY;j++)for(let i=0;i<=NX;i++){const px=1080*i/NX,py=IMG_TOP+IMG_H*j/NY,v=V(px,py);pos.push(v.x,v.y,v.z);uv.push(i/NX,1-j/NY);}
+  for(let j=0;j<NY;j++)for(let i=0;i<NX;i++){const a=j*(NX+1)+i,b=a+1,c=a+NX+1,d=c+1;idx.push(a,c,b,b,c,d);}
+  const geo=new THREE.BufferGeometry();geo.setAttribute("position",new THREE.Float32BufferAttribute(pos,3));geo.setAttribute("uv",new THREE.Float32BufferAttribute(uv,2));geo.setIndex(idx);geo.computeVertexNormals();
+  const T=new THREE.CanvasTexture(tex);T.colorSpace=THREE.SRGBColorSpace;T.anisotropy=R.capabilities.getMaxAnisotropy();
+  scene.add(new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:T})));
+  const skirt=new THREE.Mesh(new THREE.PlaneGeometry(4000,4000),new THREE.MeshLambertMaterial({color:0x1d5030}));skirt.rotation.x=-Math.PI/2;skirt.position.y=-6;scene.add(skirt);
+  // trees where the map is drawn as trees (dark green), and in the forest outside the course
+  const tc=tex.getContext("2d").getImageData(0,0,tex.width,tex.height).data,spots=[];
+  for(let py=IMG_TOP+2;py<IMG_TOP+IMG_H-2;py+=4.2)for(let px=2;px<1078;px+=4.2){
+    const jx=px+((px*7.1+py*3.3)%3.6)-1.8,jy=py+((px*2.7+py*5.9)%3.6)-1.8,k=(Math.round((jy-IMG_TOP)*texScale)*tex.width+Math.round(jx*texScale))*4;
+    const r=tc[k],g=tc[k+1],b=tc[k+2];const tree=g<115&&r<75&&b<75&&g>r+15;if(tree&&((px*13+py*7)%10)<(r<30?7:5))spots.push([jx,jy]);}
+  const cone=new THREE.ConeGeometry(2.6,9,7);cone.translate(0,4.5,0);
+  const trees=new THREE.InstancedMesh(cone,new THREE.MeshLambertMaterial({color:0xffffff}),spots.length),m4=new THREE.Matrix4(),col=new THREE.Color();
+  spots.forEach(([px,py],k)=>{const s=.75+((px*31+py*17)%10)/18,v=V(px,py,-.5);m4.makeScale(s,s*(.9+((px+py)%5)/10),s);m4.setPosition(v);trees.setMatrixAt(k,m4);
+    trees.setColorAt(k,col.setHSL(.33+((px*3+py)%7)/120,.55,.17+((px+py*3)%9)/90));});
+  scene.add(trees);
+  // pin, ball, shadow
+  const pinV=V(PIN[0],PIN[1]);const pole=new THREE.Mesh(new THREE.CylinderGeometry(.06,.06,4.5,6),new THREE.MeshBasicMaterial({color:0xffffff}));pole.position.copy(pinV).add(new THREE.Vector3(0,2.25,0));scene.add(pole);
+  const flagG=new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0,0,0),new THREE.Vector3(1.6,-.45,0),new THREE.Vector3(0,-.9,0)]);
+  const flag=new THREE.Mesh(flagG,new THREE.MeshBasicMaterial({color:0xe0242c,side:THREE.DoubleSide}));flag.position.copy(pinV).add(new THREE.Vector3(0,4.5,0));scene.add(flag);
+  const ball=new THREE.Mesh(new THREE.SphereGeometry(.45,18,12),new THREE.MeshBasicMaterial({color:0xffffff}));scene.add(ball);
+  const shadow=new THREE.Mesh(new THREE.CircleGeometry(.55,16),new THREE.MeshBasicMaterial({color:0x000000,transparent:true,opacity:.35,depthWrite:false}));shadow.rotation.x=-Math.PI/2;scene.add(shadow);
+  // tracers: a gold core and a soft glow
+  const core=new THREE.MeshBasicMaterial({color:0xffd23d}),glow=new THREE.MeshBasicMaterial({color:0xffc400,transparent:true,opacity:.28,depthWrite:false,blending:THREE.AdditiveBlending});
+  const ptsOf=t=>t.map(p=>V(p.px,p.py,p.h+.25));
+  const tube=(pts,rad,mat)=>new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts),Math.max(8,pts.length*2),rad,6),mat);
+  const RAD=s=>s.kind==="putt"?[.05,.16]:[.16,.55];
+  const done=SHOTS.map(s=>{const g=new THREE.Group(),p=ptsOf(s.trail),r=RAD(s);g.add(tube(p,r[0],core),tube(p,r[1],glow));g.visible=false;scene.add(g);return g;});
+  let live=new THREE.Group();scene.add(live);
+  // camera: behind the ball, looking down the shot; orbit the pin at the end
+  const dirOf=i=>{const s=SHOTS[i];return new THREE.Vector3(Math.cos(s.dir),0,Math.sin(s.dir));};
+  const up=new THREE.Vector3(0,1,0);
+  function camFor(i,b){const s=SHOTS[i],d=dirOf(i),P=s.kind==="putt",bv=V(b.px,b.py,b.h);
+    const back=P?11:24,hi=P?4.2:7+b.h*.35,ahead=P?6:45;
+    return{pos:bv.clone().addScaledVector(d,-back).setY(Math.max(bv.y,Y(b.px,b.py))+hi),look:bv.clone().addScaledVector(d,ahead).setY(lerp(bv.y,Y(s.to[0],s.to[1]),.6)+(P?0:2))};}
+  const endOf=i=>camFor(i,{px:SHOTS[i].to[0],py:SHOTS[i].to[1],h:0}),startOf=i=>camFor(i,{px:SHOTS[i].from[0],py:SHOTS[i].from[1],h:0});
+  const mix=(a,b,k)=>({pos:a.pos.clone().lerp(b.pos,k),look:a.look.clone().lerp(b.look,k)});
+  function cam3(st){
+    if(st.ph==="end"){const a=-Math.PI/2+st.f*Math.PI*.7,o={pos:pinV.clone().add(new THREE.Vector3(Math.cos(a)*-48,30,Math.sin(a)*-48)),look:pinV.clone().add(new THREE.Vector3(0,1.5,0))};
+      return mix(endOf(SHOTS.length-1),o,ease(clamp(st.f/.4,0,1)));}
+    if(st.ph==="pre"){const prev=st.i?endOf(st.i-1):{pos:V(TEE[0],TEE[1]).add(new THREE.Vector3(0,70,25)),look:V(PIN[0],PIN[1])};return mix(prev,startOf(st.i),ease(st.f));}
+    if(st.ph==="post")return endOf(st.i);
+    return camFor(st.i,st.ball);}
+  let smooth=null;
+  return{resize(){R.setPixelRatio(DPR);R.setSize(W,H,false);camera.aspect=W/H;camera.updateProjectionMatrix();},
+    draw(st,jump){const c=cam3(st);if(!smooth||jump)smooth={pos:c.pos.clone(),look:c.look.clone()};else{smooth.pos.lerp(c.pos,.18);smooth.look.lerp(c.look,.18);}
+      camera.position.copy(smooth.pos);camera.lookAt(smooth.look);
+      const nDone=st.ph==="end"?SHOTS.length:st.i;done.forEach((g,k)=>g.visible=k<nDone);
+      scene.remove(live);live.traverse(o=>{if(o.geometry)o.geometry.dispose();});live=new THREE.Group();
+      if(st.ph!=="end"&&st.trail.length>2){const p=ptsOf(st.trail),r=RAD(SHOTS[st.i]);live.add(tube(p,r[0],core),tube(p,r[1],glow));}scene.add(live);
+      const b=st.ball,hide=(st.holed&&st.f>.25)||st.ph==="end";ball.visible=shadow.visible=!hide;
+      const sc=SHOTS[st.i].kind==="putt"&&st.ph!=="pre"||st.i>=2?.4:1;ball.scale.setScalar(sc);shadow.scale.setScalar(sc);ball.position.copy(V(b.px,b.py,b.h+.45*sc));shadow.position.copy(V(b.px,b.py,.08));
+      R.render(scene,camera);}};}
+
+/* ---------- player ---------- */
+let view="2d",t=0,playing=true,last=performance.now(),jump=true;
+size();addEventListener("resize",()=>{size();jump=true;});
+$("loading").hidden=true;
+document.querySelector(".tabs").addEventListener("click",async e=>{const b=e.target.closest("[data-v]");if(!b||b.dataset.v===view)return;
+  view=b.dataset.v;document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",x===b));
+  $("c2").hidden=view!=="2d";$("c3").hidden=view!=="3d";
+  if(view==="3d"&&!r3){$("loading").textContent="Memuat 3D…";$("loading").hidden=false;try{r3=await make3();}catch(err){$("loading").textContent="3D tidak bisa dimuat di HP ini: "+err.message;return;}$("loading").hidden=true;}
+  t=0;playing=true;jump=true;});
+$("play").addEventListener("click",()=>{if(t>=TOTAL){t=0;jump=true;playing=true;}else playing=!playing;});
+$("scrub").addEventListener("input",()=>{t=$("scrub").value/1000*TOTAL;playing=false;jump=true;});
+function frame(now){const dt=Math.min(100,now-last);last=now;if(playing){t+=dt;if(t>=TOTAL){t=TOTAL;playing=false;}}
+  const st=stateAt(t);hud(st);$("scrub").value=Math.round(t/TOTAL*1000);$("play").textContent=playing?"Jeda":t>=TOTAL?"Putar ulang":"Lanjut";
+  if(view==="2d")draw2(st);else if(r3)r3.draw(st,jump);jump=false;requestAnimationFrame(frame);}
+requestAnimationFrame(frame);
+window.__replay={stateAt,SHOTS,TOTAL};
+</script>
+</body>
+</html>
